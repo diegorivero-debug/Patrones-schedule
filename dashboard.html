@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🗓️ Patrones de Schedule - Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    min-height: 100vh;
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    padding: 18px 24px 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.3px; }
+  header p  { font-size: 0.82rem; color: #a0aec0; margin-top: 2px; }
+
+  .tabs-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0 24px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tabs { display: flex; gap: 0; }
+  .tab-btn {
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #718096;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: #2d3748; }
+  .tab-btn.active {
+    color: #2b6cb0;
+    border-bottom-color: #2b6cb0;
+    font-weight: 700;
+  }
+
+  .action-btns {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  .action-btns button {
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e0;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #4a5568;
+    transition: background 0.15s, box-shadow 0.15s;
+  }
+  .action-btns button:hover {
+    background: #edf2f7;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  .btn-export { color: #276749 !important; border-color: #9ae6b4 !important; }
+  .btn-reset  { color: #9b2c2c !important; border-color: #feb2b2 !important; }
+
+  .main { padding: 20px 24px 40px; }
+
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    background: #fff;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: max-content;
+    min-width: 100%;
+    font-size: 11px;
+  }
+
+  th, td {
+    border: 1px solid #e2e8f0;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0;
+  }
+
+  /* Sticky columns */
+  .col-role, .col-shift {
+    position: sticky;
+    z-index: 3;
+    background: #fff;
+  }
+  .col-role  { left: 0;    min-width: 72px; max-width: 72px; }
+  .col-shift { left: 72px; min-width: 100px; max-width: 100px; }
+  .col-shift::after {
+    content: '';
+    position: absolute;
+    top: 0; right: -4px;
+    width: 4px; height: 100%;
+    background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);
+    pointer-events: none;
+  }
+
+  /* Header row */
+  thead tr.header-row th {
+    background: #2d3748;
+    color: #fff;
+    font-weight: 700;
+    font-size: 10px;
+    padding: 6px 4px;
+  }
+  thead tr.header-row th.col-role,
+  thead tr.header-row th.col-shift {
+    background: #2d3748;
+    color: #fff;
+    z-index: 5;
+  }
+
+  /* Time slot header cells – rotated label */
+  th.time-slot {
+    min-width: 40px;
+    width: 40px;
+    height: 56px;
+    padding: 0;
+    vertical-align: bottom;
+  }
+  th.time-slot .rotate-wrap {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: 56px;
+    padding-bottom: 4px;
+  }
+  th.time-slot span {
+    display: inline-block;
+    transform: rotate(-45deg);
+    transform-origin: bottom center;
+    white-space: nowrap;
+    font-size: 9px;
+    font-weight: 600;
+    color: #e2e8f0;
+    line-height: 1;
+  }
+
+  /* Opening hours row */
+  tr.apertura-row td {
+    height: 18px;
+    font-size: 9px;
+    font-weight: 700;
+  }
+  tr.apertura-row td.open-slot {
+    background: #f0fff4;
+    color: #276749;
+  }
+  tr.apertura-row td.col-role,
+  tr.apertura-row td.col-apertura-label,
+  tr.apertura-row td.col-shift {
+    background: #f7fafc;
+    color: #718096;
+    font-size: 9px;
+    font-weight: 600;
+  }
+
+  /* Section separator row */
+  tr.section-sep td {
+    height: 4px;
+    background: #4a5568;
+    border: none;
+  }
+  tr.section-sep td.col-role,
+  tr.section-sep td.col-shift {
+    background: #4a5568;
+  }
+
+  /* Data rows */
+  tr.lead-row td.col-role  { background: #ebf8ff; color: #2b6cb0; font-weight: 700; }
+  tr.lead-row td.col-shift { background: #ebf8ff; color: #2c5282; }
+  tr.mgr-row  td.col-role  { background: #fffaf0; color: #c05621; font-weight: 700; }
+  tr.mgr-row  td.col-shift { background: #fffaf0; color: #9c4221; }
+  tr.lead-row td.col-role, tr.lead-row td.col-shift,
+  tr.mgr-row  td.col-role, tr.mgr-row  td.col-shift {
+    padding: 4px 6px;
+    font-size: 11px;
+    text-align: left;
+  }
+
+  /* Activity cells */
+  td.act-cell {
+    min-width: 40px;
+    width: 40px;
+    height: 26px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 1px;
+    transition: filter 0.15s, box-shadow 0.15s;
+    position: relative;
+    user-select: none;
+  }
+  td.act-cell:hover {
+    filter: brightness(0.88);
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,0.25);
+    z-index: 2;
+  }
+
+  /* Inline dropdown */
+  .act-select-wrap {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 50;
+  }
+  .act-select {
+    font-size: 10px;
+    padding: 1px 2px;
+    border: 2px solid #2b6cb0;
+    background: #fff;
+    cursor: pointer;
+    min-width: 72px;
+    border-radius: 3px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  /* Summary section */
+  .summary-section {
+    margin-top: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    overflow-x: auto;
+  }
+  .summary-section h3 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 10px 14px 8px;
+    color: #2d3748;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f7fafc;
+    border-radius: 8px 8px 0 0;
+  }
+
+  table.summary-table {
+    width: max-content;
+    min-width: 100%;
+  }
+  .summary-table th.sum-label,
+  .summary-table td.sum-label {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    min-width: 130px;
+    max-width: 130px;
+    text-align: left;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .summary-table th.sum-label::after,
+  .summary-table td.sum-label::after {
+    content: '';
+    position: absolute;
+    top: 0; right: -4px;
+    width: 4px; height: 100%;
+    background: linear-gradient(to right, rgba(0,0,0,0.06), transparent);
+    pointer-events: none;
+  }
+  .summary-table th {
+    background: #2d3748;
+    color: #fff;
+    font-size: 9px;
+    padding: 4px 2px;
+    min-width: 40px;
+    width: 40px;
+  }
+  .summary-table th.sum-label {
+    background: #2d3748;
+    color: #e2e8f0;
+    z-index: 5;
+  }
+  .summary-table td.sum-val {
+    text-align: center;
+    font-size: 11px;
+    padding: 4px 2px;
+    min-width: 40px;
+    width: 40px;
+    border: 1px solid #e2e8f0;
+  }
+  .summary-table tr:nth-child(odd) td { background: #f7fafc; }
+  .summary-table tr:nth-child(even) td { background: #fff; }
+  tr.sum-sep td { height: 3px; background: #a0aec0; border: none; }
+  tr.sum-sep td.sum-label { background: #a0aec0; }
+  tr.sum-total td { background: #ebf8ff !important; font-weight: 700; }
+  tr.sum-total td.sum-label { background: #bee3f8 !important; color: #2c5282; }
+  td.sum-zero { color: #cbd5e0; }
+  td.sum-pos  { color: #276749; font-weight: 700; }
+
+  /* Legend */
+  .legend {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4a5568;
+  }
+  .legend-swatch {
+    width: 18px; height: 18px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.15);
+    flex-shrink: 0;
+  }
+
+  /* Group label row */
+  tr.group-label-row td {
+    background: #edf2f7;
+    color: #4a5568;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 6px;
+    text-align: left;
+  }
+  tr.group-label-row td:first-child { border-radius: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗓️ Patrones de Schedule - Dashboard</h1>
+  <p id="subtitle">Selecciona un patrón para visualizar</p>
+</header>
+
+<div class="tabs-bar">
+  <div class="tabs">
+    <button class="tab-btn active" data-pat="0">Día Normal</button>
+    <button class="tab-btn"        data-pat="1">Martes</button>
+    <button class="tab-btn"        data-pat="2">Miércoles</button>
+    <button class="tab-btn"        data-pat="3">Sábado</button>
+  </div>
+  <div class="action-btns">
+    <button class="btn-export" onclick="exportCSV()">⬇️ Exportar CSV</button>
+    <button class="btn-reset"  onclick="resetPattern()">🔄 Reset</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="schedule-container"></div>
+</div>
+
+<script>
+// ─── Constants ───────────────────────────────────────────────────────────────
+const TIME_SLOTS = ['07:00','07:30','08:00','08:30','09:00','09:15','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
+const OPEN_START = 6;   // index of 09:30
+const OPEN_END   = 30;  // index of 21:30 (inclusive)
+
+const ACTIVITY_OPTIONS = ['','LDSup','LDOPS','Coach','Support','AOR','Lunch','DD','MEETING'];
+
+const COLORS = {
+  'LDSup':   '#4A90D9',
+  'LDOPS':   '#A8D5E2',
+  'Coach':   '#7BC67E',
+  'Support': '#F5A623',
+  'AOR':     '#D5D5D5',
+  'Lunch':   '#FFE066',
+  'DD':      '#B8A9C9',
+  'MEETING': '#E74C3C',
+  '':        '#FFFFFF',
+};
+
+const PATTERN_NAMES = [
+  'Día Normal (Lun, Jue, Vie)',
+  'Martes (Reunión Comercial 14:00-16:00)',
+  'Miércoles (Leadership Meeting 14:00-16:00)',
+  'Sábado',
+];
+
+// ─── Original pattern data ────────────────────────────────────────────────────
+const ORIGINAL_PATTERNS = [
+  // Pattern 0: Día Normal
+  [
+    {role:'Lead', shift:'07:00-16:00', acts:['LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','DD','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','','','','','','','','','','','','']},
+    {role:'Lead', shift:'08:00-17:00', acts:['','','LDOPS','LDOPS','LDOPS','DD','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','LDOPS','','','','','','','','','','','']},
+    {role:'Lead', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','']},
+    {role:'Lead', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','LDOPS','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','']},
+    {role:'Manager', shift:'08:00-17:00', acts:['','','AOR','AOR','AOR','DD','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Lunch','Lunch','Coach','AOR','AOR','AOR','AOR','AOR','','','','','','','','','','','']},
+    {role:'Manager', shift:'08:00-17:00', acts:['','','AOR','AOR','AOR','DD','Support','Support','Support','Support','Support','Lunch','Lunch','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','','','','','','','','','','','']},
+    {role:'Manager', shift:'09:00-18:00', acts:['','','','','AOR','DD','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Lunch','Lunch','Coach','AOR','AOR','AOR','AOR','AOR','AOR','AOR','AOR','AOR','','','','','','','']},
+    {role:'Manager', shift:'10:00-19:00', acts:['','','','','','','','Support','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','AOR','AOR','AOR','AOR','','','','','','']},
+    {role:'Manager', shift:'10:00-19:00', acts:['','','','','','','','AOR','AOR','AOR','AOR','AOR','Lunch','Lunch','AOR','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Coach','AOR','','','','','','','','']},
+    {role:'Manager', shift:'11:00-20:00', acts:['','','','','','','','','','AOR','AOR','AOR','AOR','AOR','Lunch','Lunch','AOR','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','','','','','','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','AOR','AOR','AOR','AOR','AOR','AOR','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','AOR','AOR','AOR','Lunch','Lunch','AOR','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','Support','AOR','AOR','AOR','AOR','AOR','AOR','Lunch','Lunch','AOR','Support','Support','Support','Support','Support','Support','Support','AOR','']},
+  ],
+  // Pattern 1: Martes
+  [
+    {role:'Lead', shift:'07:00-16:00', acts:['LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','DD','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','','','','','','','','','','','','']},
+    {role:'Lead', shift:'08:00-17:00', acts:['','','LDOPS','LDOPS','LDOPS','DD','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','MEETING','MEETING','MEETING','MEETING','LDOPS','LDOPS','LDOPS','','','','','','','','','','','']},
+    {role:'Lead', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','LDOPS','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','']},
+    {role:'Lead', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','LDOPS','MEETING','MEETING','MEETING','MEETING','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDOPS','LDOPS','LDOPS','LDOPS','']},
+    {role:'Manager', shift:'08:00-17:00', acts:['','','AOR','AOR','AOR','DD','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Lunch','Lunch','MEETING','MEETING','MEETING','MEETING','Coach','AOR','','','','','','','','','','','']},
+    {role:'Manager', shift:'08:00-17:00', acts:['','','AOR','AOR','AOR','DD','Support','Support','Support','Support','Support','Lunch','Lunch','Support','Support','MEETING','MEETING','MEETING','MEETING','AOR','AOR','','','','','','','','','','','']},
+    {role:'Manager', shift:'09:00-18:00', acts:['','','','','AOR','DD','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Lunch','Lunch','MEETING','MEETING','MEETING','MEETING','AOR','AOR','AOR','AOR','AOR','AOR','','','','','','','']},
+    {role:'Manager', shift:'10:00-19:00', acts:['','','','','','','','Support','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','AOR','AOR','AOR','AOR','','','','','','']},
+    {role:'Manager', shift:'10:00-19:00', acts:['','','','','','','','AOR','AOR','AOR','AOR','Support','Lunch','Lunch','MEETING','MEETING','MEETING','MEETING','Coach','Coach','Coach','Coach','Coach','AOR','','','','','','','','']},
+    {role:'Manager', shift:'11:00-20:00', acts:['','','','','','','','','','AOR','AOR','AOR','AOR','AOR','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','','','','','','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','AOR','MEETING','MEETING','MEETING','MEETING','AOR','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','Lunch','Lunch','MEETING','MEETING','MEETING','MEETING','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','AOR','AOR','MEETING','MEETING','MEETING','MEETING','AOR','Lunch','Lunch','AOR','Support','Support','Support','Support','Support','Support','Support','AOR','']},
+  ],
+  // Pattern 2: Miércoles
+  [
+    {role:'Lead', shift:'07:00-16:00', acts:['LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','DD','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','','','','','','','','','','','','']},
+    {role:'Lead', shift:'08:00-17:00', acts:['','','LDOPS','LDOPS','LDOPS','DD','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','LDOPS','','','','','','','','','','','']},
+    {role:'Lead', shift:'10:00-19:00', acts:['','','','','','','','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','','','','','','']},
+    {role:'Lead', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','']},
+    {role:'Lead', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','LDOPS','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','']},
+    {role:'Manager', shift:'08:00-17:00', acts:['','','AOR','AOR','AOR','DD','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Lunch','Lunch','MEETING','MEETING','MEETING','MEETING','Coach','AOR','','','','','','','','','','','']},
+    {role:'Manager', shift:'08:00-17:00', acts:['','','AOR','AOR','AOR','DD','Support','Support','Support','Support','Support','Lunch','Lunch','Support','Support','MEETING','MEETING','MEETING','MEETING','AOR','AOR','','','','','','','','','','','']},
+    {role:'Manager', shift:'09:00-18:00', acts:['','','','','AOR','DD','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Lunch','Lunch','MEETING','MEETING','MEETING','MEETING','AOR','AOR','AOR','AOR','AOR','AOR','','','','','','','']},
+    {role:'Manager', shift:'10:00-19:00', acts:['','','','','','','','Support','Support','Support','Support','Lunch','Lunch','Support','Support','MEETING','MEETING','MEETING','MEETING','AOR','AOR','AOR','AOR','AOR','AOR','AOR','','','','','','']},
+    {role:'Manager', shift:'10:00-19:00', acts:['','','','','','','','AOR','AOR','AOR','AOR','AOR','Lunch','Lunch','MEETING','MEETING','MEETING','MEETING','Coach','Coach','Coach','Coach','Coach','AOR','','','','','','','','']},
+    {role:'Manager', shift:'11:00-20:00', acts:['','','','','','','','','','AOR','AOR','AOR','AOR','AOR','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','','','','','','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','AOR','AOR','MEETING','MEETING','MEETING','MEETING','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','Lunch','Lunch','MEETING','MEETING','MEETING','MEETING','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','AOR','AOR','MEETING','MEETING','MEETING','MEETING','AOR','Lunch','Lunch','AOR','Support','Support','Support','Support','Support','Support','Support','AOR','']},
+  ],
+  // Pattern 3: Sábado
+  [
+    {role:'Lead', shift:'07:00-16:00', acts:['LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','DD','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','','','','','','','','','','','','']},
+    {role:'Lead', shift:'08:00-17:00', acts:['','','LDOPS','LDOPS','LDOPS','DD','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','','','','','','','','','','','']},
+    {role:'Lead', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDOPS','LDOPS','LDOPS','LDOPS','']},
+    {role:'Lead', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','']},
+    {role:'Manager', shift:'08:00-17:00', acts:['','','AOR','AOR','AOR','DD','Coach','Coach','Coach','Coach','Coach','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','','','','','','','','','','','']},
+    {role:'Manager', shift:'08:00-17:00', acts:['','','AOR','AOR','AOR','DD','Support','Support','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','AOR','AOR','','','','','','','','','','','']},
+    {role:'Manager', shift:'09:00-18:00', acts:['','','','','AOR','DD','Coach','Coach','Coach','Coach','Coach','Coach','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','AOR','AOR','AOR','AOR','AOR','AOR','','','','','','','']},
+    {role:'Manager', shift:'10:00-19:00', acts:['','','','','','','','Support','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','','','','','','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','Coach','Coach','Coach','Coach','Coach','Coach','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','AOR','AOR','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','Support','Support','Support','Support','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','']},
+    {role:'Manager', shift:'13:00-22:00', acts:['','','','','','','','','','','','','','AOR','Support','Support','Support','Support','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','AOR','AOR','']},
+  ],
+];
+
+// ─── Mutable state (deep copy of originals) ──────────────────────────────────
+let currentState = ORIGINAL_PATTERNS.map(pat => pat.map(row => ({...row, acts: [...row.acts]})));
+let activePattern = 0;
+let openDropdown = null; // reference to active dropdown element
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
+function getColor(act) {
+  return Object.prototype.hasOwnProperty.call(COLORS, act) ? COLORS[act] : '#FFFFFF';
+}
+
+function textColor(hex) {
+  // Compute perceived luminance to decide dark/light text
+  if (typeof hex !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return '#333';
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return (0.299*r + 0.587*g + 0.114*b) > 160 ? '#333' : '#fff';
+}
+
+function buildScheduleTable(patIdx) {
+  const rows = currentState[patIdx];
+  const leads = rows.filter(r => r.role === 'Lead');
+  const mgrs  = rows.filter(r => r.role === 'Manager');
+
+  let html = '<div class="table-wrapper"><table id="sched-table">';
+
+  // Header row
+  html += '<thead><tr class="header-row">';
+  html += '<th class="col-role">Rol</th>';
+  html += '<th class="col-shift">Turno</th>';
+  for (const t of TIME_SLOTS) {
+    html += `<th class="time-slot"><div class="rotate-wrap"><span>${t}</span></div></th>`;
+  }
+  html += '</tr></thead>';
+
+  html += '<tbody>';
+
+  // Opening hours row
+  html += '<tr class="apertura-row">';
+  html += '<td class="col-role col-apertura-label">Horario</td>';
+  html += '<td class="col-shift">Apertura</td>';
+  for (let i = 0; i < TIME_SLOTS.length; i++) {
+    if (i >= OPEN_START && i <= OPEN_END) {
+      html += '<td class="open-slot">▶</td>';
+    } else {
+      html += '<td></td>';
+    }
+  }
+  html += '</tr>';
+
+  // Leads group
+  html += '<tr class="group-label-row"><td colspan="' + (TIME_SLOTS.length + 2) + '">👤 Leads</td></tr>';
+  leads.forEach((row, localIdx) => {
+    const globalIdx = rows.indexOf(row);
+    html += buildPersonRow(patIdx, globalIdx, row, 'lead-row');
+  });
+
+  // Separator
+  html += '<tr class="section-sep"><td colspan="' + (TIME_SLOTS.length + 2) + '"></td></tr>';
+
+  // Managers group
+  html += '<tr class="group-label-row"><td colspan="' + (TIME_SLOTS.length + 2) + '">👔 Managers</td></tr>';
+  mgrs.forEach((row, localIdx) => {
+    const globalIdx = rows.indexOf(row);
+    html += buildPersonRow(patIdx, globalIdx, row, 'mgr-row');
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function buildPersonRow(patIdx, rowIdx, row, rowClass) {
+  let html = `<tr class="${rowClass}" data-pat="${patIdx}" data-row="${rowIdx}">`;
+  html += `<td class="col-role">${row.role}</td>`;
+  html += `<td class="col-shift">${row.shift}</td>`;
+  for (let c = 0; c < TIME_SLOTS.length; c++) {
+    const act = row.acts[c];
+    const bg  = getColor(act);
+    const fg  = textColor(bg);
+    html += `<td class="act-cell" data-pat="${patIdx}" data-row="${rowIdx}" data-col="${c}" `
+          + `style="background:${bg};color:${fg}" `
+          + `onclick="cellClick(event,${patIdx},${rowIdx},${c})">${act}</td>`;
+  }
+  html += '</tr>';
+  return html;
+}
+
+// ─── Summary calculation ──────────────────────────────────────────────────────
+function calcSummary(patIdx) {
+  const rows = currentState[patIdx];
+  const n = TIME_SLOTS.length;
+
+  const counts = {
+    LDSup:   new Array(n).fill(0),
+    LDOPS:   new Array(n).fill(0),
+    Coach:   new Array(n).fill(0),
+    MgrSup:  new Array(n).fill(0), // Support for Manager role
+    AOR:     new Array(n).fill(0),
+    Lunch:   new Array(n).fill(0),
+    DD:      new Array(n).fill(0),
+    MEETING: new Array(n).fill(0),
+  };
+
+  for (const row of rows) {
+    for (let c = 0; c < n; c++) {
+      const act = row.acts[c];
+      if (act === 'LDSup')   counts.LDSup[c]++;
+      else if (act === 'LDOPS')   counts.LDOPS[c]++;
+      else if (act === 'Coach')   counts.Coach[c]++;
+      else if (act === 'Support' && row.role === 'Manager') counts.MgrSup[c]++;
+      else if (act === 'AOR')     counts.AOR[c]++;
+      else if (act === 'Lunch')   counts.Lunch[c]++;
+      else if (act === 'DD')      counts.DD[c]++;
+      else if (act === 'MEETING') counts.MEETING[c]++;
+    }
+  }
+
+  // Derived totals
+  const TotalSupport = counts.LDSup.map((v,i) => v + counts.MgrSup[i]);
+  const TotalCoach   = [...counts.Coach];
+  const TotalFloor   = TotalSupport.map((v,i) => v + counts.Coach[i]);
+  const MgrsOnFloor  = counts.Coach.map((v,i) => v + counts.MgrSup[i]);
+
+  // Check if MEETING is used
+  const hasMeeting = counts.MEETING.some(v => v > 0);
+
+  return { counts, TotalSupport, TotalCoach, TotalFloor, MgrsOnFloor, hasMeeting };
+}
+
+function buildSummaryTable(patIdx) {
+  const { counts, TotalSupport, TotalFloor, MgrsOnFloor, hasMeeting } = calcSummary(patIdx);
+  const n = TIME_SLOTS.length;
+
+  function makeRow(label, arr, extraClass='') {
+    let r = `<tr class="${extraClass}"><td class="sum-label">${label}</td>`;
+    for (let i = 0; i < n; i++) {
+      const v = arr[i];
+      r += `<td class="sum-val ${v===0?'sum-zero':'sum-pos'}">${v===0?'':v}</td>`;
+    }
+    r += '</tr>';
+    return r;
+  }
+
+  let html = '<div class="summary-section">';
+  html += '<h3>📊 Resumen</h3>';
+  html += '<table class="summary-table">';
+
+  // Header
+  html += '<thead><tr>';
+  html += '<th class="sum-label">Actividad</th>';
+  for (const t of TIME_SLOTS) html += `<th>${t}</th>`;
+  html += '</tr></thead>';
+
+  html += '<tbody>';
+  html += makeRow('LDSup (Leads)',      counts.LDSup);
+  html += makeRow('LDOPS',              counts.LDOPS);
+  html += makeRow('Coach',              counts.Coach);
+  html += makeRow('MGR Support',        counts.MgrSup);
+  html += makeRow('AOR',                counts.AOR);
+  html += makeRow('Lunch',              counts.Lunch);
+  html += makeRow('DD',                 counts.DD);
+  if (hasMeeting) html += makeRow('MEETING', counts.MEETING);
+  html += '<tr class="sum-sep"><td class="sum-label"></td>' + '<td></td>'.repeat(n) + '</tr>';
+  html += makeRow('Total Support (LDSup+MGR)', TotalSupport, 'sum-total');
+  html += makeRow('Total Coach',               counts.Coach, 'sum-total');
+  html += makeRow('Total Floor (Sup+Coach)',   TotalFloor,   'sum-total');
+  html += makeRow('Mgrs on Floor (Coach+Sup)', MgrsOnFloor,  'sum-total');
+  html += '</tbody></table></div>';
+
+  return html;
+}
+
+// ─── Legend ───────────────────────────────────────────────────────────────────
+function buildLegend() {
+  let html = '<div class="legend">';
+  for (const [act, color] of Object.entries(COLORS)) {
+    const label = act === '' ? '(vacío)' : act;
+    html += `<div class="legend-item">
+      <div class="legend-swatch" style="background:${color}"></div>
+      <span>${label}</span>
+    </div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+// ─── Main render ─────────────────────────────────────────────────────────────
+function render(patIdx) {
+  closeDropdown();
+  document.getElementById('subtitle').textContent = PATTERN_NAMES[patIdx];
+  const container = document.getElementById('schedule-container');
+  container.innerHTML =
+    buildScheduleTable(patIdx) +
+    buildSummaryTable(patIdx) +
+    buildLegend();
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activePattern = parseInt(btn.dataset.pat);
+    render(activePattern);
+  });
+});
+
+// ─── Cell click / inline dropdown ────────────────────────────────────────────
+function closeDropdown() {
+  if (openDropdown) {
+    const cell = openDropdown.closest('td.act-cell');
+    openDropdown.remove();
+    openDropdown = null;
+    if (cell) {
+      const pat = parseInt(cell.dataset.pat);
+      const row = parseInt(cell.dataset.row);
+      const col = parseInt(cell.dataset.col);
+      const act = currentState[pat][row].acts[col];
+      const bg  = getColor(act);
+      const fg  = textColor(bg);
+      cell.style.background = bg;
+      cell.style.color = fg;
+      cell.textContent = act;
+    }
+  }
+}
+
+function cellClick(evt, patIdx, rowIdx, colIdx) {
+  evt.stopPropagation();
+
+  // If clicking same cell that already has dropdown, close it
+  if (openDropdown) {
+    const existing = openDropdown.closest('td');
+    if (existing && parseInt(existing.dataset.row) === rowIdx
+        && parseInt(existing.dataset.col) === colIdx
+        && parseInt(existing.dataset.pat) === patIdx) {
+      closeDropdown();
+      return;
+    }
+    closeDropdown();
+  }
+
+  const cell = evt.currentTarget;
+  const currentAct = currentState[patIdx][rowIdx].acts[colIdx];
+
+  // Build select
+  const wrap = document.createElement('div');
+  wrap.className = 'act-select-wrap';
+
+  const sel = document.createElement('select');
+  sel.className = 'act-select';
+
+  for (const opt of ACTIVITY_OPTIONS) {
+    const o = document.createElement('option');
+    o.value = opt;
+    o.textContent = opt === '' ? '(vacío)' : opt;
+    if (opt === currentAct) o.selected = true;
+    sel.appendChild(o);
+  }
+
+  sel.addEventListener('change', (e) => {
+    const newAct = e.target.value;
+    currentState[patIdx][rowIdx].acts[colIdx] = newAct;
+    // Update cell appearance immediately
+    const bg = getColor(newAct);
+    const fg = textColor(bg);
+    cell.style.background = bg;
+    cell.style.color = fg;
+    cell.textContent = newAct;
+    closeDropdown();
+    // Re-render just summary
+    const sumContainer = document.querySelector('.summary-section');
+    if (sumContainer) {
+      const newSumHtml = buildSummaryTable(patIdx);
+      const tmp = document.createElement('div');
+      tmp.innerHTML = newSumHtml;
+      sumContainer.replaceWith(tmp.firstChild);
+    }
+  });
+
+  sel.addEventListener('blur', () => {
+    // Small delay to let the change event fire before closing on blur
+    setTimeout(closeDropdown, 120);
+  });
+
+  wrap.appendChild(sel);
+  cell.style.position = 'relative';
+  cell.style.overflow = 'visible';
+  cell.appendChild(wrap);
+  openDropdown = wrap;
+  sel.focus();
+}
+
+// Close dropdown when clicking elsewhere
+document.addEventListener('click', (e) => {
+  if (openDropdown && !openDropdown.contains(e.target)) {
+    closeDropdown();
+  }
+});
+
+// ─── Export CSV ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  const rows = currentState[activePattern];
+  const header = ['Role','Shift', ...TIME_SLOTS].join(';');
+  const lines = rows.map(r => [r.role, r.shift, ...r.acts].join(';'));
+  const csv = [header, ...lines].join('\n');
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `patron_${activePattern}_${PATTERN_NAMES[activePattern].replace(/[^a-zA-Z0-9]/g,'_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function resetPattern() {
+  if (!confirm(`¿Restaurar el patrón "${PATTERN_NAMES[activePattern]}" a los datos originales?`)) return;
+  currentState[activePattern] = ORIGINAL_PATTERNS[activePattern].map(row => ({...row, acts: [...row.acts]}));
+  render(activePattern);
+}
+
+// ─── Initial render ───────────────────────────────────────────────────────────
+render(0);
+</script>
+</body>
+</html>
