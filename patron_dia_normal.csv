@@ -1,35 +1,36 @@
-PATRON DIA NORMAL (Lunes, Jueves, Viernes);;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-4 Leads + 9 Managers = 13 personas;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+PATRON DIA NORMAL (Lunes, Jueves, Viernes);;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+4 Leads + 10 Managers = 14 personas;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;07:00;07:30;08:00;08:30;09:00;09:15;09:30;10:00;10:30;11:00;11:30;12:00;12:30;13:00;13:30;14:00;14:30;15:00;15:30;16:00;16:30;17:00;17:30;18:00;18:30;19:00;19:30;20:00;20:30;21:00;21:30;22:00
-Opening Hours;;;;;;;;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Opening Hours;;;;;;;;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;OPEN;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Role;Shift;07:00;07:30;08:00;08:30;09:00;09:15;09:30;10:00;10:30;11:00;11:30;12:00;12:30;13:00;13:30;14:00;14:30;15:00;15:30;16:00;16:30;17:00;17:30;18:00;18:30;19:00;19:30;20:00;20:30;21:00;21:30;22:00
-Lead;07:00-16:00;LDOPS;LDOPS;LDOPS;LDOPS;LDOPS;DD;LDSup;LDSup;LDSup;Lunch;Lunch;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDOPS;;;;;;;;;;;;;
+Lead;07:00-16:00;LDOPS;LDOPS;LDOPS;LDOPS;LDOPS;DD;LDSup;LDSup;LDSup;Lunch;Lunch;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDOPS;LDOPS;;;;;;;;;;;;
 Lead;08:00-17:00;;;LDOPS;LDOPS;LDOPS;DD;LDSup;LDSup;LDSup;LDSup;LDSup;Lunch;Lunch;LDSup;LDSup;LDSup;LDSup;LDSup;LDOPS;LDOPS;LDOPS;;;;;;;;;;;
 Lead;13:00-22:00;;;;;;;;;;;;;;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;Lunch;Lunch;LDOPS;LDOPS;LDOPS;LDOPS;LDOPS;LDOPS;
-Lead;13:00-22:00;;;;;;;;;;;;;;LDOPS;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDOPS;Lunch;Lunch;LDOPS;LDOPS;LDOPS;LDOPS;
+Lead;13:00-22:00;;;;;;;;;;;;;;LDOPS;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;LDSup;Lunch;Lunch;LDOPS;LDOPS;LDOPS;LDOPS;LDOPS;
 Manager;08:00-17:00;;;AOR;AOR;AOR;DD;Coach;Coach;Coach;Coach;Coach;Coach;Coach;Lunch;Lunch;Coach;AOR;AOR;AOR;AOR;AOR;;;;;;;;;;;
 Manager;08:00-17:00;;;AOR;AOR;AOR;DD;Support;Support;Support;Support;Support;Lunch;Lunch;Support;Support;Support;AOR;AOR;AOR;AOR;AOR;;;;;;;;;;;
 Manager;09:00-18:00;;;;;AOR;DD;Coach;Coach;Coach;Coach;Coach;Coach;Coach;Lunch;Lunch;Coach;AOR;AOR;AOR;AOR;AOR;AOR;AOR;;;;;;;;;
 Manager;10:00-19:00;;;;;;;;Support;Support;Support;Support;Lunch;Lunch;Support;Support;Support;Support;AOR;AOR;AOR;AOR;AOR;AOR;AOR;AOR;;;;;;;
-Manager;10:00-19:00;;;;;;;;AOR;AOR;AOR;AOR;AOR;AOR;Lunch;Lunch;Coach;Coach;Coach;Coach;Coach;Coach;Coach;Coach;AOR;AOR;;;;;;;
-Manager;11:00-20:00;;;;;;;;;;AOR;AOR;AOR;AOR;AOR;AOR;Lunch;Lunch;Support;Support;Support;Support;Support;Support;Support;Support;AOR;AOR;;;;;
+Manager;10:00-19:00;;;;;;;;AOR;AOR;AOR;AOR;AOR;Lunch;Lunch;AOR;Coach;Coach;Coach;Coach;Coach;Coach;Coach;Coach;AOR;;;;;;;;
+Manager;11:00-20:00;;;;;;;;;;AOR;AOR;AOR;AOR;AOR;Lunch;Lunch;Support;Support;Support;Support;Support;Support;Support;Support;AOR;AOR;;;;;;
 Manager;13:00-22:00;;;;;;;;;;;;;;AOR;AOR;AOR;AOR;AOR;AOR;Lunch;Lunch;Coach;Coach;Coach;Coach;Coach;Coach;Coach;Coach;AOR;AOR;
-Manager;13:00-22:00;;;;;;;;;;;;;;AOR;AOR;AOR;AOR;Lunch;Lunch;Support;Support;Support;Support;Support;Support;Support;Support;AOR;AOR;AOR;AOR;
-Manager;13:00-22:00;;;;;;;;;;;;;;Support;AOR;AOR;AOR;AOR;AOR;AOR;AOR;Lunch;Lunch;Support;Support;Support;Support;Support;Support;Support;AOR;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Manager;13:00-22:00;;;;;;;;;;;;;;AOR;AOR;AOR;Lunch;Lunch;AOR;Support;Support;Support;Support;Support;Support;Support;Support;AOR;AOR;AOR;AOR;
+Manager;13:00-22:00;;;;;;;;;;;;;;Support;AOR;AOR;AOR;AOR;AOR;AOR;Lunch;Lunch;AOR;Support;Support;Support;Support;Support;Support;Support;AOR;
+Manager;13:00-22:00;;;;;;;;;;;;;;AOR;AOR;AOR;AOR;Lunch;Lunch;Support;Support;Support;Support;Support;Support;AOR;AOR;AOR;AOR;AOR;AOR;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 RESUMEN;;07:00;07:30;08:00;08:30;09:00;09:15;09:30;10:00;10:30;11:00;11:30;12:00;12:30;13:00;13:30;14:00;14:30;15:00;15:30;16:00;16:30;17:00;17:30;18:00;18:30;19:00;19:30;20:00;20:30;21:00;21:30;22:00
 LDSup;;0;0;0;0;0;0;2;2;2;1;1;1;1;3;4;4;4;4;2;2;2;2;2;1;0;0;0;0;0;0;0;0
 Coach;;0;0;0;0;0;0;2;2;2;2;2;2;2;0;0;3;1;1;1;1;1;2;2;1;1;1;1;1;1;0;0;0
-MGR Support;;0;0;0;0;0;0;1;2;2;2;2;0;0;3;2;2;1;1;1;2;2;2;2;3;3;2;2;1;1;1;0;0
-AOR;;0;0;2;2;3;0;0;1;1;2;2;2;2;3;4;3;6;6;6;5;5;2;2;2;2;1;1;1;1;2;3;0
-LDOPS;;1;1;2;2;2;0;0;0;0;0;0;0;0;1;0;0;0;0;2;1;1;0;0;0;1;1;1;2;2;2;2;0
-Lunch;;0;0;0;0;0;0;0;0;0;1;1;3;3;3;3;1;1;1;1;1;1;1;1;1;1;1;1;0;0;0;0;0
+MGR Support;;0;0;0;0;0;0;1;2;2;2;2;0;0;3;2;2;2;1;1;3;3;3;3;4;3;2;2;1;1;1;0;0
+AOR;;0;0;2;2;3;0;0;1;1;2;2;2;1;4;5;4;6;6;7;5;4;2;3;2;2;2;1;2;2;3;4;0
+LDOPS;;1;1;2;2;2;0;0;0;0;0;0;0;0;1;0;0;0;0;2;2;1;0;0;0;0;1;2;2;2;2;2;0
+Lunch;;0;0;0;0;0;0;0;0;0;1;1;3;4;3;3;1;1;2;1;1;2;1;0;1;2;1;0;0;0;0;0;0
 DD;;0;0;0;0;0;5;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Total Support;;0;0;0;0;0;0;3;4;4;3;3;1;1;6;6;6;5;5;3;4;4;4;4;4;3;2;2;1;1;1;0;0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Total Support;;0;0;0;0;0;0;3;4;4;3;3;1;1;6;6;6;6;5;3;5;5;5;5;5;3;2;2;1;1;1;0;0
 Total Coach;;0;0;0;0;0;0;2;2;2;2;2;2;2;0;0;3;1;1;1;1;1;2;2;1;1;1;1;1;1;0;0;0
-Total Floor;;0;0;0;0;0;0;5;6;6;5;5;3;3;6;6;9;6;6;4;5;5;6;6;5;4;3;3;2;2;1;0;0
-Mgrs on Floor;;0;0;0;0;0;0;3;4;4;4;4;2;2;3;2;5;2;2;2;3;3;4;4;4;4;3;3;2;2;1;0;0
+Total Floor;;0;0;0;0;0;0;5;6;6;5;5;3;3;6;6;9;7;6;4;6;6;7;7;6;4;3;3;2;2;1;0;0
+Mgrs on Floor;;0;0;0;0;0;0;3;4;4;4;4;2;2;3;2;5;3;2;2;4;4;5;5;5;4;3;3;2;2;1;0;0
