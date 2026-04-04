@@ -290,7 +290,7 @@
       <option value="10:00-19:00">10:00 - 19:00</option>
       <option value="11:00-20:00">11:00 - 20:00</option>
       <option value="13:00-22:00">13:00 - 22:00 (Verano)</option>
-      <option value="13:00-21:30">13:00 - 21:30 (Invierno)</option>
+      <option value="12:30-21:30">12:30 - 21:30 (Invierno)</option>
     </select>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modal-add')">Cancelar</button>
@@ -366,7 +366,7 @@ const PATTERN_NAMES = [
 ];
 
 const SHIFT_OPTIONS_VERANO   = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','13:00-22:00'];
-const SHIFT_OPTIONS_INVIERNO = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','13:00-21:30'];
+const SHIFT_OPTIONS_INVIERNO = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','12:30-21:30'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ORIGINAL PATTERN DATA  (4 Leads + 10 Managers = 14 personas)
@@ -443,16 +443,22 @@ const ORIGINAL_PATTERNS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WINTER PATTERNS  (derived from summer: 13:00-22:00 → 13:00-21:30, close at 21:00)
-// Same rules & structure, just shorter evening shift
+// WINTER PATTERNS  (derived from summer: 13:00-22:00 → 12:30-21:30, close at 21:00)
+// Closing shift starts 30 min earlier in winter and ends 30 min earlier.
 // ═══════════════════════════════════════════════════════════════════════════════
 function deriveWinterPatterns(summer) {
+  const idx1230 = TIME_SLOTS.indexOf('12:30'); // 12
+  const idx1300 = TIME_SLOTS.indexOf('13:00'); // 13
   const idx2130 = TIME_SLOTS.indexOf('21:30'); // 30
   const idx2200 = TIME_SLOTS.indexOf('22:00'); // 31
   return summer.map(pat => pat.map(row => {
     const r = {role: row.role, shift: row.shift, acts: [...row.acts]};
     if (row.shift === '13:00-22:00') {
-      r.shift = '13:00-21:30';
+      r.shift = '12:30-21:30';
+      // Start 30 min earlier: fill 12:30 slot with same activity as 13:00
+      if (idx1230 >= 0 && idx1300 >= 0) {
+        r.acts[idx1230] = row.acts[idx1300] || (row.role === 'Lead' ? 'LDSup' : 'AOR');
+      }
       // Remove last two slots: store closes at 21:00 in winter
       if (idx2200 >= 0) r.acts[idx2200] = '';
       if (idx2130 >= 0) r.acts[idx2130] = '';
@@ -509,7 +515,7 @@ function loadRules() {
     {day:'Martes', text:'Reunión Comercial 14:00-16:00. Todos a reunión excepto 2 Mgr Support + 1 Lead en floor.', highlight:true},
     {day:'Miércoles', text:'Leadership Meeting 14:00-16:00. Solo Managers a reunión. Leads cubren floor.', highlight:true},
     {day:'Sábado', text:'Más tiempo en floor. 6h floor + 2h AOR/LDOPS por persona.', highlight:false},
-    {day:'Todos', text:'Verano: cierre 21:30 · Invierno: cierre 21:00. El turno de tarde en invierno es 13:00-21:30.', highlight:true}
+    {day:'Todos', text:'Verano: cierre 21:30 · Invierno: cierre 21:00. El turno de tarde en invierno es 12:30-21:30 (entrada 30 min antes).', highlight:true}
   ];
 }
 
