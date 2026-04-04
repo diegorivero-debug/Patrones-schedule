@@ -220,6 +220,55 @@
   body.dark td.sum-heat-high { background: #134424 !important; }
   body.dark td.sum-heat-max  { background: #16522c !important; color: #7ee787 !important; }
 
+  /* ── Weekly View ─────────────────────────────────────── */
+  .weekly-view { margin-top: 0; }
+  .weekly-table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); }
+  .weekly-table { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 12px; }
+  .weekly-table th, .weekly-table td { border: 1px solid var(--border); padding: 0; text-align: center; vertical-align: middle; }
+  .weekly-table thead th { background: var(--text); color: #fff; font-weight: 700; font-size: 11px; padding: 7px 10px; white-space: nowrap; }
+  .weekly-table thead th.wk-person { text-align: left; position: sticky; left: 0; z-index: 5; background: var(--text); min-width: 80px; }
+  .weekly-table thead th.wk-role { position: sticky; left: 80px; z-index: 5; background: var(--text); min-width: 72px; }
+  .wk-person { position: sticky; left: 0; z-index: 3; min-width: 80px; background: var(--surface); text-align: left; padding: 5px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .wk-role-col { position: sticky; left: 80px; z-index: 3; min-width: 72px; background: var(--surface); padding: 5px 6px; font-size: 10px; white-space: nowrap; }
+  .wk-person::after { content: ''; position: absolute; top: 0; right: 0; width: 1px; height: 100%; background: var(--border); pointer-events: none; }
+  .wk-role-col::after { content: ''; position: absolute; top: 0; right: -4px; width: 4px; height: 100%; background: linear-gradient(to right,rgba(0,0,0,.08),transparent); pointer-events: none; }
+  .weekly-table tr.wk-lead-row .wk-person { background: var(--lead-bg); color: var(--lead-text); }
+  .weekly-table tr.wk-lead-row .wk-role-col { background: var(--lead-bg); color: var(--lead-shift); }
+  .weekly-table tr.wk-mgr-row .wk-person { background: var(--mgr-bg); color: var(--mgr-text); }
+  .weekly-table tr.wk-mgr-row .wk-role-col { background: var(--mgr-bg); color: var(--mgr-shift); }
+  .wk-day-cell { min-width: 96px; padding: 5px 7px; line-height: 1.5; }
+  .wk-role-pill { display: inline-block; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+  .wk-pill-coach   { background: #c6f6d5; color: #276749; }
+  .wk-pill-support { background: #feebc8; color: #c05621; }
+  .wk-pill-ldsup   { background: #bee3f8; color: #2b6cb0; }
+  .wk-shift-str { font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 1px; }
+  .wk-off { color: var(--text-light); font-size: 11px; }
+  body.dark .wk-pill-coach   { background: #134424; color: #9ae6b4; }
+  body.dark .wk-pill-support { background: #2d1a0e; color: #fbd38d; }
+  body.dark .wk-pill-ldsup   { background: #0d2240; color: #79c0ff; }
+  .weekly-table tr.wk-totals td { background: var(--surface-alt) !important; font-weight: 700; font-size: 11px; padding: 5px 8px; }
+  .weekly-table tr.wk-totals .wk-person,
+  .weekly-table tr.wk-totals .wk-role-col { background: var(--accent-light) !important; color: var(--lead-shift); font-weight: 700; }
+  .weekly-table tr.wk-sep td { height: 3px; background: #a0aec0; border: none; }
+  .weekly-table tr.wk-sep .wk-person,
+  .weekly-table tr.wk-sep .wk-role-col { background: #a0aec0; }
+  .weekly-table tr.wk-group-label td { background: #edf2f7; color: #4a5568; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; text-align: left; }
+  body.dark .weekly-table tr.wk-group-label td { background: #1c2128; color: #8b949e; }
+  body.dark .weekly-table tr.wk-totals td { background: var(--surface-alt) !important; }
+  body.dark .weekly-table tr.wk-totals .wk-person,
+  body.dark .weekly-table tr.wk-totals .wk-role-col { background: #1f3a5f !important; color: #79c0ff; }
+  body.dark .weekly-table tr.wk-sep td,
+  body.dark .weekly-table tr.wk-sep .wk-person,
+  body.dark .weekly-table tr.wk-sep .wk-role-col { background: #484f58; }
+
+  /* ── Equity Card ─────────────────────────────────────── */
+  .equity-card { margin-top: 14px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; }
+  .equity-card h3 { font-size: .86rem; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+  .equity-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .equity-item { display: flex; align-items: center; gap: 6px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: .82rem; font-weight: 600; color: var(--text); }
+  .equity-item.eq-warning { border-color: #f6e05e; background: #fffff0; }
+  body.dark .equity-item.eq-warning { border-color: #6e5a08; background: #1c1800; }
+
   /* ── Print ──────────────────────────────────────────── */
   @media print {
     header { position: static; box-shadow: none; }
@@ -334,6 +383,7 @@
     <button class="tab-btn"        data-pat="1">Martes</button>
     <button class="tab-btn"        data-pat="2">Miércoles</button>
     <button class="tab-btn"        data-pat="3">Sábado</button>
+    <button class="tab-btn"        data-pat="week">📅 Semana</button>
   </div>
   <div class="action-btns">
     <button class="btn-alerts" id="alerts-btn" onclick="toggleAlertDrawer()">🔔 Alertas<span id="alerts-badge" class="alert-badge ok">0</span></button>
@@ -447,6 +497,10 @@ const PATTERN_NAMES = [
   'Miércoles (Leadership Meeting 14:00-16:00)',
   'Sábado'
 ];
+
+// Weekly view mapping: [Lunes, Martes, Miércoles, Jueves, Viernes, Sábado] → pattern indices
+const WEEK_DAYS       = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DAY_PATTERN_IDX = [0, 1, 2, 0, 0, 3];
 
 const SHIFT_OPTIONS_VERANO   = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','13:00-22:00'];
 const SHIFT_OPTIONS_INVIERNO = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','12:30-21:30'];
@@ -756,6 +810,26 @@ function shiftIndices(shift) {
   let si = TIME_SLOTS.indexOf(s), ei = TIME_SLOTS.indexOf(e);
   if (si<0) si=0; if (ei<0) ei=TIME_SLOTS.length-1;
   return [si, ei];
+}
+
+// Returns the floor role a row performs that day: 'LDSup' for Leads,
+// 'Coach' or 'Support' for Managers (first one found), or null if none.
+function getFloorRoleForRow(row) {
+  if (!row) return null;
+  if (row.role === 'Lead') return 'LDSup';
+  for (const a of row.acts) {
+    if (a === 'Coach')   return 'Coach';
+    if (a === 'Support') return 'Support';
+  }
+  return null;
+}
+
+// Abbreviates a shift string to "HH-HH" (e.g. "08:00-17:00" → "08-17").
+function shiftShort(shift) {
+  if (!shift) return '—';
+  const parts = shift.split('-');
+  if (parts.length < 2) return shift;
+  return parts[0].slice(0, 2) + '-' + parts[1].slice(0, 2);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1241,6 +1315,141 @@ function render(patIdx) {
     buildScheduleTable(patIdx) + buildSummaryTable(patIdx) + buildLegend() + buildRulesSection();
 }
 
+// ── Weekly View ──────────────────────────────────────────────────────────────
+function buildWeeklyView() {
+  const totalDays = WEEK_DAYS.length;
+  const colSpan   = 2 + totalDays; // person + role + day columns
+
+  // Per-day pattern rows, split by role
+  const dayPatterns = DAY_PATTERN_IDX.map(idx => currentState[idx]);
+  const dayLeads    = dayPatterns.map(p => p.filter(r => r.role === 'Lead'));
+  const dayMgrs     = dayPatterns.map(p => p.filter(r => r.role === 'Manager'));
+
+  const maxLeads = Math.max(...dayLeads.map(a => a.length));
+  const maxMgrs  = Math.max(...dayMgrs.map(a => a.length));
+
+  let h = '<div class="weekly-view">';
+  h += '<div class="weekly-table-wrap"><table class="weekly-table"><thead><tr>';
+  h += '<th class="wk-person">Persona</th>';
+  h += '<th class="wk-role">Rol</th>';
+  for (const day of WEEK_DAYS) h += `<th>${day}</th>`;
+  h += '</tr></thead><tbody>';
+
+  // ── Leads ──
+  h += `<tr class="wk-group-label"><td colspan="${colSpan}">👤 Leads (${maxLeads})</td></tr>`;
+  for (let i = 0; i < maxLeads; i++) {
+    h += '<tr class="wk-lead-row">';
+    h += `<td class="wk-person">Lead ${i + 1}</td>`;
+    h += `<td class="wk-role-col">Lead</td>`;
+    for (let d = 0; d < totalDays; d++) {
+      const row = dayLeads[d][i];
+      if (!row) {
+        h += '<td class="wk-day-cell"><span class="wk-off">—</span></td>';
+      } else {
+        h += '<td class="wk-day-cell">';
+        h += `<span class="wk-shift-str">${esc(shiftShort(row.shift))}</span>`;
+        h += `<span class="wk-role-pill wk-pill-ldsup">LDSup</span>`;
+        h += '</td>';
+      }
+    }
+    h += '</tr>';
+  }
+
+  // ── Separator ──
+  h += `<tr class="wk-sep"><td colspan="${colSpan}"></td></tr>`;
+
+  // ── Managers ──
+  h += `<tr class="wk-group-label"><td colspan="${colSpan}">👔 Managers (${maxMgrs})</td></tr>`;
+  const mgrEquity = []; // [{coach, support}] per manager position
+  for (let i = 0; i < maxMgrs; i++) {
+    let coachDays = 0, supportDays = 0;
+    h += '<tr class="wk-mgr-row">';
+    h += `<td class="wk-person">Mgr ${i + 1}</td>`;
+    h += `<td class="wk-role-col">Manager</td>`;
+    for (let d = 0; d < totalDays; d++) {
+      const row = dayMgrs[d][i];
+      if (!row) {
+        h += '<td class="wk-day-cell"><span class="wk-off">—</span></td>';
+      } else {
+        const role = getFloorRoleForRow(row);
+        if (role === 'Coach')   coachDays++;
+        if (role === 'Support') supportDays++;
+        const pillCls = role === 'Coach'   ? 'wk-pill-coach'
+                      : role === 'Support' ? 'wk-pill-support' : '';
+        h += '<td class="wk-day-cell">';
+        h += `<span class="wk-shift-str">${esc(shiftShort(row.shift))}</span>`;
+        if (role) {
+          h += `<span class="wk-role-pill ${pillCls}">${esc(role)}</span>`;
+        } else {
+          h += '<span class="wk-off">—</span>';
+        }
+        h += '</td>';
+      }
+    }
+    h += '</tr>';
+    mgrEquity.push({coach: coachDays, support: supportDays});
+  }
+
+  // ── Totals ──
+  h += `<tr class="wk-sep"><td colspan="${colSpan}"></td></tr>`;
+
+  // Total persons per day
+  h += '<tr class="wk-totals">';
+  h += '<td class="wk-person">Total personas</td><td class="wk-role-col"></td>';
+  for (let d = 0; d < totalDays; d++) {
+    h += `<td>${dayPatterns[d].length}</td>`;
+  }
+  h += '</tr>';
+
+  // Coaches per day
+  h += '<tr class="wk-totals">';
+  h += `<td class="wk-person" style="color:var(--green)">Coaches</td><td class="wk-role-col"></td>`;
+  for (let d = 0; d < totalDays; d++) {
+    const cnt = dayMgrs[d].filter(r => getFloorRoleForRow(r) === 'Coach').length;
+    h += `<td>${cnt}</td>`;
+  }
+  h += '</tr>';
+
+  // Support per day
+  h += '<tr class="wk-totals">';
+  h += `<td class="wk-person" style="color:var(--orange)">Support</td><td class="wk-role-col"></td>`;
+  for (let d = 0; d < totalDays; d++) {
+    const cnt = dayMgrs[d].filter(r => getFloorRoleForRow(r) === 'Support').length;
+    h += `<td>${cnt}</td>`;
+  }
+  h += '</tr>';
+
+  h += '</tbody></table></div>';
+
+  // ── Equity card ──
+  h += '<div class="equity-card">';
+  h += '<h3>⚖️ Equidad de Roles · Managers</h3>';
+  h += '<div class="equity-grid">';
+  for (let i = 0; i < mgrEquity.length; i++) {
+    const {coach, support} = mgrEquity[i];
+    const total     = coach + support;
+    const imbalance = total > 0 && Math.abs(coach - support) > 1;
+    const emoji     = imbalance ? '⚠️' : '✅';
+    h += `<div class="equity-item${imbalance ? ' eq-warning' : ''}">Mgr ${i + 1}: ${coach}C/${support}S ${emoji}</div>`;
+  }
+  h += '</div></div>';
+
+  h += '</div>';
+  return h;
+}
+
+function renderWeeklyView() {
+  closeDropdown();
+  const seasonTag = activeSeason === 'invierno' ? ' · ❄️ Invierno' : ' · ☀️ Verano';
+  document.getElementById('subtitle').textContent = 'Vista Semanal (Lun–Sáb)' + seasonTag;
+  const badge   = document.getElementById('alerts-badge');
+  const summary = document.getElementById('alert-drawer-summary');
+  if (badge)   { badge.textContent = ''; badge.className = 'alert-badge ok'; }
+  if (summary) { summary.innerHTML = 'ℹ️ <strong>Vista Semanal</strong> — selecciona un patrón individual para ver sus alertas'; summary.style.color = 'var(--text-muted)'; }
+  document.getElementById('quick-stats').innerHTML = '';
+  document.getElementById('schedule-container').innerHTML = buildWeeklyView();
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB SWITCHING
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1248,8 +1457,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    activePattern = parseInt(btn.dataset.pat);
-    render(activePattern);
+    if (btn.dataset.pat === 'week') {
+      renderWeeklyView();
+    } else {
+      activePattern = parseInt(btn.dataset.pat);
+      render(activePattern);
+    }
   });
 });
 
@@ -1323,7 +1536,13 @@ function switchSeason(season) {
   try { localStorage.setItem(LS_KEY_SEASON, season); } catch(e) {}
   // Update button UI
   document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.season === season));
-  render(activePattern);
+  // Re-render active tab (weekly or pattern)
+  const activeTab = document.querySelector('.tab-btn.active');
+  if (activeTab && activeTab.dataset.pat === 'week') {
+    renderWeeklyView();
+  } else {
+    render(activePattern);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
