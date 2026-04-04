@@ -234,6 +234,81 @@
 
   /* ── Footer ────────────────────────────────────────── */
   .footer { text-align: center; padding: 12px 24px; font-size: .75rem; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 20px; background: var(--surface); }
+
+  /* ── Alert Drawer ───────────────────────────────────── */
+  .alert-drawer { background: var(--surface); border-bottom: 2px solid var(--border); position: relative; z-index: 90; }
+  .alert-drawer-bar { display: flex; align-items: center; gap: 10px; padding: 7px 24px; cursor: pointer; user-select: none; transition: background .15s; }
+  .alert-drawer-bar:hover { background: var(--surface-alt); }
+  .alert-drawer-summary { flex: 1; font-size: .82rem; font-weight: 600; }
+  .alert-drawer-toggle { background: none; border: none; cursor: pointer; font-size: .82rem; color: var(--text-muted); padding: 2px 8px; border-radius: 4px; transition: .15s; font-weight: 700; }
+  .alert-drawer-toggle:hover { background: var(--border); color: var(--text); }
+  .alert-drawer-list { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+  .alert-drawer.open .alert-drawer-list { max-height: 280px; overflow-y: auto; padding: 6px 24px 12px; display: flex; flex-direction: column; gap: 5px; }
+
+  /* ── Bell / Alert badge button ────────────────────────── */
+  .btn-alerts { position: relative; padding-right: 22px !important; }
+  .alert-badge { position: absolute; top: -5px; right: -5px; background: var(--red); color: #fff; font-size: 9px; font-weight: 800; border-radius: 10px; padding: 1px 5px; line-height: 1.5; min-width: 17px; text-align: center; pointer-events: none; }
+  .alert-badge.ok { background: var(--green); }
+
+  /* ── Drag Handle ──────────────────────────────────────── */
+  .col-drag { position: sticky; left: 0; z-index: 4; min-width: 22px; max-width: 22px; width: 22px; background: var(--surface); border: 1px solid var(--border); padding: 0; }
+  .drag-handle { display: block; font-size: 14px; color: var(--text-light); cursor: grab; padding: 0 4px; line-height: 1; user-select: none; text-align: center; transition: color .15s; }
+  .drag-handle:hover { color: var(--accent); }
+  .drag-handle:active { cursor: grabbing; }
+  tr.dragging { opacity: .35; background: var(--accent-light) !important; }
+  tr.drag-over > td { border-top: 3px solid var(--accent) !important; }
+  thead .col-drag { background: var(--text); cursor: default; }
+  tr.apertura-row .col-drag { background: var(--surface-alt); }
+  tr.group-label-row .col-drag, tr.section-sep .col-drag { background: transparent; border-color: transparent; }
+  tr.section-sep .col-drag { background: #4a5568; }
+  body.dark tr.section-sep .col-drag { background: #30363d; }
+  body.dark tr.group-label-row .col-drag { background: #1c2128; }
+  body.dark tr.apertura-row .col-drag { background: var(--surface-alt); }
+  body.dark thead .col-drag { background: #21262d; }
+
+  /* Adjust sticky positions for drag col ──────────────── */
+  .col-role  { left: 22px !important; }
+  .col-shift { left: calc(22px + var(--col-role-w)) !important; }
+
+  /* ── Hours Column ─────────────────────────────────────── */
+  .col-hours { position: sticky; right: 28px; z-index: 3; min-width: 72px; max-width: 72px; width: 72px; background: var(--surface); border: 1px solid var(--border); padding: 2px 4px; text-align: center; line-height: 1.4; }
+  thead .col-hours { background: var(--text); color: #e2e8f0; font-size: 9px; font-weight: 700; padding: 5px 3px; }
+  tr.apertura-row .col-hours { background: var(--surface-alt); }
+  tr.group-label-row .col-hours, tr.section-sep .col-hours { background: transparent; border-color: transparent; }
+  tr.section-sep .col-hours { background: #4a5568; }
+  body.dark tr.section-sep .col-hours { background: #30363d; }
+  body.dark tr.group-label-row .col-hours { background: #1c2128; }
+  body.dark thead .col-hours { background: #21262d; }
+  body.dark tr.apertura-row .col-hours { background: var(--surface-alt); }
+  body.dark .col-hours { background: var(--surface); }
+  .hours-badge { display: inline-block; padding: 1px 5px; border-radius: 3px; margin: 1px 0; font-weight: 700; font-size: 9px; white-space: nowrap; }
+  .hours-floor  { background: #c6f6d5; color: #276749; }
+  .hours-mgmt   { background: #bee3f8; color: #2b6cb0; }
+  .hours-lunch  { background: #fefcbf; color: #975a16; }
+  body.dark .hours-floor  { background: #134424; color: #9ae6b4; }
+  body.dark .hours-mgmt   { background: #1f3a5f; color: #79c0ff; }
+  body.dark .hours-lunch  { background: #33290a; color: #f6e05e; }
+
+  /* ── Shift Edit ───────────────────────────────────────── */
+  td.col-shift { cursor: pointer; }
+  td.col-shift .shift-text { border-bottom: 1px dotted transparent; transition: border-color .15s; }
+  td.col-shift:hover .shift-text { border-bottom-color: currentColor; }
+  .shift-edit-icon { font-size: 8px; opacity: 0; transition: opacity .15s; margin-left: 2px; vertical-align: middle; }
+  td.col-shift:hover .shift-edit-icon { opacity: .7; }
+  .shift-popover { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); padding: 14px 16px; z-index: 400; min-width: 230px; }
+  .shift-popover h4 { font-size: .88rem; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+  .shift-popover .sp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .shift-popover label { font-size: .8rem; font-weight: 600; color: var(--text-muted); min-width: 52px; }
+  .shift-popover select { flex: 1; padding: 5px 7px; border: 1px solid var(--border); border-radius: 6px; font-size: .82rem; background: var(--surface); color: var(--text); cursor: pointer; }
+  .shift-popover .sp-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 12px; }
+  .shift-popover .sp-actions button { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: .82rem; font-weight: 600; transition: .15s; }
+  .sp-ok { background: var(--accent); color: #fff; border-color: var(--accent) !important; }
+  .sp-ok:hover { background: #2c5282; }
+  .sp-cancel { background: var(--surface); color: var(--text-muted); }
+  .sp-cancel:hover { background: var(--surface-alt); }
+  body.dark .shift-popover { background: var(--surface); }
+  body.dark .shift-popover select { background: var(--surface-alt); color: var(--text); }
+
 </style>
 </head>
 <body>
@@ -261,6 +336,7 @@
     <button class="tab-btn"        data-pat="3">Sábado</button>
   </div>
   <div class="action-btns">
+    <button class="btn-alerts" id="alerts-btn" onclick="toggleAlertDrawer()">🔔 Alertas<span id="alerts-badge" class="alert-badge ok">0</span></button>
     <button class="btn-add"    onclick="openAddFigure()">➕ Añadir Figura</button>
     <button class="btn-gen"    onclick="openGenerate()">⚙️ Generar Patrón</button>
     <button class="btn-rules"  onclick="openRules()">📋 Reglas</button>
@@ -270,8 +346,15 @@
   </div>
 </div>
 
+
+<div id="alert-drawer" class="alert-drawer">
+  <div class="alert-drawer-bar" onclick="toggleAlertDrawer()">
+    <span id="alert-drawer-summary" class="alert-drawer-summary">✅ Sin alertas — el patrón cumple todas las reglas</span>
+    <button class="alert-drawer-toggle" id="alert-drawer-btn">▼</button>
+  </div>
+  <div id="alert-drawer-list" class="alert-drawer-list"></div>
+</div>
 <div class="main">
-  <div id="alerts-container" class="alerts-container"></div>
   <div id="quick-stats" class="quick-stats"></div>
   <div id="schedule-container"></div>
 </div>
@@ -905,13 +988,48 @@ function validatePattern(patIdx) {
   return alerts;
 }
 
+let alertDrawerOpen = false;
+
+function toggleAlertDrawer() {
+  alertDrawerOpen = !alertDrawerOpen;
+  const drawer = document.getElementById('alert-drawer');
+  const btn    = document.getElementById('alert-drawer-btn');
+  if (drawer) drawer.classList.toggle('open', alertDrawerOpen);
+  if (btn) btn.textContent = alertDrawerOpen ? '▲' : '▼';
+}
+
 function renderAlerts(patIdx) {
-  const alerts = validatePattern(patIdx);
-  const container = document.getElementById('alerts-container');
-  if (alerts.length===0) { container.innerHTML=''; return; }
-  container.innerHTML = alerts.map(a =>
-    `<div class="alert alert-${a.type}">${a.msg}<button class="dismiss" onclick="this.closest('.alert').remove()">✕</button></div>`
-  ).join('');
+  const allAlerts = validatePattern(patIdx);
+  const badge   = document.getElementById('alerts-badge');
+  const summary = document.getElementById('alert-drawer-summary');
+  const list    = document.getElementById('alert-drawer-list');
+  const n        = allAlerts.length;
+  const critical = allAlerts.filter(a => a.type === 'red').length;
+  const warnings = allAlerts.filter(a => a.type === 'orange').length;
+  const info     = n - critical - warnings;
+  // Badge
+  if (badge) { badge.textContent = n; badge.className = 'alert-badge' + (n === 0 ? ' ok' : ''); }
+  // Summary bar
+  if (summary) {
+    if (n === 0) {
+      summary.innerHTML = '✅ <strong>Sin alertas</strong> — el patrón cumple todas las reglas';
+      summary.style.color = 'var(--green)';
+    } else {
+      const parts = [];
+      if (critical > 0) parts.push(`<span style="color:var(--red);font-weight:800">🔴 ${critical} crítica${critical>1?'s':''}</span>`);
+      if (warnings > 0) parts.push(`<span style="color:var(--orange);font-weight:700">🟠 ${warnings} aviso${warnings>1?'s':''}</span>`);
+      if (info > 0)     parts.push(`<span style="color:var(--yellow);font-weight:600">🟡 ${info} info</span>`);
+      const hint = alertDrawerOpen ? 'ocultar' : 'ver detalles';
+      summary.innerHTML = `🔔 <strong>${n} alerta${n>1?'s':''}</strong>: ${parts.join(' · ')} <em style="font-size:.75rem;color:var(--text-muted);margin-left:8px">— clic para ${hint}</em>`;
+      summary.style.color = 'var(--text)';
+    }
+  }
+  // List
+  if (list) {
+    list.innerHTML = allAlerts.map(a =>
+      `<div class="alert alert-${a.type}">${a.msg}<button class="dismiss" onclick="this.closest('.alert').remove()">✕</button></div>`
+    ).join('');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -921,15 +1039,15 @@ function buildScheduleTable(patIdx) {
   const rows = currentState[patIdx];
   const leads = rows.filter(r=>r.role==='Lead');
   const mgrs = rows.filter(r=>r.role==='Manager');
-  const totalCols = 1 + 1 + TIME_SLOTS.length + 1; // role + shift + time slots + actions col
+  const totalCols = 1 + 1 + 1 + TIME_SLOTS.length + 1 + 1; // drag+role+shift+slots+hours+actions
   let h = '<div class="table-wrapper"><table id="sched-table"><thead><tr class="header-row">';
-  h += '<th class="col-role">Rol</th><th class="col-shift">Turno</th>';
+  h += '<th class="col-drag"></th><th class="col-role">Rol</th><th class="col-shift">Turno ✏️</th>';
   for (const t of TIME_SLOTS) h += `<th class="time-slot"><div class="rw"><span>${t}</span></div></th>`;
-  h += '<th class="col-actions"></th>';
+  h += '<th class="col-hours">Horas</th><th class="col-actions"></th>';
   h += '</tr></thead><tbody>';
-  h += '<tr class="apertura-row"><td class="col-role">Horario</td><td class="col-shift">Apertura</td>';
+  h += '<tr class="apertura-row"><td class="col-drag"></td><td class="col-role">Horario</td><td class="col-shift">Apertura</td>';
   for (let i=0;i<TIME_SLOTS.length;i++) h += i>=getOpenStart(patIdx)&&i<=getOpenEnd()?'<td class="open-slot">▶</td>':'<td></td>';
-  h += '<td class="col-actions"></td></tr>';
+  h += '<td class="col-hours"></td><td class="col-actions"></td></tr>';
   h += `<tr class="group-label-row"><td colspan="${totalCols}">👤 Leads (${leads.length})</td></tr>`;
   leads.forEach(row => { h += buildPersonRow(patIdx, rows.indexOf(row), row, 'lead-row'); });
   h += `<tr class="section-sep"><td colspan="${totalCols}"></td></tr>`;
@@ -939,13 +1057,46 @@ function buildScheduleTable(patIdx) {
   return h;
 }
 
+function calcPersonHours(row) {
+  const [si, ei] = shiftIndices(row.shift);
+  let coach = 0, support = 0, ldSup = 0, ldops = 0, aor = 0, lunch = 0;
+  for (let c = si; c < ei; c++) {
+    const a = row.acts[c];
+    if (a === 'Coach')   coach++;
+    else if (a === 'Support') support++;
+    else if (a === 'LDSup') ldSup++;
+    else if (a === 'LDOPS') ldops++;
+    else if (a === 'AOR')  aor++;
+    else if (a === 'Lunch') lunch++;
+  }
+  return { coach:coach*.5, support:support*.5, ldSup:ldSup*.5, ldops:ldops*.5, aor:aor*.5, lunch:lunch*.5 };
+}
+
+function buildHoursCell(row) {
+  const h = calcPersonHours(row);
+  const isLead = row.role === 'Lead';
+  let out = '';
+  if (isLead) {
+    if (h.ldSup > 0) out += `<span class="hours-badge hours-floor">${h.ldSup}h LDSup</span><br>`;
+    if (h.ldops > 0) out += `<span class="hours-badge hours-mgmt">${h.ldops}h LDOPS</span>`;
+  } else {
+    if (h.coach > 0)   out += `<span class="hours-badge hours-floor">${h.coach}h Coach</span><br>`;
+    if (h.support > 0) out += `<span class="hours-badge hours-floor">${h.support}h Sup</span><br>`;
+    if (h.aor > 0)     out += `<span class="hours-badge hours-mgmt">${h.aor}h AOR</span>`;
+  }
+  return out || `<span style="color:var(--text-light);font-size:9px">–</span>`;
+}
+
 function buildPersonRow(patIdx, rowIdx, row, cls) {
-  let h = `<tr class="${cls}" data-pat="${patIdx}" data-row="${rowIdx}">`;
-  h += `<td class="col-role">${esc(row.role)}</td><td class="col-shift">${esc(row.shift)}</td>`;
+  let h = `<tr class="${cls}" data-pat="${patIdx}" data-row="${rowIdx}" draggable="true" ondragstart="onDragStart(event,${patIdx},${rowIdx})" ondragover="onDragOver(event)" ondrop="onDrop(event,${patIdx},${rowIdx})" ondragleave="onDragLeave(event)">`;
+  h += `<td class="col-drag"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>`;
+  h += `<td class="col-role">${esc(row.role)}</td>`;
+  h += `<td class="col-shift" onclick="openShiftEdit(event,${patIdx},${rowIdx})" title="Clic para editar turno"><span class="shift-text">${esc(row.shift)}</span><span class="shift-edit-icon">✏️</span></td>`;
   for (let c=0;c<TIME_SLOTS.length;c++) {
     const a=row.acts[c], bg=getColor(a), fg=textColor(bg);
     h += `<td class="act-cell" data-pat="${patIdx}" data-row="${rowIdx}" data-col="${c}" style="background:${bg};color:${fg}" onclick="cellClick(event,${patIdx},${rowIdx},${c})">${esc(a)}</td>`;
   }
+  h += `<td class="col-hours">${buildHoursCell(row)}</td>`;
   h += `<td class="col-actions"><button class="del-btn" title="Eliminar persona" onclick="deletePerson(${patIdx},${rowIdx})">✕</button></td>`;
   return h+'</tr>';
 }
@@ -1059,15 +1210,23 @@ function buildQuickStats(patIdx) {
   const alertsData = validatePattern(patIdx);
   const alertCount = alertsData.length;
   const criticalCount = alertsData.filter(a => a.type === 'red').length;
+  // Coach / Support peak across open hours
+  const {counts:smry} = calcSummary(patIdx);
+  let maxCoach = 0, maxSupport = 0;
+  for (let i = getOpenStart(patIdx); i <= getOpenEnd(); i++) {
+    if (smry.Coach[i]  > maxCoach)   maxCoach   = smry.Coach[i];
+    if (smry.MgrSup[i] > maxSupport) maxSupport = smry.MgrSup[i];
+  }
   return `
     <div class="stat-card"><div class="stat-value">${leads}</div><div class="stat-label">Leads</div></div>
     <div class="stat-card"><div class="stat-value">${mgrs}</div><div class="stat-label">Managers</div></div>
     <div class="stat-card"><div class="stat-value">${leads+mgrs}</div><div class="stat-label">Total</div></div>
     <div class="stat-card"><div class="stat-value">${avgFloor}</div><div class="stat-label">Media Floor</div></div>
-    <div class="stat-card"><div class="stat-value">${peakFloor}</div><div class="stat-label">Pico Floor</div></div>
     <div class="stat-card"><div class="stat-value${minFloor===0?' danger':''}">${minFloor}</div><div class="stat-label">Mín Floor</div></div>
-    <div class="stat-card"><div class="stat-value">${getSeasonLabel()}</div><div class="stat-label">Cierre ${getCloseTime()}</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--green)">${maxCoach}</div><div class="stat-label">Pico Coach</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--orange)">${maxSupport}</div><div class="stat-label">Pico Support</div></div>
     <div class="stat-card"><div class="stat-value${criticalCount > 0 ? ' danger' : ''}">${alertCount}</div><div class="stat-label">${criticalCount > 0 ? '⚠️' : '✅'} Alertas</div></div>
+    <div class="stat-card"><div class="stat-value" style="font-size:1rem">${getSeasonLabel()}</div><div class="stat-label">Cierre ${getCloseTime()}</div></div>
   `;
 }
 
@@ -1131,10 +1290,14 @@ function cellClick(evt, patIdx, rowIdx, colIdx) {
     cell.style.background=bg; cell.style.color=fg; cell.textContent=nw;
     closeDropdown();
     saveState();
+    // Refresh hours cell for this row
+    const hcell = document.querySelector(`td.col-hours[data-hours-row="${rowIdx}"]`);
     // Re-render summary & alerts
     const sc=document.querySelector('.summary-section');
     if (sc) { const t=document.createElement('div'); t.innerHTML=buildSummaryTable(patIdx); sc.replaceWith(t.firstChild); }
     renderAlerts(patIdx);
+    // Refresh quick stats
+    document.getElementById('quick-stats').innerHTML = buildQuickStats(patIdx);
   });
   sel.addEventListener('blur', ()=>setTimeout(closeDropdown,120));
   wrap.appendChild(sel);
@@ -1386,12 +1549,116 @@ function resetPattern() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// DRAG & DROP ROW REORDER
+// ═══════════════════════════════════════════════════════════════════════════════
+let dragSrcPat = -1, dragSrcRow = -1;
+
+function onDragStart(e, pat, row) {
+  dragSrcPat = pat; dragSrcRow = row;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(row));
+  // Slight delay so style applies after DnD snapshot
+  setTimeout(() => { const el = document.querySelector(`tr[data-pat="${pat}"][data-row="${row}"]`); if (el) el.classList.add('dragging'); }, 0);
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('tr.drag-over').forEach(el => el.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function onDrop(e, pat, targetRow) {
+  e.preventDefault();
+  document.querySelectorAll('tr.drag-over, tr.dragging').forEach(el => { el.classList.remove('drag-over'); el.classList.remove('dragging'); });
+  if (dragSrcPat !== pat || dragSrcRow === targetRow) { dragSrcPat = -1; dragSrcRow = -1; return; }
+  const arr = currentState[pat];
+  // Only allow reorder within same role group
+  if (arr[dragSrcRow] && arr[targetRow] && arr[dragSrcRow].role !== arr[targetRow].role) { dragSrcPat = -1; dragSrcRow = -1; return; }
+  const moved = arr.splice(dragSrcRow, 1)[0];
+  const dest  = dragSrcRow < targetRow ? targetRow - 1 : targetRow;
+  arr.splice(dest, 0, moved);
+  dragSrcPat = -1; dragSrcRow = -1;
+  saveState();
+  render(activePattern);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHIFT EDITING
+// ═══════════════════════════════════════════════════════════════════════════════
+let activeShiftPopover = null;
+
+function openShiftEdit(e, patIdx, rowIdx) {
+  e.stopPropagation();
+  closeShiftPopover();
+  const row = currentState[patIdx][rowIdx];
+  const parts = row.shift.split('-');
+  const curStart = parts[0], curEnd = parts[1];
+  const shiftOpts = activeSeason === 'invierno' ? SHIFT_OPTIONS_INVIERNO : SHIFT_OPTIONS_VERANO;
+  // Collect unique start/end times
+  const starts = [...new Set(shiftOpts.map(s => s.split('-')[0]))].sort();
+  const ends   = [...new Set(shiftOpts.map(s => s.split('-')[1]))].sort();
+  if (!starts.includes(curStart)) { starts.push(curStart); starts.sort(); }
+  if (!ends.includes(curEnd))     { ends.push(curEnd);     ends.sort(); }
+
+  const pop = document.createElement('div');
+  pop.className = 'shift-popover';
+  pop.innerHTML = `
+    <h4>✏️ Editar turno</h4>
+    <div class="sp-row"><label>Entrada</label><select id="sp-start">${starts.map(t=>`<option value="${t}"${t===curStart?' selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="sp-row"><label>Salida</label><select id="sp-end">${ends.map(t=>`<option value="${t}"${t===curEnd?' selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="sp-actions">
+      <button class="sp-cancel" onclick="closeShiftPopover()">Cancelar</button>
+      <button class="sp-ok" onclick="confirmShiftEdit(${patIdx},${rowIdx})">✓ Aplicar</button>
+    </div>`;
+  const rect = e.currentTarget.getBoundingClientRect();
+  pop.style.top  = (rect.bottom + window.scrollY + 6) + 'px';
+  pop.style.left = (rect.left  + window.scrollX)      + 'px';
+  document.body.appendChild(pop);
+  activeShiftPopover = pop;
+  setTimeout(() => document.addEventListener('click', _closeShiftOnOutside, {once:true}), 50);
+}
+
+function _closeShiftOnOutside(e) {
+  if (activeShiftPopover && !activeShiftPopover.contains(e.target)) closeShiftPopover();
+}
+
+function closeShiftPopover() {
+  if (activeShiftPopover) { activeShiftPopover.remove(); activeShiftPopover = null; }
+}
+
+function confirmShiftEdit(patIdx, rowIdx) {
+  const startEl = document.getElementById('sp-start');
+  const endEl   = document.getElementById('sp-end');
+  if (!startEl || !endEl) return;
+  const newShift = startEl.value + '-' + endEl.value;
+  const row = currentState[patIdx][rowIdx];
+  closeShiftPopover();
+  if (newShift === row.shift) return;
+  const [si, ei] = shiftIndices(newShift);
+  // Clear activities outside new shift
+  for (let c = 0; c < TIME_SLOTS.length; c++) {
+    if (row.acts[c] !== '' && (c < si || c >= ei)) row.acts[c] = '';
+  }
+  // Add/keep DD at 09:15 if covered
+  const ddSlot = TIME_SLOTS.indexOf('09:15');
+  if (ddSlot >= si && ddSlot < ei && row.acts[ddSlot] !== 'MEETING') row.acts[ddSlot] = 'DD';
+  row.shift = newShift;
+  saveState();
+  render(activePattern);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // INITIAL RENDER
 // ═══════════════════════════════════════════════════════════════════════════════
 // Restore season button state
 document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.season === activeSeason));
 render(0);
 </script>
-<div class="footer">Patrones de Schedule Dashboard · v2.1</div>
+<div class="footer">Patrones de Schedule Dashboard · v3.0</div>
 </body>
 </html>
