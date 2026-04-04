@@ -447,13 +447,15 @@ const ORIGINAL_PATTERNS = [
 // Same rules & structure, just shorter evening shift
 // ═══════════════════════════════════════════════════════════════════════════════
 function deriveWinterPatterns(summer) {
+  const idx2130 = TIME_SLOTS.indexOf('21:30'); // 30
+  const idx2200 = TIME_SLOTS.indexOf('22:00'); // 31
   return summer.map(pat => pat.map(row => {
     const r = {role: row.role, shift: row.shift, acts: [...row.acts]};
     if (row.shift === '13:00-22:00') {
       r.shift = '13:00-21:30';
-      // Remove last slot (22:00) and second-to-last (21:30) assignment
-      r.acts[31] = '';  // 22:00
-      r.acts[30] = '';  // 21:30
+      // Remove last two slots: store closes at 21:00 in winter
+      if (idx2200 >= 0) r.acts[idx2200] = '';
+      if (idx2130 >= 0) r.acts[idx2130] = '';
     }
     return r;
   }));
@@ -478,6 +480,14 @@ function loadAllState() {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed && parsed.verano && parsed.invierno) return parsed;
+    }
+    // Migrate from old format (v1 stored flat array as 'schedule_patterns')
+    const oldSaved = localStorage.getItem('schedule_patterns');
+    if (oldSaved) {
+      const oldParsed = JSON.parse(oldSaved);
+      if (Array.isArray(oldParsed)) {
+        return { verano: oldParsed, invierno: deriveWinterPatterns(oldParsed) };
+      }
     }
   } catch(e) {}
   return { verano: deepClone(ORIGINAL_PATTERNS), invierno: deepClone(ORIGINAL_WINTER_PATTERNS) };
@@ -604,7 +614,7 @@ function buildScheduleTable(patIdx) {
   const rows = currentState[patIdx];
   const leads = rows.filter(r=>r.role==='Lead');
   const mgrs = rows.filter(r=>r.role==='Manager');
-  const totalCols = TIME_SLOTS.length + 3; // role + shift + time slots + actions
+  const totalCols = 1 + 1 + TIME_SLOTS.length + 1; // role + shift + time slots + actions col
   let h = '<div class="table-wrapper"><table id="sched-table"><thead><tr class="header-row">';
   h += '<th class="col-role">Rol</th><th class="col-shift">Turno</th>';
   for (const t of TIME_SLOTS) h += `<th class="time-slot"><div class="rw"><span>${t}</span></div></th>`;
