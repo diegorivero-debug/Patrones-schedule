@@ -1249,7 +1249,7 @@ function generatePattern() {
 
   // Lunch window indices
   const lunchWinStart = TIME_SLOTS.indexOf(BR.lunch.windowStart);  // 11:00
-  const lunchWinEnd   = TIME_SLOTS.indexOf(BR.lunch.windowEnd);    // 16:00
+  const lunchWinEnd   = TIME_SLOTS.indexOf(BR.lunch.windowEnd);    // 17:00 (puede empezar hasta las 17:00)
   const ddSlot        = TIME_SLOTS.indexOf(BR.dd.time);            // 09:15
 
   // Track simultaneous lunches per slot to stagger
@@ -1289,7 +1289,7 @@ function generatePattern() {
     // Preserve meetings
     if (hasMtg) meetingMap[ri].forEach(c => { row.acts[c] = 'MEETING'; });
 
-    // Find best lunch slot in window 11:00-16:00 (staggered, morning-first)
+    // Find best lunch slot in window 11:00-17:00 (staggered, morning-first)
     // si+4 = don't start lunch in first 2h of shift; ei-2 = keep at least 1h after lunch
     const lunchOptions = [];
     for (let c = Math.max(si + 4, lunchWinStart); c <= Math.min(ei - 2, lunchWinEnd); c++) {

@@ -1,31 +1,65 @@
 # Patrones de Schedule - Cobertura de Tienda
 
+## 🔴 REGLA DE ORO
+
+**La cobertura mínima de floor NO es negociable.** Si no puede cuadrar los mínimos con el personal asignado, añadir más personas al turno (especialmente tarde). Nunca reducir la cobertura.
+
+Prioridades del generador:
+1. 🔴 Cobertura mínima de floor → SIEMPRE se cumple
+2. 🟠 Equidad de roles, AOR, lunches → Se ajustan para lograr lo anterior
+3. 🟡 Preferencias (AOR junto, franjas tranquilas) → Nice to have
+
+---
+
 ## Resumen
 
-Patrones de schedule optimizados para asegurar la cobertura minima de la tienda con Managers y Leads.
+Patrones de schedule optimizados para asegurar la cobertura mínima de la tienda con Managers y Leads.
 
 ### Horarios
-- **Apertura tienda:** 09:30 - 21:30
-- **Primer Lead entra:** 07:00 | **Ultimo sale:** 22:00
-- **Primer Manager entra:** 08:00 | **Ultimo sale:** 22:00
+- **Apertura tienda (L-V):** 09:30 - 21:30 (verano) / 09:30 - 21:00 (invierno)
+- **Apertura tienda (Sabado):** 08:00 - 21:30 (verano) / 08:00 - 21:00 (invierno)
+- **Primer Lead entra (L-V):** 07:00 | **Ultimo sale:** 22:00
+- **Primer Lead/Mgr entra (Sabado):** 08:00 (NO hay turno de 07:00 el sabado)
+- **Primer Manager entra (L-V):** 08:00 | **Ultimo sale:** 22:00
 - **Turnos:** 9 horas (8h trabajo + 1h lunch)
+- **Verano:** cierre 21:30, turno tarde 13:00-22:00
+- **Invierno:** cierre 21:00, turno tarde 12:30-21:30 (empieza 30 min antes)
 
-### Roles
+### Roles en floor
+| Rol | Actividad de floor | Actividad de gestion |
+|---|---|---|
+| **Manager** | Coach o Support (NUNCA mezcla en el mismo dia) | AOR |
+| **Lead** | LDSup (nunca Coach ni Support) | LDOPS |
+
+### Horas por rol/dia
 | Rol | Floor | Gestion | Lunch | Total |
 |---|---|---|---|---|
 | **Manager (L-V)** | 4h (Coach o Support) | 4h AOR | 1h | 9h |
-| **Lead (L-V)** | 5h (Support) | 3h LDOPS | 1h | 9h |
+| **Lead (L-V)** | 5h LDSup | 3h LDOPS | 1h | 9h |
 | **Manager (Sabado)** | 6h (Coach o Support) | 2h AOR | 1h | 9h |
-| **Lead (Sabado)** | 6h (Support) | 2h LDOPS | 1h | 9h |
+| **Lead (Sabado)** | 6h LDSup | 2h LDOPS | 1h | 9h |
 
-### Cobertura minima en floor
+### Equidad semanal de roles (Manager)
+- Cada Manager deberia hacer ~2-3 dias de Coach y ~2-3 dias de Support por semana
+- Dentro de la misma semana un Manager puede ser Coach un dia y Support al siguiente
+- **Regla critica: un Manager es Coach O Support TODO EL DIA, nunca mezcla en el mismo dia**
+
+### Cobertura mínima en floor
 | Franja | Support | Coach | Total Floor |
 |---|---|---|---|
 | **Normal/Pico** | 4 | 2 | 6 |
 | **Lunch/transicion** | 3 | 1 | 4 |
 
-- Minimo 2 Managers en floor simultaneamente siempre
+- **Mínimo 2 Coach simultaneos en floor en todo momento**
+- Mínimo 2 Managers en floor simultaneamente siempre
 - Horas pico: 12:00-14:00 y 17:00-21:00
+- Franjas tranquilas (buen momento para AOR/Lunch): 09:30-11:00 y 15:00-16:00
+
+### Apertura y cierre
+- **Apertura (L-V):** Mínimo 2 personas a las 07:00 (idealmente 2 Leads). Hacen LDOPS hasta apertura tienda (09:30)
+- **Apertura (Sabado):** Mínimo 2 personas a las 08:00
+- **Pre-apertura:** LDOPS (Leads) o AOR (Managers) antes de la apertura de tienda
+- **Cierre:** Mínimo 2 Leads + 1 Manager despues del cierre de tienda. Hacen AOR/LDOPS
 
 ---
 
@@ -33,26 +67,29 @@ Patrones de schedule optimizados para asegurar la cobertura minima de la tienda 
 
 ### 1. Dia Normal (Lunes, Jueves, Viernes)
 - **Archivo:** `patron_dia_normal.csv`
-- **Personal:** 4 Leads + 9 Managers = **13 personas**
+- **Personal:** 4 Leads + 10 Managers = **14 personas**
 
 ### 2. Martes - Commercial Meeting (14:00-16:00)
 - **Archivo:** `patron_martes_commercial.csv`
-- **Personal:** 4 Leads + 9 Managers = **13 personas**
-- Acuden todos los Managers y Leads excepto 2 Mgr Support + 1 Lead en floor
+- **Personal:** 4 Leads + 10 Managers = **14 personas**
+- Acuden todos los Managers y Leads excepto **2 Mgr Support + 1 Lead en floor**
+  - Puede ser **CUALQUIER Lead** (no un Lead especifico)
+  - Los 2 Mgr Support tambien pueden ser cualquiera
 - Coach suspendido durante reunion
-- 2h reunion cuentan como AOR/LDOPS
+- 2h reunion cuentan como AOR (Managers) / LDOPS (Leads)
 
 ### 3. Miercoles - Leadership Meeting (14:00-16:00)
 - **Archivo:** `patron_miercoles_leadership.csv`
-- **Personal:** 5 Leads + 9 Managers = **14 personas**
-- Solo acuden Managers
-- 3 Leads cubren Support en floor
+- **Personal:** 4 Leads + 10 Managers = **14 personas**
+- Solo acuden **Managers** (no Leads)
+- **1 Manager se queda en floor** (no va a reunion) — para poner claves y mantener operaciones
+- 3+ Leads cubren floor
 - Coach suspendido durante reunion
-- 1 Lead extra necesario
 
 ### 4. Sabado
 - **Archivo:** `patron_sabado.csv`
-- **Personal:** 4 Leads + 7 Managers = **11 personas**
+- **Personal:** 4 Leads + 10 Managers = **14 personas** (mínimo 12: 3-4 Leads + 7-8 Managers)
+- **Tienda abre a las 08:00** — NO hay turno de 07:00
 - 6h floor + 2h AOR/LDOPS por persona
 
 ---
@@ -61,20 +98,37 @@ Patrones de schedule optimizados para asegurar la cobertura minima de la tienda 
 
 | Dia | Leads | Managers | Total |
 |---|---|---|---|
-| Lunes | 4 | 9 | 13 |
-| Martes | 4 | 9 | 13 |
-| Miercoles | 5 | 9 | 14 |
-| Jueves | 4 | 9 | 13 |
-| Viernes | 4 | 9 | 13 |
-| Sabado | 4 | 7 | 11 |
-| **TOTAL semanal** | **25** | **52** | **77** |
+| Lunes | 4 | 10 | 14 |
+| Martes | 4 | 10 | 14 |
+| Miercoles | 4 | 10 | 14 |
+| Jueves | 4 | 10 | 14 |
+| Viernes | 4 | 10 | 14 |
+| Sabado | 4 | 10 | 14 (min 12) |
+| **TOTAL semanal** | **24** | **60** | **84** |
 
 ---
 
 ## Reglas adicionales
-- **DD (Daily Download):** 15 min, solo turno manana (09:15-09:30)
-- **Lunch:** 1h, entre 11:00-16:00, escalonado (quien entra primero come primero)
-- **Bloques de floor preferidos:** horas seguidas (minimo 2h bloques)
-- **Bloques AOR/LDOPS preferidos:** seguidos o divididos maximo en 2 bloques
-- **Martes meeting:** Coach suspendido 14-16h. 2 Mgr Support + 1 Lead cubren floor
-- **Miercoles meeting:** Coach suspendido 14-16h. 3+ Leads cubren floor. Todos Mgrs en reunion
+
+### Lunch
+- **Ventana:** 11:00-17:00 (puede empezar hasta las 17:00 como máximo)
+- **Duracion:** 1h (2 slots de 30 min)
+- **Simultaneo:** OK si no viola cobertura mínima
+- **Franjas optimas:** 15:00-16:00 (franja tranquila)
+
+### DD (Daily Download)
+- **Hora:** 09:15 (15 min)
+- **Quien:** TODAS las personas que esten en turno a las 09:15
+- **Turno tarde (13:00+):** NO tienen DD (no estan en turno a las 09:15)
+
+### Bloques de actividad
+- **Floor:** bloques mínimos de 2h seguidas
+- **AOR/LDOPS:** idealmente en 1 bloque; aceptable partido en máximo 2 bloques si la cobertura lo requiere
+
+### Rotacion de turnos (Manager)
+- Los Managers suelen hacer una semana de manana y otra de tarde
+- Esto es informativo, no requiere logica en el generador diario
+
+### Actividades por zona
+- **Floor:** LDSup (Leads), Coach (Mgr), Support (Mgr) — cuentan como cobertura
+- **Oficina/back:** LDOPS (Leads), AOR (Mgr) — NO cuentan como cobertura de floor, pero disponibles para emergencias
