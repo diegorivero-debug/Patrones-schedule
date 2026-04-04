@@ -158,12 +158,99 @@
   .modal .modal-actions .btn-cancel:hover { background: #edf2f7; }
   .modal .cb-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
   .modal .cb-row input[type=checkbox] { width: auto; }
+
+  /* ── Season Toggle ─────────────────────────────────── */
+  .header-row-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .header-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .season-toggle { display: flex; align-items: center; gap: 0; background: rgba(255,255,255,.1); border-radius: 20px; overflow: hidden; }
+  .season-btn { padding: 5px 14px; border: none; background: transparent; color: rgba(255,255,255,.55); cursor: pointer; font-size: .78rem; font-weight: 600; transition: .2s; }
+  .season-btn:hover { color: rgba(255,255,255,.85); }
+  .season-btn.active { background: rgba(255,255,255,.2); color: #fff; }
+  .theme-btn { background: rgba(255,255,255,.1); border: none; color: rgba(255,255,255,.65); padding: 5px 10px; border-radius: 16px; cursor: pointer; font-size: .78rem; transition: .2s; }
+  .theme-btn:hover { background: rgba(255,255,255,.2); color: #fff; }
+
+  /* ── Quick Stats ──────────────────────────────────── */
+  .quick-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .stat-card { flex: 1; min-width: 100px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px 12px; text-align: center; }
+  .stat-value { font-size: 1.3rem; font-weight: 800; color: var(--accent); line-height: 1.1; }
+  .stat-value.danger { color: var(--red); }
+  .stat-label { font-size: .68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+
+  /* ── Delete row button ──────────────────────────────── */
+  .col-actions { position: sticky; right: 0; z-index: 3; min-width: 28px; max-width: 28px; width: 28px; background: var(--surface); border: 1px solid var(--border); padding: 0; }
+  .del-btn { background: none; border: none; cursor: pointer; color: #e53e3e; font-size: 12px; opacity: .3; transition: .15s; line-height: 1; padding: 2px; }
+  .del-btn:hover { opacity: 1; transform: scale(1.3); }
+  thead .col-actions { background: var(--text); }
+  tr.apertura-row .col-actions { background: var(--surface-alt); }
+  tr.group-label-row .col-actions, tr.section-sep .col-actions { background: transparent; border-color: transparent; }
+
+  /* ── Heatmap cells ──────────────────────────────────── */
+  td.sum-heat-low  { background: #f0fff4 !important; }
+  td.sum-heat-med  { background: #c6f6d5 !important; }
+  td.sum-heat-high { background: #9ae6b4 !important; }
+  td.sum-heat-max  { background: #68d391 !important; color: #22543d !important; }
+
+  /* ── Dark mode ─────────────────────────────────────── */
+  body.dark {
+    --primary: #0d1117; --primary-light: #161b22; --accent: #58a6ff; --accent-light: #1f3a5f;
+    --surface: #161b22; --surface-alt: #1c2128; --bg: #0d1117; --border: #30363d;
+    --text: #c9d1d9; --text-muted: #8b949e; --text-light: #484f58;
+    --lead-bg: #0d2240; --lead-text: #58a6ff; --lead-shift: #79c0ff;
+    --mgr-bg: #2a1800; --mgr-text: #d29922; --mgr-shift: #e3b341;
+    --green: #3fb950; --red: #f85149; --orange: #d29922; --yellow: #e3b341;
+  }
+  body.dark thead tr.header-row th { background: #21262d; }
+  body.dark tr.section-sep td, body.dark tr.section-sep td.col-role, body.dark tr.section-sep td.col-shift { background: #30363d; }
+  body.dark tr.group-label-row td { background: #1c2128; color: #8b949e; }
+  body.dark tr.apertura-row td.open-slot { background: #0d2818; color: #3fb950; }
+  body.dark .summary-table th { background: #21262d; }
+  body.dark .summary-table th.sum-label { background: #21262d; }
+  body.dark td.sum-zero { color: #30363d; }
+  body.dark td.sum-alert { color: #f85149; background: #3d1214 !important; }
+  body.dark tr.sum-total td { background: #0d2240 !important; }
+  body.dark tr.sum-total td.sum-label { background: #1f3a5f !important; color: #79c0ff; }
+  body.dark tr.sum-sep td, body.dark tr.sum-sep td.sum-label { background: #484f58; }
+  body.dark .rule-card { background: var(--surface-alt); border-color: var(--border); }
+  body.dark .rule-card.highlighted { border-color: #6e5a08; background: #1c1800; }
+  body.dark .modal { background: var(--surface); }
+  body.dark .modal h2, body.dark .modal label { color: var(--text); }
+  body.dark .modal select, body.dark .modal input, body.dark .modal textarea { background: var(--surface-alt); color: var(--text); border-color: var(--border); }
+  body.dark td.sum-heat-low  { background: #0d2818 !important; }
+  body.dark td.sum-heat-med  { background: #10351e !important; }
+  body.dark td.sum-heat-high { background: #134424 !important; }
+  body.dark td.sum-heat-max  { background: #16522c !important; color: #7ee787 !important; }
+
+  /* ── Print ──────────────────────────────────────────── */
+  @media print {
+    header { position: static; box-shadow: none; }
+    .action-btns, .theme-btn, .del-btn, .col-actions, .alert .dismiss { display: none !important; }
+    .tab-btn { display: none; }
+    .tab-btn.active { display: inline-block; font-size: 1rem; border: none; }
+    .main { padding: 8px; }
+    .table-wrapper, .summary-section, .stat-card, .rules-section { box-shadow: none; }
+    .stat-card { border: 1px solid #ccc; }
+    .quick-stats { gap: 4px; }
+  }
+
+  /* ── Footer ────────────────────────────────────────── */
+  .footer { text-align: center; padding: 12px 24px; font-size: .75rem; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 20px; background: var(--surface); }
 </style>
 </head>
 <body>
 <header>
-  <h1>🗓️ Patrones de Schedule - Dashboard</h1>
-  <p id="subtitle">Selecciona un patrón para visualizar</p>
+  <div class="header-row-top">
+    <div>
+      <h1>🗓️ Patrones de Schedule - Dashboard</h1>
+      <p id="subtitle">Selecciona un patrón para visualizar</p>
+    </div>
+    <div class="header-controls">
+      <div class="season-toggle">
+        <button class="season-btn active" data-season="verano" onclick="switchSeason('verano')">☀️ Verano</button>
+        <button class="season-btn" data-season="invierno" onclick="switchSeason('invierno')">❄️ Invierno</button>
+      </div>
+      <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()">🌙 Oscuro</button>
+    </div>
+  </div>
 </header>
 
 <div class="tabs-bar">
@@ -178,12 +265,14 @@
     <button class="btn-gen"    onclick="openGenerate()">⚙️ Generar Patrón</button>
     <button class="btn-rules"  onclick="openRules()">📋 Reglas</button>
     <button class="btn-export" onclick="exportCSV()">⬇️ Exportar CSV</button>
+    <button class="btn-export" onclick="window.print()">🖨️ Imprimir</button>
     <button class="btn-reset"  onclick="resetPattern()">🔄 Reset</button>
   </div>
 </div>
 
 <div class="main">
   <div id="alerts-container" class="alerts-container"></div>
+  <div id="quick-stats" class="quick-stats"></div>
   <div id="schedule-container"></div>
 </div>
 
@@ -200,7 +289,8 @@
       <option value="09:00-18:00">09:00 - 18:00</option>
       <option value="10:00-19:00">10:00 - 19:00</option>
       <option value="11:00-20:00">11:00 - 20:00</option>
-      <option value="13:00-22:00">13:00 - 22:00</option>
+      <option value="13:00-22:00">13:00 - 22:00 (Verano)</option>
+      <option value="12:30-21:30">12:30 - 21:30 (Invierno)</option>
     </select>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modal-add')">Cancelar</button>
@@ -256,7 +346,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 const TIME_SLOTS = ['07:00','07:30','08:00','08:30','09:00','09:15','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
 const OPEN_START = 6;  // 09:30
-const OPEN_END   = 30; // 21:30
+
+// Season-dependent closing: Verano 21:30 (idx 30), Invierno 21:00 (idx 29)
+const OPEN_END_VERANO   = 30; // 21:30
+const OPEN_END_INVIERNO = 29; // 21:00
 
 const ACTIVITY_OPTIONS = ['','LDSup','LDOPS','Coach','Support','AOR','Lunch','DD','MEETING'];
 
@@ -272,7 +365,8 @@ const PATTERN_NAMES = [
   'Sábado'
 ];
 
-const SHIFT_OPTIONS = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','13:00-22:00'];
+const SHIFT_OPTIONS_VERANO   = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','13:00-22:00'];
+const SHIFT_OPTIONS_INVIERNO = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','12:30-21:30'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ORIGINAL PATTERN DATA  (4 Leads + 10 Managers = 14 personas)
@@ -349,25 +443,67 @@ const ORIGINAL_PATTERNS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// WINTER PATTERNS  (derived from summer: 13:00-22:00 → 12:30-21:30, close at 21:00)
+// Closing shift starts 30 min earlier in winter and ends 30 min earlier.
+// ═══════════════════════════════════════════════════════════════════════════════
+function deriveWinterPatterns(summer) {
+  const idx1230 = TIME_SLOTS.indexOf('12:30'); // 12
+  const idx1300 = TIME_SLOTS.indexOf('13:00'); // 13
+  const idx2130 = TIME_SLOTS.indexOf('21:30'); // 30
+  const idx2200 = TIME_SLOTS.indexOf('22:00'); // 31
+  return summer.map(pat => pat.map(row => {
+    const r = {role: row.role, shift: row.shift, acts: [...row.acts]};
+    if (row.shift === '13:00-22:00') {
+      r.shift = '12:30-21:30';
+      // Start 30 min earlier: fill 12:30 slot with same activity as 13:00
+      if (idx1230 >= 0 && idx1300 >= 0) {
+        r.acts[idx1230] = row.acts[idx1300] || (row.role === 'Lead' ? 'LDSup' : 'AOR');
+      }
+      // Remove last two slots: store closes at 21:00 in winter
+      if (idx2200 >= 0) r.acts[idx2200] = '';
+      if (idx2130 >= 0) r.acts[idx2130] = '';
+    }
+    return r;
+  }));
+}
+const ORIGINAL_WINTER_PATTERNS = deriveWinterPatterns(ORIGINAL_PATTERNS);
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // STATE MANAGEMENT (localStorage)
 // ═══════════════════════════════════════════════════════════════════════════════
-const LS_KEY_PATTERNS = 'schedule_patterns';
-const LS_KEY_RULES    = 'schedule_rules';
+const LS_KEY_PATTERNS  = 'schedule_patterns_v2';
+const LS_KEY_RULES     = 'schedule_rules';
+const LS_KEY_SEASON    = 'schedule_season';
+const LS_KEY_THEME     = 'schedule_theme';
 
 function deepClone(patterns) {
   return patterns.map(pat => pat.map(row => ({role:row.role, shift:row.shift, acts:[...row.acts]})));
 }
 
-function loadState() {
+function loadAllState() {
   try {
     const saved = localStorage.getItem(LS_KEY_PATTERNS);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.verano && parsed.invierno) return parsed;
+    }
+    // Migrate from old format (v1 stored flat array as 'schedule_patterns')
+    const oldSaved = localStorage.getItem('schedule_patterns');
+    if (oldSaved) {
+      const oldParsed = JSON.parse(oldSaved);
+      if (Array.isArray(oldParsed)) {
+        return { verano: oldParsed, invierno: deriveWinterPatterns(oldParsed) };
+      }
+    }
   } catch(e) {}
-  return deepClone(ORIGINAL_PATTERNS);
+  return { verano: deepClone(ORIGINAL_PATTERNS), invierno: deepClone(ORIGINAL_WINTER_PATTERNS) };
 }
 
 function saveState() {
-  try { localStorage.setItem(LS_KEY_PATTERNS, JSON.stringify(currentState)); } catch(e) {}
+  try {
+    allSeasonState[activeSeason] = currentState;
+    localStorage.setItem(LS_KEY_PATTERNS, JSON.stringify(allSeasonState));
+  } catch(e) {}
 }
 
 function loadRules() {
@@ -378,7 +514,8 @@ function loadRules() {
   return [
     {day:'Martes', text:'Reunión Comercial 14:00-16:00. Todos a reunión excepto 2 Mgr Support + 1 Lead en floor.', highlight:true},
     {day:'Miércoles', text:'Leadership Meeting 14:00-16:00. Solo Managers a reunión. Leads cubren floor.', highlight:true},
-    {day:'Sábado', text:'Más tiempo en floor. 6h floor + 2h AOR/LDOPS por persona.', highlight:false}
+    {day:'Sábado', text:'Más tiempo en floor. 6h floor + 2h AOR/LDOPS por persona.', highlight:false},
+    {day:'Todos', text:'Verano: cierre 21:30 · Invierno: cierre 21:00. El turno de tarde en invierno es 12:30-21:30 (entrada 30 min antes).', highlight:true}
   ];
 }
 
@@ -386,15 +523,31 @@ function saveRules() {
   try { localStorage.setItem(LS_KEY_RULES, JSON.stringify(rules)); } catch(e) {}
 }
 
-let currentState = loadState();
+let activeSeason = 'verano';
+try { activeSeason = localStorage.getItem(LS_KEY_SEASON) || 'verano'; } catch(e) {}
+
+let allSeasonState = loadAllState();
+let currentState = allSeasonState[activeSeason];
 let rules = loadRules();
 let activePattern = 0;
 let openDropdownEl = null;
+
+function getOpenEnd() { return activeSeason === 'invierno' ? OPEN_END_INVIERNO : OPEN_END_VERANO; }
+function getSeasonLabel() { return activeSeason === 'invierno' ? '❄️ Invierno' : '☀️ Verano'; }
+function getCloseTime() { return activeSeason === 'invierno' ? '21:00' : '21:30'; }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UTILITY
 // ═══════════════════════════════════════════════════════════════════════════════
 function getColor(act) { return COLORS.hasOwnProperty(act) ? COLORS[act] : '#FFFFFF'; }
+
+// XSS-safe HTML escape
+function esc(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(str));
+  return d.innerHTML;
+}
 
 function textColor(hex) {
   if (typeof hex !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return '#333';
@@ -428,7 +581,7 @@ function validatePattern(patIdx) {
     }
   }
 
-  for (let c=OPEN_START; c<=OPEN_END; c++) {
+  for (let c=OPEN_START; c<=getOpenEnd(); c++) {
     if (counts.Floor[c]===0) alerts.push({type:'red',msg:`⚠️ Sin cobertura en floor a las ${TIME_SLOTS[c]}`});
     if (counts.Coach[c]===0 && counts.Support[c]===0 && counts.LDSup[c]===0) alerts.push({type:'red',msg:`🚨 Sin Coach ni Support a las ${TIME_SLOTS[c]}`});
     if (counts.Lunch[c]>3) alerts.push({type:'orange',msg:`🍽️ Demasiadas personas en Lunch a las ${TIME_SLOTS[c]} (${counts.Lunch[c]})`});
@@ -467,17 +620,19 @@ function buildScheduleTable(patIdx) {
   const rows = currentState[patIdx];
   const leads = rows.filter(r=>r.role==='Lead');
   const mgrs = rows.filter(r=>r.role==='Manager');
+  const totalCols = 1 + 1 + TIME_SLOTS.length + 1; // role + shift + time slots + actions col
   let h = '<div class="table-wrapper"><table id="sched-table"><thead><tr class="header-row">';
   h += '<th class="col-role">Rol</th><th class="col-shift">Turno</th>';
   for (const t of TIME_SLOTS) h += `<th class="time-slot"><div class="rw"><span>${t}</span></div></th>`;
+  h += '<th class="col-actions"></th>';
   h += '</tr></thead><tbody>';
   h += '<tr class="apertura-row"><td class="col-role">Horario</td><td class="col-shift">Apertura</td>';
-  for (let i=0;i<TIME_SLOTS.length;i++) h += i>=OPEN_START&&i<=OPEN_END?'<td class="open-slot">▶</td>':'<td></td>';
-  h += '</tr>';
-  h += `<tr class="group-label-row"><td colspan="${TIME_SLOTS.length+2}">👤 Leads (${leads.length})</td></tr>`;
+  for (let i=0;i<TIME_SLOTS.length;i++) h += i>=OPEN_START&&i<=getOpenEnd()?'<td class="open-slot">▶</td>':'<td></td>';
+  h += '<td class="col-actions"></td></tr>';
+  h += `<tr class="group-label-row"><td colspan="${totalCols}">👤 Leads (${leads.length})</td></tr>`;
   leads.forEach(row => { h += buildPersonRow(patIdx, rows.indexOf(row), row, 'lead-row'); });
-  h += `<tr class="section-sep"><td colspan="${TIME_SLOTS.length+2}"></td></tr>`;
-  h += `<tr class="group-label-row"><td colspan="${TIME_SLOTS.length+2}">👔 Managers (${mgrs.length})</td></tr>`;
+  h += `<tr class="section-sep"><td colspan="${totalCols}"></td></tr>`;
+  h += `<tr class="group-label-row"><td colspan="${totalCols}">👔 Managers (${mgrs.length})</td></tr>`;
   mgrs.forEach(row => { h += buildPersonRow(patIdx, rows.indexOf(row), row, 'mgr-row'); });
   h += '</tbody></table></div>';
   return h;
@@ -485,11 +640,12 @@ function buildScheduleTable(patIdx) {
 
 function buildPersonRow(patIdx, rowIdx, row, cls) {
   let h = `<tr class="${cls}" data-pat="${patIdx}" data-row="${rowIdx}">`;
-  h += `<td class="col-role">${row.role}</td><td class="col-shift">${row.shift}</td>`;
+  h += `<td class="col-role">${esc(row.role)}</td><td class="col-shift">${esc(row.shift)}</td>`;
   for (let c=0;c<TIME_SLOTS.length;c++) {
     const a=row.acts[c], bg=getColor(a), fg=textColor(bg);
-    h += `<td class="act-cell" data-pat="${patIdx}" data-row="${rowIdx}" data-col="${c}" style="background:${bg};color:${fg}" onclick="cellClick(event,${patIdx},${rowIdx},${c})">${a}</td>`;
+    h += `<td class="act-cell" data-pat="${patIdx}" data-row="${rowIdx}" data-col="${c}" style="background:${bg};color:${fg}" onclick="cellClick(event,${patIdx},${rowIdx},${c})">${esc(a)}</td>`;
   }
+  h += `<td class="col-actions"><button class="del-btn" title="Eliminar persona" onclick="deletePerson(${patIdx},${rowIdx})">✕</button></td>`;
   return h+'</tr>';
 }
 
@@ -520,33 +676,43 @@ function calcSummary(patIdx) {
 function buildSummaryTable(patIdx) {
   const {counts:c, TotalSupport, TotalFloor, MgrsOnFloor, hasMeeting} = calcSummary(patIdx);
   const n = TIME_SLOTS.length;
-  function mkRow(label, arr, extra='') {
+  function heatCls(v, max) {
+    if (v===0) return '';
+    const pct = max>0 ? v/max : 0;
+    if (pct<=0.25) return 'sum-heat-low';
+    if (pct<=0.5) return 'sum-heat-med';
+    if (pct<=0.75) return 'sum-heat-high';
+    return 'sum-heat-max';
+  }
+  function mkRow(label, arr, extra='', heat=false) {
+    const mx = heat ? Math.max(...arr) : 0;
     let r = `<tr class="${extra}"><td class="sum-label">${label}</td>`;
     for (let i=0;i<n;i++) {
       const v=arr[i];
       let cls = v===0?'sum-zero':'sum-pos';
-      if (extra==='sum-total' && v===0 && i>=OPEN_START && i<=OPEN_END) cls='sum-alert';
+      if (extra==='sum-total' && v===0 && i>=OPEN_START && i<=getOpenEnd()) cls='sum-alert';
+      if (heat && v>0) cls += ' ' + heatCls(v, mx);
       r += `<td class="sum-val ${cls}">${v===0?'':v}</td>`;
     }
     return r+'</tr>';
   }
-  let h = '<div class="summary-section"><h3>📊 Resumen</h3><table class="summary-table"><thead><tr>';
+  let h = '<div class="summary-section"><h3>📊 Resumen · ' + getSeasonLabel() + '</h3><table class="summary-table"><thead><tr>';
   h += '<th class="sum-label">Actividad</th>';
   for (const t of TIME_SLOTS) h += `<th>${t}</th>`;
   h += '</tr></thead><tbody>';
-  h += mkRow('LDSup (Leads)',c.LDSup);
+  h += mkRow('LDSup (Leads)',c.LDSup,'',true);
   h += mkRow('LDOPS',c.LDOPS);
-  h += mkRow('Coach',c.Coach);
-  h += mkRow('MGR Support',c.MgrSup);
+  h += mkRow('Coach',c.Coach,'',true);
+  h += mkRow('MGR Support',c.MgrSup,'',true);
   h += mkRow('AOR',c.AOR);
   h += mkRow('Lunch',c.Lunch);
   h += mkRow('DD',c.DD);
   if (hasMeeting) h += mkRow('MEETING',c.MEETING);
   h += `<tr class="sum-sep"><td class="sum-label"></td>${'<td></td>'.repeat(n)}</tr>`;
-  h += mkRow('Total Support (LDSup+MGR)',TotalSupport,'sum-total');
-  h += mkRow('Total Coach',c.Coach,'sum-total');
-  h += mkRow('Total Floor (Sup+Coach)',TotalFloor,'sum-total');
-  h += mkRow('Mgrs on Floor (Coach+Sup)',MgrsOnFloor,'sum-total');
+  h += mkRow('Total Support (LDSup+MGR)',TotalSupport,'sum-total',true);
+  h += mkRow('Total Coach',c.Coach,'sum-total',true);
+  h += mkRow('Total Floor (Sup+Coach)',TotalFloor,'sum-total',true);
+  h += mkRow('Mgrs on Floor (Coach+Sup)',MgrsOnFloor,'sum-total',true);
   h += '</tbody></table></div>';
   return h;
 }
@@ -565,8 +731,8 @@ function buildRulesSection() {
   else {
     rules.forEach((r,i) => {
       h += `<div class="rule-card ${r.highlight?'highlighted':''}">
-        <span class="rule-day">${r.day}</span>
-        <span class="rule-text">${r.text}</span>
+        <span class="rule-day">${esc(r.day)}</span>
+        <span class="rule-text">${esc(r.text)}</span>
         <button class="rule-delete" onclick="deleteRule(${i})">✕</button>
       </div>`;
     });
@@ -574,11 +740,39 @@ function buildRulesSection() {
   return h+'</div>';
 }
 
+// ── Quick Stats ──────────────────────────────────────────────────────────────
+function buildQuickStats(patIdx) {
+  const rows = currentState[patIdx];
+  const leads = rows.filter(r=>r.role==='Lead').length;
+  const mgrs = rows.filter(r=>r.role==='Manager').length;
+  const {TotalFloor, TotalSupport} = calcSummary(patIdx);
+  const openEnd = getOpenEnd();
+  let floorSum=0, floorCount=0, minFloor=Infinity, peakFloor=0;
+  for (let i=OPEN_START; i<=openEnd; i++) {
+    floorSum += TotalFloor[i]; floorCount++;
+    if (TotalFloor[i] < minFloor) minFloor = TotalFloor[i];
+    if (TotalFloor[i] > peakFloor) peakFloor = TotalFloor[i];
+  }
+  const avgFloor = floorCount>0 ? (floorSum/floorCount).toFixed(1) : '0';
+  if (minFloor === Infinity) minFloor = 0;
+  return `
+    <div class="stat-card"><div class="stat-value">${leads}</div><div class="stat-label">Leads</div></div>
+    <div class="stat-card"><div class="stat-value">${mgrs}</div><div class="stat-label">Managers</div></div>
+    <div class="stat-card"><div class="stat-value">${leads+mgrs}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card"><div class="stat-value">${avgFloor}</div><div class="stat-label">Media Floor</div></div>
+    <div class="stat-card"><div class="stat-value">${peakFloor}</div><div class="stat-label">Pico Floor</div></div>
+    <div class="stat-card"><div class="stat-value${minFloor===0?' danger':''}">${minFloor}</div><div class="stat-label">Mín Floor</div></div>
+    <div class="stat-card"><div class="stat-value">${getSeasonLabel()}</div><div class="stat-label">Cierre ${getCloseTime()}</div></div>
+  `;
+}
+
 // ── Main render ──────────────────────────────────────────────────────────────
 function render(patIdx) {
   closeDropdown();
-  document.getElementById('subtitle').textContent = PATTERN_NAMES[patIdx];
+  const seasonTag = activeSeason === 'invierno' ? ' · ❄️ Invierno' : ' · ☀️ Verano';
+  document.getElementById('subtitle').textContent = PATTERN_NAMES[patIdx] + seasonTag;
   renderAlerts(patIdx);
+  document.getElementById('quick-stats').innerHTML = buildQuickStats(patIdx);
   document.getElementById('schedule-container').innerHTML =
     buildScheduleTable(patIdx) + buildSummaryTable(patIdx) + buildLegend() + buildRulesSection();
 }
@@ -646,6 +840,53 @@ function cellClick(evt, patIdx, rowIdx, colIdx) {
 }
 
 document.addEventListener('click', e => { if (openDropdownEl&&!openDropdownEl.contains(e.target)) closeDropdown(); });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SEASON TOGGLE
+// ═══════════════════════════════════════════════════════════════════════════════
+function switchSeason(season) {
+  if (season === activeSeason) return;
+  // Save current state for current season
+  allSeasonState[activeSeason] = currentState;
+  try { localStorage.setItem(LS_KEY_PATTERNS, JSON.stringify(allSeasonState)); } catch(e) {}
+  // Switch
+  activeSeason = season;
+  currentState = allSeasonState[activeSeason];
+  try { localStorage.setItem(LS_KEY_SEASON, season); } catch(e) {}
+  // Update button UI
+  document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.season === season));
+  render(activePattern);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DARK MODE
+// ═══════════════════════════════════════════════════════════════════════════════
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark');
+  try { localStorage.setItem(LS_KEY_THEME, isDark ? 'dark' : 'light'); } catch(e) {}
+  document.getElementById('theme-toggle').textContent = isDark ? '☀️ Claro' : '🌙 Oscuro';
+}
+// Restore theme on load
+(function() {
+  try {
+    if (localStorage.getItem(LS_KEY_THEME) === 'dark') {
+      document.body.classList.add('dark');
+      document.getElementById('theme-toggle').textContent = '☀️ Claro';
+    }
+  } catch(e) {}
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DELETE PERSON
+// ═══════════════════════════════════════════════════════════════════════════════
+function deletePerson(patIdx, rowIdx) {
+  const row = currentState[patIdx][rowIdx];
+  if (!row) return;
+  if (!confirm(`¿Eliminar ${row.role} (${row.shift}) de este patrón?`)) return;
+  currentState[patIdx].splice(rowIdx, 1);
+  saveState();
+  render(activePattern);
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MODALS
@@ -774,7 +1015,8 @@ function exportCSV() {
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href=url; a.download=`patron_${activePattern}_${PATTERN_NAMES[activePattern].replace(/[^a-zA-Z0-9]/g,'_')}.csv`;
+  const safeName = PATTERN_NAMES[activePattern].replace(/[^a-zA-Z0-9]/g,'_');
+  a.href=url; a.download=`patron_${activeSeason}_${activePattern}_${safeName}.csv`;
   a.click(); URL.revokeObjectURL(url);
 }
 
@@ -782,8 +1024,10 @@ function exportCSV() {
 // RESET
 // ═══════════════════════════════════════════════════════════════════════════════
 function resetPattern() {
-  if (!confirm(`¿Restaurar el patrón "${PATTERN_NAMES[activePattern]}" a los datos originales?`)) return;
-  currentState[activePattern] = ORIGINAL_PATTERNS[activePattern].map(row => ({role:row.role, shift:row.shift, acts:[...row.acts]}));
+  const label = PATTERN_NAMES[activePattern] + (activeSeason==='invierno'?' (Invierno)':' (Verano)');
+  if (!confirm(`¿Restaurar el patrón "${label}" a los datos originales?`)) return;
+  const originals = activeSeason === 'invierno' ? ORIGINAL_WINTER_PATTERNS : ORIGINAL_PATTERNS;
+  currentState[activePattern] = originals[activePattern].map(row => ({role:row.role, shift:row.shift, acts:[...row.acts]}));
   saveState();
   render(activePattern);
 }
@@ -791,7 +1035,10 @@ function resetPattern() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // INITIAL RENDER
 // ═══════════════════════════════════════════════════════════════════════════════
+// Restore season button state
+document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.season === activeSeason));
 render(0);
 </script>
+<div class="footer">Patrones de Schedule Dashboard · v2.0</div>
 </body>
 </html>
