@@ -499,8 +499,9 @@ const PATTERN_NAMES = [
 ];
 
 // Weekly view mapping: [Lunes, Martes, Miércoles, Jueves, Viernes, Sábado] → pattern indices
+// Thursday and Friday reuse pattern 0 (Día Normal), same as Monday.
 const WEEK_DAYS       = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const DAY_PATTERN_IDX = [0, 1, 2, 0, 0, 3];
+const DAY_PATTERN_IDX = [0, 1, 2, 0, 0, 3]; // [Mon=pat0, Tue=pat1, Wed=pat2, Thu→pat0, Fri→pat0, Sat=pat3]
 
 const SHIFT_OPTIONS_VERANO   = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','13:00-22:00'];
 const SHIFT_OPTIONS_INVIERNO = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','12:30-21:30'];
@@ -1428,9 +1429,11 @@ function buildWeeklyView() {
   for (let i = 0; i < mgrEquity.length; i++) {
     const {coach, support} = mgrEquity[i];
     const total     = coach + support;
+    // Managers with no floor-role assignments (total=0) are considered balanced.
     const imbalance = total > 0 && Math.abs(coach - support) > 1;
     const emoji     = imbalance ? '⚠️' : '✅';
-    h += `<div class="equity-item${imbalance ? ' eq-warning' : ''}">Mgr ${i + 1}: ${coach}C/${support}S ${emoji}</div>`;
+    const ariaLabel = imbalance ? ` aria-label="Mgr ${i + 1}: desequilibrio de roles (${coach}C/${support}S)"` : '';
+    h += `<div class="equity-item${imbalance ? ' eq-warning' : ''}"${ariaLabel}>Mgr ${i + 1}: ${coach}C/${support}S ${emoji}</div>`;
   }
   h += '</div></div>';
 
