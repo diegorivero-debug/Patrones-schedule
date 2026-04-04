@@ -369,6 +369,87 @@ const SHIFT_OPTIONS_VERANO   = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00
 const SHIFT_OPTIONS_INVIERNO = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','12:30-21:30'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// BUSINESS RULES  (single source of truth for all scheduling constraints)
+// ═══════════════════════════════════════════════════════════════════════════════
+const BUSINESS_RULES = {
+  store: {
+    openTime: '09:30',
+    closeVerano: '21:30',
+    closeInvierno: '21:00',
+    firstLeadEntry: '07:00',
+    lastLeadExit: '22:00',
+    firstMgrEntry: '08:00',
+    lastMgrExit: '22:00',
+  },
+  shifts: {
+    totalHours: 9,
+    workHours: 8,
+    lunchHours: 1,
+    lunchSlots: 2,
+  },
+  weekday: {
+    manager: { floorHours: 4, aorHours: 4, lunchHours: 1, floorActivities: ['Coach','Support'] },
+    lead:    { floorHours: 5, ldopsHours: 3, lunchHours: 1, floorActivities: ['LDSup'] },
+  },
+  saturday: {
+    manager: { floorHours: 6, aorHours: 2, lunchHours: 1, floorActivities: ['Coach','Support'] },
+    lead:    { floorHours: 6, ldopsHours: 2, lunchHours: 1, floorActivities: ['LDSup'] },
+  },
+  coverage: {
+    normal:    { support: 4, coach: 2, totalFloor: 6 },
+    lunchTrans:{ support: 3, coach: 1, totalFloor: 4 },
+    minMgrsOnFloor: 2,
+    peakHours: [
+      { start: '12:00', end: '14:00' },
+      { start: '17:00', end: '21:00' },
+    ],
+  },
+  lunch: {
+    windowStart: '11:00',
+    windowEnd: '16:00',
+    durationSlots: 2,
+    maxSimultaneous: 3,
+    rule: 'Quien entra primero come primero (escalonado)',
+  },
+  dd: {
+    time: '09:15',
+    durationMin: 15,
+    onlyMorningShifts: true,
+  },
+  blocks: {
+    minFloorBlockSlots: 4,
+    maxAorBlocks: 2,
+  },
+  staffing: {
+    0: { leads: 4, managers: 10, name: 'Día Normal' },
+    1: { leads: 4, managers: 10, name: 'Martes' },
+    2: { leads: 5, managers: 10, name: 'Miércoles' },
+    3: { leads: 4, managers: 10, name: 'Sábado' },
+  },
+  meetings: {
+    martes: {
+      name: 'Reunión Comercial',
+      start: '14:00',
+      end: '16:00',
+      attendees: 'all',
+      exceptions: { mgrSupport: 2, leadFloor: 1 },
+      coachSuspended: true,
+      countsAs: { manager: 'AOR', lead: 'LDOPS' },
+    },
+    miercoles: {
+      name: 'Leadership Meeting',
+      start: '14:00',
+      end: '16:00',
+      attendees: 'managers',
+      exceptions: {},
+      leadsCoverFloor: 3,
+      coachSuspended: true,
+      countsAs: { manager: 'AOR' },
+    },
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ORIGINAL PATTERN DATA  (4 Leads + 10 Managers = 14 personas)
 // ═══════════════════════════════════════════════════════════════════════════════
 const ORIGINAL_PATTERNS = [
@@ -512,10 +593,16 @@ function loadRules() {
     if (saved) return JSON.parse(saved);
   } catch(e) {}
   return [
-    {day:'Martes', text:'Reunión Comercial 14:00-16:00. Todos a reunión excepto 2 Mgr Support + 1 Lead en floor.', highlight:true},
-    {day:'Miércoles', text:'Leadership Meeting 14:00-16:00. Solo Managers a reunión. Leads cubren floor.', highlight:true},
-    {day:'Sábado', text:'Más tiempo en floor. 6h floor + 2h AOR/LDOPS por persona.', highlight:false},
-    {day:'Todos', text:'Verano: cierre 21:30 · Invierno: cierre 21:00. El turno de tarde en invierno es 12:30-21:30 (entrada 30 min antes).', highlight:true}
+    {day:'Todos', text:'Cobertura mínima en floor: ' + BUSINESS_RULES.coverage.normal.totalFloor + ' personas (' + BUSINESS_RULES.coverage.normal.support + ' Support + ' + BUSINESS_RULES.coverage.normal.coach + ' Coach). Transición/Lunch: mín ' + BUSINESS_RULES.coverage.lunchTrans.totalFloor + '.', highlight:true},
+    {day:'Todos', text:'Mínimo ' + BUSINESS_RULES.coverage.minMgrsOnFloor + ' Managers en floor simultáneamente durante toda la apertura.', highlight:true},
+    {day:'Todos', text:'Lunch: ' + BUSINESS_RULES.lunch.windowStart + '-' + BUSINESS_RULES.lunch.windowEnd + ', escalonado. Máx ' + BUSINESS_RULES.lunch.maxSimultaneous + ' personas a la vez.', highlight:false},
+    {day:'Todos', text:'Horas pico: 12:00-14:00 y 17:00-21:00. Nunca reducir cobertura.', highlight:true},
+    {day:'Todos', text:'Bloques floor mínimo 2h seguidas. AOR/LDOPS máximo en 2 bloques.', highlight:false},
+    {day:'Todos', text:'Verano: cierre 21:30. Invierno: cierre 21:00. Turno tarde invierno: 12:30-21:30.', highlight:true},
+    {day:'Martes', text:'Reunión Comercial ' + BUSINESS_RULES.meetings.martes.start + '-' + BUSINESS_RULES.meetings.martes.end + '. Todos a reunión excepto ' + BUSINESS_RULES.meetings.martes.exceptions.mgrSupport + ' Mgr Support + ' + BUSINESS_RULES.meetings.martes.exceptions.leadFloor + ' Lead en floor. Coach suspendido.', highlight:true},
+    {day:'Miércoles', text:'Leadership Meeting ' + BUSINESS_RULES.meetings.miercoles.start + '-' + BUSINESS_RULES.meetings.miercoles.end + '. Solo Managers a reunión. ' + BUSINESS_RULES.meetings.miercoles.leadsCoverFloor + '+ Leads cubren floor. Coach suspendido.', highlight:true},
+    {day:'Sábado', text:'Más tiempo en floor: ' + BUSINESS_RULES.saturday.manager.floorHours + 'h floor + ' + BUSINESS_RULES.saturday.manager.aorHours + 'h AOR por Manager, ' + BUSINESS_RULES.saturday.lead.floorHours + 'h floor + ' + BUSINESS_RULES.saturday.lead.ldopsHours + 'h LDOPS por Lead.', highlight:false},
+    {day:'L-V', text:'Manager: ' + BUSINESS_RULES.weekday.manager.floorHours + 'h floor + ' + BUSINESS_RULES.weekday.manager.aorHours + 'h AOR. Lead: ' + BUSINESS_RULES.weekday.lead.floorHours + 'h floor + ' + BUSINESS_RULES.weekday.lead.ldopsHours + 'h LDOPS.', highlight:false},
   ];
 }
 
@@ -569,36 +656,188 @@ function validatePattern(patIdx) {
   const rows = currentState[patIdx];
   const n = TIME_SLOTS.length;
   const alerts = [];
-  const counts = {Coach:new Array(n).fill(0), Support:new Array(n).fill(0), LDSup:new Array(n).fill(0), Lunch:new Array(n).fill(0), Floor:new Array(n).fill(0)};
+  const openEnd = getOpenEnd();
+
+  // ── Build counts per slot ──────────────────────────────
+  const counts = {
+    Coach:      new Array(n).fill(0),
+    Support:    new Array(n).fill(0),
+    LDSup:      new Array(n).fill(0),
+    Lunch:      new Array(n).fill(0),
+    MEETING:    new Array(n).fill(0),
+    Floor:      new Array(n).fill(0),
+    MgrsOnFloor: new Array(n).fill(0),  // Coach + Support (Managers only)
+  };
 
   for (const row of rows) {
-    for (let c=0; c<n; c++) {
+    const isMgr = row.role === 'Manager';
+    for (let c = 0; c < n; c++) {
       const a = row.acts[c];
-      if (a==='Coach')   { counts.Coach[c]++; counts.Floor[c]++; }
-      if (a==='Support') { counts.Support[c]++; counts.Floor[c]++; }
-      if (a==='LDSup')   { counts.LDSup[c]++; counts.Floor[c]++; }
-      if (a==='Lunch')   counts.Lunch[c]++;
+      if (a === 'Coach')   { counts.Coach[c]++; counts.Floor[c]++; if (isMgr) counts.MgrsOnFloor[c]++; }
+      if (a === 'Support') { counts.Support[c]++; counts.Floor[c]++; if (isMgr) counts.MgrsOnFloor[c]++; }
+      if (a === 'LDSup')   { counts.LDSup[c]++; counts.Floor[c]++; }
+      if (a === 'Lunch')   counts.Lunch[c]++;
+      if (a === 'MEETING') counts.MEETING[c]++;
     }
   }
 
-  for (let c=OPEN_START; c<=getOpenEnd(); c++) {
-    if (counts.Floor[c]===0) alerts.push({type:'red',msg:`⚠️ Sin cobertura en floor a las ${TIME_SLOTS[c]}`});
-    if (counts.Coach[c]===0 && counts.Support[c]===0 && counts.LDSup[c]===0) alerts.push({type:'red',msg:`🚨 Sin Coach ni Support a las ${TIME_SLOTS[c]}`});
-    if (counts.Lunch[c]>3) alerts.push({type:'orange',msg:`🍽️ Demasiadas personas en Lunch a las ${TIME_SLOTS[c]} (${counts.Lunch[c]})`});
+  // ── Peak hour indices ──────────────────────────────────
+  const peakIndices = new Set();
+  for (const ph of BUSINESS_RULES.coverage.peakHours) {
+    const s = TIME_SLOTS.indexOf(ph.start);
+    const e = TIME_SLOTS.indexOf(ph.end);
+    if (s >= 0 && e >= 0) for (let i = s; i <= e; i++) peakIndices.add(i);
   }
 
-  // Check meeting alignment
-  const meetingSlots = {};
+  // ── Meeting slot indices (for Martes/Miércoles) ────────
+  const meetingStart14 = TIME_SLOTS.indexOf('14:00');
+  const meetingEnd16   = TIME_SLOTS.indexOf('16:00');
+  const isMeetingPat   = patIdx === 1 || patIdx === 2;
+  const meetingIndices = new Set();
+  if (isMeetingPat && meetingStart14 >= 0 && meetingEnd16 >= 0) {
+    for (let i = meetingStart14; i < meetingEnd16; i++) meetingIndices.add(i);
+  }
+
+  // ── Slot-by-slot validation during opening ─────────────
+  for (let c = OPEN_START; c <= openEnd; c++) {
+    const inMeeting   = meetingIndices.has(c);
+    const floorVal    = counts.Floor[c];
+    const mgrsOnFloor = counts.MgrsOnFloor[c];
+
+    // 🔴 Floor = 0
+    if (floorVal === 0) {
+      alerts.push({type:'red', msg:`🚨 Sin cobertura en floor a las ${TIME_SLOTS[c]}`});
+    }
+    // 🔴 Floor < 4 (minimum absolute)
+    else if (floorVal < BUSINESS_RULES.coverage.lunchTrans.totalFloor) {
+      alerts.push({type:'red', msg:`⚠️ Floor muy bajo (${floorVal}) a las ${TIME_SLOTS[c]} — mín absoluto ${BUSINESS_RULES.coverage.lunchTrans.totalFloor}`});
+    }
+
+    // 🔴 Managers en floor < 2
+    if (!inMeeting && mgrsOnFloor < BUSINESS_RULES.coverage.minMgrsOnFloor) {
+      alerts.push({type:'red', msg:`👔 Solo ${mgrsOnFloor} Manager(s) en floor a las ${TIME_SLOTS[c]} — mín ${BUSINESS_RULES.coverage.minMgrsOnFloor}`});
+    }
+
+    // 🟠 Peak hour floor < 6
+    if (peakIndices.has(c) && !inMeeting && floorVal < BUSINESS_RULES.coverage.normal.totalFloor) {
+      alerts.push({type:'orange', msg:`⏰ Hora pico con floor bajo (${floorVal}) a las ${TIME_SLOTS[c]} — recomendado ${BUSINESS_RULES.coverage.normal.totalFloor}`});
+    }
+
+    // 🟠 No Coach outside meetings
+    if (!inMeeting && counts.Coach[c] === 0) {
+      alerts.push({type:'orange', msg:`🎓 Sin Coach a las ${TIME_SLOTS[c]}`});
+    }
+
+    // 🟠 Lunch > maxSimultaneous
+    if (counts.Lunch[c] > BUSINESS_RULES.lunch.maxSimultaneous) {
+      alerts.push({type:'orange', msg:`🍽️ ${counts.Lunch[c]} personas en Lunch a las ${TIME_SLOTS[c]} — máx ${BUSINESS_RULES.lunch.maxSimultaneous}`});
+    }
+  }
+
+  // ── Per-person validation ──────────────────────────────
+  const lunchWinStart = TIME_SLOTS.indexOf(BUSINESS_RULES.lunch.windowStart);
+  const lunchWinEnd   = TIME_SLOTS.indexOf(BUSINESS_RULES.lunch.windowEnd);
+
+  for (const row of rows) {
+    const [si, ei] = shiftIndices(row.shift);
+    const isLead = row.role === 'Lead';
+    const floorActs = isLead ? ['LDSup'] : ['Coach', 'Support'];
+    const mgmtActs  = isLead ? ['LDOPS'] : ['AOR'];
+
+    // 🔴 Activity outside shift
+    for (let c = 0; c < n; c++) {
+      const a = row.acts[c];
+      if (a !== '' && (c < si || c >= ei)) {
+        alerts.push({type:'red', msg:`⛔ ${row.role} (${row.shift}) tiene actividad "${a}" fuera de su turno a las ${TIME_SLOTS[c]}`});
+      }
+    }
+
+    // 🔴 No lunch
+    const lunchSlots = [];
+    for (let c = si; c < ei; c++) { if (row.acts[c] === 'Lunch') lunchSlots.push(c); }
+    if (lunchSlots.length === 0) {
+      alerts.push({type:'red', msg:`🍽️ ${row.role} (${row.shift}) no tiene Lunch asignado`});
+    }
+
+    // 🟠 Lunch outside window 11:00-16:00
+    if (lunchSlots.length > 0) {
+      const firstLunch = Math.min(...lunchSlots);
+      const lastLunch  = Math.max(...lunchSlots);
+      if (firstLunch < lunchWinStart || lastLunch >= lunchWinEnd) {
+        alerts.push({type:'orange', msg:`⏰ ${row.role} (${row.shift}) tiene Lunch fuera de la ventana ${BUSINESS_RULES.lunch.windowStart}-${BUSINESS_RULES.lunch.windowEnd}`});
+      }
+    }
+
+    // 🟡 Short floor blocks (<2h = <4 consecutive slots)
+    let floorBlock = 0, maxFloorBlock = 0;
+    for (let c = si; c < ei; c++) {
+      if (floorActs.includes(row.acts[c])) { floorBlock++; maxFloorBlock = Math.max(maxFloorBlock, floorBlock); }
+      else floorBlock = 0;
+    }
+    if (maxFloorBlock > 0 && maxFloorBlock < BUSINESS_RULES.blocks.minFloorBlockSlots) {
+      alerts.push({type:'yellow', msg:`🧱 ${row.role} (${row.shift}) tiene bloque de floor corto (${maxFloorBlock / 2}h) — mín ${BUSINESS_RULES.blocks.minFloorBlockSlots / 2}h`});
+    }
+
+    // 🟡 AOR/LDOPS fragmented in >2 blocks
+    let mgmtBlocks = 0, inMgmtBlock = false;
+    for (let c = si; c < ei; c++) {
+      const isMgmtSlot = mgmtActs.includes(row.acts[c]) || row.acts[c] === 'MEETING';
+      if (isMgmtSlot && !inMgmtBlock) { mgmtBlocks++; inMgmtBlock = true; }
+      else if (!isMgmtSlot) inMgmtBlock = false;
+    }
+    if (mgmtBlocks > BUSINESS_RULES.blocks.maxAorBlocks) {
+      const actName = isLead ? 'LDOPS' : 'AOR';
+      alerts.push({type:'yellow', msg:`📦 ${row.role} (${row.shift}) tiene ${actName} fragmentado en ${mgmtBlocks} bloques — máx ${BUSINESS_RULES.blocks.maxAorBlocks}`});
+    }
+  }
+
+  // ── Staffing validation ────────────────────────────────
+  const staffRule = BUSINESS_RULES.staffing[patIdx];
+  if (staffRule) {
+    const actualLeads = rows.filter(r => r.role === 'Lead').length;
+    const actualMgrs  = rows.filter(r => r.role === 'Manager').length;
+    if (actualLeads < staffRule.leads) {
+      alerts.push({type:'orange', msg:`👥 Leads insuficientes: ${actualLeads} (esperados ${staffRule.leads}) para ${staffRule.name}`});
+    }
+    if (actualMgrs < staffRule.managers) {
+      alerts.push({type:'orange', msg:`👥 Managers insuficientes: ${actualMgrs} (esperados ${staffRule.managers}) para ${staffRule.name}`});
+    }
+  }
+
+  // ── Meeting alignment ──────────────────────────────────
+  const meetingSlotMap = {};
   for (const row of rows) {
     const mySlots = [];
-    for (let c=0; c<n; c++) { if (row.acts[c]==='MEETING') mySlots.push(c); }
-    if (mySlots.length>0) {
+    for (let c = 0; c < n; c++) { if (row.acts[c] === 'MEETING') mySlots.push(c); }
+    if (mySlots.length > 0) {
       const key = mySlots.join(',');
-      meetingSlots[key] = (meetingSlots[key]||0)+1;
+      meetingSlotMap[key] = (meetingSlotMap[key] || 0) + 1;
     }
   }
-  if (Object.keys(meetingSlots).length>1) {
-    alerts.push({type:'red',msg:'⏰ Las reuniones no están a la misma hora para todos los asistentes'});
+  if (Object.keys(meetingSlotMap).length > 1) {
+    alerts.push({type:'red', msg:'⏰ Las reuniones no están a la misma hora para todos los asistentes'});
+  }
+
+  // ── Meeting exceptions validation ─────────────────────
+  if (isMeetingPat && meetingStart14 >= 0) {
+    if (patIdx === 1) {
+      // Martes: 2 Mgr Support + 1 Lead on floor during meeting
+      const mgrSupportInFloor = rows.filter(r => r.role === 'Manager' && ['Coach','Support'].includes(r.acts[meetingStart14])).length;
+      const leadOnFloor       = rows.filter(r => r.role === 'Lead' && r.acts[meetingStart14] === 'LDSup').length;
+      if (mgrSupportInFloor < BUSINESS_RULES.meetings.martes.exceptions.mgrSupport) {
+        alerts.push({type:'orange', msg:`📋 Martes: solo ${mgrSupportInFloor} Mgr en floor durante reunión — deben ser ${BUSINESS_RULES.meetings.martes.exceptions.mgrSupport}`});
+      }
+      if (leadOnFloor < BUSINESS_RULES.meetings.martes.exceptions.leadFloor) {
+        alerts.push({type:'orange', msg:`📋 Martes: solo ${leadOnFloor} Lead en floor durante reunión — debe ser ${BUSINESS_RULES.meetings.martes.exceptions.leadFloor}`});
+      }
+    }
+    if (patIdx === 2) {
+      // Miércoles: 3+ Leads on floor during meeting
+      const leadsOnFloor = rows.filter(r => r.role === 'Lead' && r.acts[meetingStart14] === 'LDSup').length;
+      if (leadsOnFloor < BUSINESS_RULES.meetings.miercoles.leadsCoverFloor) {
+        alerts.push({type:'orange', msg:`📋 Miércoles: solo ${leadsOnFloor} Lead(s) en floor durante reunión — deben ser ${BUSINESS_RULES.meetings.miercoles.leadsCoverFloor}+`});
+      }
+    }
   }
 
   return alerts;
@@ -755,6 +994,9 @@ function buildQuickStats(patIdx) {
   }
   const avgFloor = floorCount>0 ? (floorSum/floorCount).toFixed(1) : '0';
   if (minFloor === Infinity) minFloor = 0;
+  const alertsData = validatePattern(patIdx);
+  const alertCount = alertsData.length;
+  const criticalCount = alertsData.filter(a => a.type === 'red').length;
   return `
     <div class="stat-card"><div class="stat-value">${leads}</div><div class="stat-label">Leads</div></div>
     <div class="stat-card"><div class="stat-value">${mgrs}</div><div class="stat-label">Managers</div></div>
@@ -763,6 +1005,7 @@ function buildQuickStats(patIdx) {
     <div class="stat-card"><div class="stat-value">${peakFloor}</div><div class="stat-label">Pico Floor</div></div>
     <div class="stat-card"><div class="stat-value${minFloor===0?' danger':''}">${minFloor}</div><div class="stat-label">Mín Floor</div></div>
     <div class="stat-card"><div class="stat-value">${getSeasonLabel()}</div><div class="stat-label">Cierre ${getCloseTime()}</div></div>
+    <div class="stat-card"><div class="stat-value${criticalCount > 0 ? ' danger' : ''}">${alertCount}</div><div class="stat-label">${criticalCount > 0 ? '⚠️' : '✅'} Alertas</div></div>
   `;
 }
 
@@ -926,52 +1169,90 @@ function addFigure() {
 function generatePattern() {
   const rows = currentState[activePattern];
   const n = TIME_SLOTS.length;
+  const BR = BUSINESS_RULES;
+
   // Collect existing meetings to preserve
   const meetingMap = rows.map(row => {
     const slots = [];
-    for (let c=0;c<n;c++) if (row.acts[c]==='MEETING') slots.push(c);
+    for (let c = 0; c < n; c++) if (row.acts[c] === 'MEETING') slots.push(c);
     return slots;
   });
 
-  let lunchSlot = 0; // Stagger lunches
-  rows.forEach((row, ri) => {
-    const [si,ei] = shiftIndices(row.shift);
-    const isLead = row.role==='Lead';
-    const hasMtg = meetingMap[ri].length>0;
-    const totalWorkSlots = ei - si;
+  // Sort indices by shift start (morning first) for lunch staggering
+  const sortedIndices = rows.map((_, i) => i).sort((a, b) => {
+    const [sa] = shiftIndices(rows[a].shift);
+    const [sb] = shiftIndices(rows[b].shift);
+    return sa - sb;
+  });
+
+  // Lunch window indices
+  const lunchWinStart = TIME_SLOTS.indexOf(BR.lunch.windowStart);  // 11:00
+  const lunchWinEnd   = TIME_SLOTS.indexOf(BR.lunch.windowEnd);    // 16:00
+  const ddSlot        = TIME_SLOTS.indexOf(BR.dd.time);            // 09:15
+
+  // Track simultaneous lunches per slot to stagger
+  const lunchAssigned = new Array(n).fill(0);
+
+  sortedIndices.forEach(ri => {
+    const row = rows[ri];
+    const [si, ei] = shiftIndices(row.shift);
+    const isLead   = row.role === 'Lead';
+    const hasMtg   = meetingMap[ri].length > 0;
+    const isSat    = activePattern === 3;
+
+    // Target hours per role/day from BUSINESS_RULES
+    const dayRules  = isSat ? BR.saturday : BR.weekday;
+    const roleRules = isLead ? dayRules.lead : dayRules.manager;
+    const mgmtSlots = (isLead ? roleRules.ldopsHours : roleRules.aorHours) * 2;
+    const edgeLen   = Math.floor(mgmtSlots / 2);
 
     // Reset all
-    for (let c=0;c<n;c++) row.acts[c]='';
+    for (let c = 0; c < n; c++) row.acts[c] = '';
 
-    // DD at 09:15
-    if (si<=5 && ei>5) row.acts[5]='DD';
+    // DD at 09:15 for morning shifts
+    if (BR.dd.onlyMorningShifts && ddSlot >= si && ddSlot < ei) {
+      row.acts[ddSlot] = 'DD';
+    }
 
     // Preserve meetings
-    if (hasMtg) meetingMap[ri].forEach(c => row.acts[c]='MEETING');
+    if (hasMtg) meetingMap[ri].forEach(c => { row.acts[c] = 'MEETING'; });
 
-    // Assign lunch (2 consecutive slots, staggered)
+    // Find best lunch slot in window 11:00-16:00 (staggered, morning-first)
+    // si+4 = don't start lunch in first 2h of shift; ei-2 = keep at least 1h after lunch
     const lunchOptions = [];
-    for (let c=si+3; c<ei-3 && c<n-1; c++) {
-      if (row.acts[c]===''&&row.acts[c+1]==='') lunchOptions.push(c);
+    for (let c = Math.max(si + 4, lunchWinStart); c < Math.min(ei - 2, lunchWinEnd); c++) {
+      if (row.acts[c] === '' && row.acts[c + 1] === '') lunchOptions.push(c);
     }
-    const lunchIdx = lunchSlot % Math.max(lunchOptions.length,1);
-    if (lunchOptions.length>0) {
-      const lc = lunchOptions[lunchIdx];
-      row.acts[lc]='Lunch'; row.acts[lc+1]='Lunch';
+    let bestLunch = -1, bestCount = Infinity;
+    for (const c of lunchOptions) {
+      const cnt = lunchAssigned[c] + lunchAssigned[c + 1];
+      if (cnt < bestCount) { bestCount = cnt; bestLunch = c; }
     }
-    lunchSlot++;
+    if (bestLunch >= 0) {
+      row.acts[bestLunch] = 'Lunch';
+      row.acts[bestLunch + 1] = 'Lunch';
+      lunchAssigned[bestLunch]++;
+      lunchAssigned[bestLunch + 1]++;
+    }
 
-    // Fill remaining
-    for (let c=si; c<ei && c<n; c++) {
-      if (row.acts[c]!=='') continue;
+    // Pass 1: fill shift edges with management activity (AOR/LDOPS) for better
+    // floor coverage during core hours — edges = first/last edgeLen slots
+    for (let c = si; c < ei && c < n; c++) {
+      if (row.acts[c] !== '') continue;
+      const fromStart = c - si;
+      const fromEnd   = ei - 1 - c;
+      if (fromStart < edgeLen || fromEnd < edgeLen) {
+        row.acts[c] = isLead ? 'LDOPS' : 'AOR';
+      }
+    }
+
+    // Pass 2: fill center with floor activity
+    for (let c = si; c < ei && c < n; c++) {
+      if (row.acts[c] !== '') continue;
       if (isLead) {
-        // LDOPS at edges, LDSup in middle
-        if (c<si+3 || c>=ei-3) row.acts[c]='LDOPS';
-        else row.acts[c]='LDSup';
+        row.acts[c] = 'LDSup';
       } else {
-        // Managers: AOR at edges, alternate Coach/Support
-        if (c<si+2 || c>=ei-2) row.acts[c]='AOR';
-        else row.acts[c] = (ri%2===0)?'Coach':'Support';
+        row.acts[c] = (ri % 2 === 0) ? 'Coach' : 'Support';
       }
     }
   });
