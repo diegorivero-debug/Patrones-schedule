@@ -282,6 +282,40 @@
   .equity-item.eq-warning { border-color: #f6e05e; background: #fffff0; }
   body.dark .equity-item.eq-warning { border-color: #6e5a08; background: #1c1800; }
 
+  /* ── Coverage Chart ─────────────────────────────────── */
+  .coverage-chart { margin-top: 16px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; }
+  .coverage-chart h3 { font-size: .86rem; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+  .chart-wrap { display: flex; gap: 0; align-items: flex-start; }
+  .chart-y-axis { position: relative; width: 28px; flex-shrink: 0; }
+  .chart-y-tick { position: absolute; right: 4px; font-size: 9px; color: var(--text-muted); transform: translateY(50%); line-height: 1; white-space: nowrap; }
+  .chart-scroll { overflow-x: auto; flex: 1; min-width: 0; }
+  .chart-area { min-width: max-content; position: relative; }
+  .chart-bars { display: flex; gap: 2px; position: relative; border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); }
+  .chart-bar { width: 24px; flex-shrink: 0; position: relative; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; }
+  .chart-bar.outside-hours { opacity: .3; background: var(--surface-alt); }
+  .bar-segment { width: 100%; flex-shrink: 0; }
+  .bar-ldsup   { background: #4A90D9; }
+  .bar-support { background: #F5A623; }
+  .bar-coach   { background: #7BC67E; }
+  .chart-bar:hover .bar-segment { filter: brightness(1.12); }
+  .chart-x-axis { display: flex; gap: 2px; height: 30px; }
+  .chart-x-label { width: 24px; flex-shrink: 0; display: flex; justify-content: flex-end; align-items: flex-start; overflow: visible; padding-top: 2px; }
+  .chart-x-label span { display: inline-block; transform: rotate(-45deg); transform-origin: top right; white-space: nowrap; font-size: 8px; color: var(--text-muted); line-height: 1; }
+  .chart-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); align-items: center; }
+  .chart-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+  .chart-legend-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+  .chart-tooltip-box { display: none; position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-lg); padding: 8px 10px; font-size: 11px; z-index: 9999; pointer-events: none; min-width: 130px; white-space: nowrap; }
+  .chart-tooltip-box.visible { display: block; }
+  .chart-tooltip-time { font-weight: 700; font-size: 12px; color: var(--text); margin-bottom: 4px; }
+  .chart-tooltip-div  { border-top: 1px solid var(--border); margin: 3px 0; }
+  .chart-tooltip-total { font-weight: 700; margin-top: 2px; }
+  body.dark .bar-ldsup   { background: #5BA3E8; }
+  body.dark .bar-support { background: #F7B74A; }
+  body.dark .bar-coach   { background: #8DD38E; }
+  .chart-meeting-overlay { position: absolute; inset: 0; background: repeating-linear-gradient(-45deg,transparent,transparent 3px,rgba(90,90,90,.18) 3px,rgba(90,90,90,.18) 6px); pointer-events: none; z-index: 3; }
+  .chart-meeting-label { position: absolute; top: -16px; left: 0; font-size: 8px; white-space: nowrap; color: var(--text-muted); font-weight: 700; z-index: 5; pointer-events: none; }
+  body.dark .chart-bar.outside-hours { background: var(--surface-alt); }
+
   /* ── Print ──────────────────────────────────────────── */
   @media print {
     header { position: static; box-shadow: none; }
@@ -485,6 +519,9 @@
     </div>
   </div>
 </div>
+
+<!-- Coverage chart tooltip (global, reused across renders) -->
+<div class="chart-tooltip-box" id="chart-tooltip-box"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1257,6 +1294,147 @@ function buildSummaryTable(patIdx) {
   return h;
 }
 
+// ── Coverage Chart ───────────────────────────────────────────────────────────
+function buildCoverageChart(patIdx) {
+  const { counts: c, TotalFloor } = calcSummary(patIdx);
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+  const n         = TIME_SLOTS.length;
+  const CHART_H   = 200;
+
+  // Max Y: highest floor value during open hours + 2
+  let peakFloor = 0;
+  for (let i = openStart; i <= openEnd; i++) {
+    if (TotalFloor[i] > peakFloor) peakFloor = TotalFloor[i];
+  }
+  const maxFloor = peakFloor + 2;
+
+  // Meeting zone (Martes patIdx=1, Miércoles patIdx=2): 14:00–15:30 slots (indices 15–18, exclusive end at index 19 = 16:00)
+  const meetingZoneStart = TIME_SLOTS.indexOf('14:00'); // idx 15
+  const meetingZoneEnd   = TIME_SLOTS.indexOf('16:00'); // idx 19, exclusive boundary
+  const isMeetingPat     = patIdx === 1 || patIdx === 2;
+  const meetingIndices   = new Set();
+  if (isMeetingPat && meetingZoneStart >= 0 && meetingZoneEnd >= 0) {
+    for (let i = meetingZoneStart; i < meetingZoneEnd; i++) meetingIndices.add(i);
+  }
+  const firstMeetingIdx = meetingIndices.size > 0 ? Math.min(...meetingIndices) : -1;
+
+  // Reference line positions (bottom offset in px)
+  const minAbsVal = BUSINESS_RULES.coverage.lunchTrans.totalFloor; // 4
+  const normVal   = BUSINESS_RULES.coverage.normal.totalFloor;     // 6
+  const px = v => maxFloor > 0 ? Math.round((v / maxFloor) * CHART_H) : 0;
+  const minAbsBot = px(minAbsVal);
+  const normBot   = px(normVal);
+
+  // Y-axis ticks (every 2 units)
+  let yAxisHtml = '';
+  for (let v = 0; v <= maxFloor; v += 2) {
+    yAxisHtml += `<div class="chart-y-tick" style="bottom:${px(v)}px">${v}</div>`;
+  }
+
+  // Bars
+  let barsHtml = '';
+  for (let i = 0; i < n; i++) {
+    const ldsup   = c.LDSup[i];
+    const support = c.MgrSup[i];
+    const coach   = c.Coach[i];
+    const total   = ldsup + support + coach;
+    const isOut   = i < openStart || i > openEnd;
+    const isMtg   = meetingIndices.has(i);
+
+    const ldsupPx   = px(ldsup);
+    const supportPx = px(support);
+    const coachPx   = px(coach);
+
+    // Meeting zone: diagonal-stripe overlay + label on first slot
+    const mtgOverlay = isMtg
+      ? `<div class="chart-meeting-overlay"></div>`
+      : '';
+    const mtgLabel = (isMtg && i === firstMeetingIdx)
+      ? `<div class="chart-meeting-label">📋 Reunión</div>`
+      : '';
+
+    barsHtml += `<div class="chart-bar${isOut ? ' outside-hours' : ''}"` +
+      ` data-time="${esc(TIME_SLOTS[i])}" data-ldsup="${ldsup}" data-support="${support}" data-coach="${coach}" data-total="${total}"` +
+      ` style="height:${CHART_H}px"` +
+      ` onmouseenter="showChartTooltip(event,this)" onmouseleave="hideChartTooltip()" onmousemove="moveChartTooltip(event)">` +
+      mtgLabel + mtgOverlay +
+      (coachPx   > 0 ? `<div class="bar-segment bar-coach"   style="height:${coachPx}px"></div>` : '') +
+      (supportPx > 0 ? `<div class="bar-segment bar-support" style="height:${supportPx}px"></div>` : '') +
+      (ldsupPx   > 0 ? `<div class="bar-segment bar-ldsup"   style="height:${ldsupPx}px"></div>` : '') +
+      `</div>`;
+  }
+
+  // X-axis labels
+  let xHtml = '';
+  for (const t of TIME_SLOTS) {
+    xHtml += `<div class="chart-x-label"><span>${esc(t)}</span></div>`;
+  }
+
+  // Reference lines (absolute positioned inside .chart-bars)
+  const refLines =
+    `<div style="position:absolute;left:0;right:0;bottom:${minAbsBot}px;height:0;border-top:2px dashed #E53E3E;z-index:4;pointer-events:none">` +
+    `<span style="position:absolute;right:2px;top:-10px;font-size:9px;font-weight:700;color:#E53E3E">mín ${minAbsVal}</span></div>` +
+    `<div style="position:absolute;left:0;right:0;bottom:${normBot}px;height:0;border-top:2px dashed #DD6B20;z-index:4;pointer-events:none">` +
+    `<span style="position:absolute;right:2px;top:-10px;font-size:9px;font-weight:700;color:#DD6B20">objetivo ${normVal}</span></div>`;
+
+  return `<div class="coverage-chart">
+    <h3>📊 Cobertura Visual</h3>
+    <div class="chart-wrap">
+      <div class="chart-y-axis" style="height:${CHART_H}px">${yAxisHtml}</div>
+      <div class="chart-scroll">
+        <div class="chart-area">
+          <div class="chart-bars" style="height:${CHART_H}px">${refLines}${barsHtml}</div>
+          <div class="chart-x-axis">${xHtml}</div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-legend">
+      <div class="chart-legend-item"><div class="chart-legend-swatch" style="background:#4A90D9"></div><span>LDSup</span></div>
+      <div class="chart-legend-item"><div class="chart-legend-swatch" style="background:#F5A623"></div><span>Support</span></div>
+      <div class="chart-legend-item"><div class="chart-legend-swatch" style="background:#7BC67E"></div><span>Coach</span></div>
+      <div class="chart-legend-item"><span style="color:#E53E3E;font-size:11px">- - mín ${minAbsVal} (absoluto)</span></div>
+      <div class="chart-legend-item"><span style="color:#DD6B20;font-size:11px">- - objetivo ${normVal} (normal)</span></div>
+    </div>
+  </div>`;
+}
+
+// ── Chart Tooltip helpers ────────────────────────────────────────────────────
+function showChartTooltip(e, bar) {
+  const tt = document.getElementById('chart-tooltip-box');
+  if (!tt) return;
+  const time    = bar.dataset.time;
+  const ldsup   = +bar.dataset.ldsup;
+  const support = +bar.dataset.support;
+  const coach   = +bar.dataset.coach;
+  const total   = +bar.dataset.total;
+  const minAbs  = BUSINESS_RULES.coverage.lunchTrans.totalFloor;
+  const minNorm = BUSINESS_RULES.coverage.normal.totalFloor;
+  const icon    = total < minAbs ? '🔴' : (total < minNorm ? '⚠️' : '✅');
+  tt.innerHTML =
+    `<div class="chart-tooltip-time">${esc(time)}</div>` +
+    `<div class="chart-tooltip-div"></div>` +
+    `<div>LDSup: ${ldsup}</div>` +
+    `<div>Support: ${support}</div>` +
+    `<div>Coach: ${coach}</div>` +
+    `<div class="chart-tooltip-div"></div>` +
+    `<div class="chart-tooltip-total">Total Floor: ${total} ${icon}</div>`;
+  tt.classList.add('visible');
+  moveChartTooltip(e);
+}
+
+function hideChartTooltip() {
+  const tt = document.getElementById('chart-tooltip-box');
+  if (tt) tt.classList.remove('visible');
+}
+
+function moveChartTooltip(e) {
+  const tt = document.getElementById('chart-tooltip-box');
+  if (!tt || !tt.classList.contains('visible')) return;
+  tt.style.left = (e.clientX + 14) + 'px';
+  tt.style.top  = (e.clientY - 10) + 'px';
+}
+
 function buildLegend() {
   let h = '<div class="legend">';
   for (const [act,color] of Object.entries(COLORS)) {
@@ -1510,7 +1688,7 @@ function render(patIdx) {
   renderAlerts(patIdx);
   document.getElementById('quick-stats').innerHTML = buildQuickStats(patIdx);
   document.getElementById('schedule-container').innerHTML =
-    buildScheduleTable(patIdx) + buildSummaryTable(patIdx) + buildLegend() + buildRulesSection();
+    buildScheduleTable(patIdx) + buildSummaryTable(patIdx) + buildCoverageChart(patIdx) + buildLegend() + buildRulesSection();
 }
 
 // ── Weekly View ──────────────────────────────────────────────────────────────
@@ -1742,9 +1920,11 @@ function cellClick(evt, patIdx, rowIdx, colIdx) {
     saveState();
     // Refresh hours cell for this row
     const hcell = document.querySelector(`td.col-hours[data-hours-row="${rowIdx}"]`);
-    // Re-render summary & alerts
+    // Re-render summary, chart & alerts
     const sc=document.querySelector('.summary-section');
     if (sc) { const t=document.createElement('div'); t.innerHTML=buildSummaryTable(patIdx); sc.replaceWith(t.firstChild); }
+    const cc=document.querySelector('.coverage-chart');
+    if (cc) { const t2=document.createElement('div'); t2.innerHTML=buildCoverageChart(patIdx); cc.replaceWith(t2.firstChild); }
     renderAlerts(patIdx);
     // Refresh quick stats
     document.getElementById('quick-stats').innerHTML = buildQuickStats(patIdx);
