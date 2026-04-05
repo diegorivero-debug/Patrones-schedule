@@ -1067,6 +1067,11 @@ function escAttr(str) {
   return esc(str).replace(/"/g, '&quot;');
 }
 
+// Returns the display name for a team member (shortName if set, otherwise full name).
+function memberShortDisplay(member) {
+  return member.shortName || member.name || '';
+}
+
 function renderNameCell(row) {
   if (!row.assignedId) return esc(row.role);
   const isLead = row.role === 'Lead';
@@ -1075,7 +1080,7 @@ function renderNameCell(row) {
     : teamData.managers.find(m => m.id === row.assignedId);
   if (!member) return esc(row.role);
   const roleCls = isLead ? 'role-lead' : 'role-mgr';
-  return `<span class="name-short" title="${escAttr(member.name)}">${esc(member.shortName || member.name)}</span>`
+  return `<span class="name-short" title="${escAttr(member.name)}">${esc(memberShortDisplay(member))}</span>`
        + `<span class="name-role-label ${roleCls}">${esc(row.role)}</span>`;
 }
 
@@ -1095,8 +1100,8 @@ function openAssignDropdown(e, patIdx, rowIdx) {
   for (const m of members) {
     const active = row.assignedId === m.id ? ' active-assign' : '';
     // Use data attribute for id to avoid any escaping issues in inline handler
-    inner += `<div class="assign-dropdown-item${active}" data-mid="${esc(m.id)}"
-      onclick="assignPerson(${patIdx},${rowIdx},this.dataset.mid)">${esc(m.shortName || m.name)}</div>`;
+    inner += `<div class="assign-dropdown-item${active}" data-mid="${escAttr(m.id)}"
+      onclick="assignPerson(${patIdx},${rowIdx},this.dataset.mid)">${esc(memberShortDisplay(m))}</div>`;
   }
   drop.innerHTML = inner;
 
@@ -1967,7 +1972,7 @@ function buildWeeklyView() {
     let leadLabel = `Lead ${i + 1}`;
     if (firstLeadRow && firstLeadRow.assignedId) {
       const m = teamData.leads.find(tm => tm.id === firstLeadRow.assignedId);
-      if (m) leadLabel = m.shortName || m.name;
+      if (m) leadLabel = memberShortDisplay(m);
     }
     h += `<td class="wk-person" title="Lead ${i + 1}">${esc(leadLabel)}</td>`;
     h += `<td class="wk-role-col">Lead</td>`;
@@ -1999,7 +2004,7 @@ function buildWeeklyView() {
     let mgrLabel = `Mgr ${i + 1}`;
     if (firstMgrRow && firstMgrRow.assignedId) {
       const m = teamData.managers.find(tm => tm.id === firstMgrRow.assignedId);
-      if (m) mgrLabel = m.shortName || m.name;
+      if (m) mgrLabel = memberShortDisplay(m);
     }
     h += `<td class="wk-person" title="Mgr ${i + 1}">${esc(mgrLabel)}</td>`;
     h += `<td class="wk-role-col">Manager</td>`;
@@ -2080,7 +2085,7 @@ function buildWeeklyView() {
     // Managers with no floor-role assignments (total=0) are considered balanced.
     const imbalance = total > 0 && Math.abs(coach - support) > 1;
     const emoji     = imbalance ? '⚠️' : '✅';
-    const ariaLabel = imbalance ? ` aria-label="${esc(mgrEquity[i].label || `Mgr ${i + 1}`)}: desequilibrio de roles (${coach}C/${support}S)"` : '';
+    const ariaLabel = imbalance ? ` aria-label="${escAttr(`${mgrEquity[i].label || `Mgr ${i + 1}`}: desequilibrio de roles (${coach}C/${support}S)`)}"` : '';
     h += `<div class="equity-item${imbalance ? ' eq-warning' : ''}"${ariaLabel}>${esc(mgrEquity[i].label || `Mgr ${i + 1}`)}: ${coach}C/${support}S ${emoji}</div>`;
   }
   h += '</div></div>';
