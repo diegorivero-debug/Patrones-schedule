@@ -2779,17 +2779,19 @@ function renderWhatifImpact() {
   }
   if (minSimFloor === Infinity) minSimFloor = 0;
   const needed = Math.max(0, BUSINESS_RULES.coverage.lunchTrans.totalFloor - minSimFloor);
+  // pl(n, sg, pl) — Spanish pluralizer helper for this panel
+  const pl = (n, sg, plr) => n === 1 ? sg : plr;
   const suggHtml = needed > 0
-    ? `<div style="color:#553c9a;">💡 Sugerencia: Necesitas ${needed} persona${needed !== 1 ? 's' : ''} adicional${needed !== 1 ? 'es' : ''} en floor</div>`
+    ? `<div style="color:#553c9a;">💡 Sugerencia: Necesitas ${needed} ${pl(needed, 'persona adicional', 'personas adicionales')} en floor</div>`
     : '';
 
   const absentCount = whatifAbsent.length;
   panel.innerHTML = `
-    <div style="font-weight:700;color:#553c9a;margin-bottom:4px;">🔮 Simulación: ${absentCount} persona${absentCount !== 1 ? 's' : ''} ausente${absentCount !== 1 ? 's' : ''}</div>
+    <div style="font-weight:700;color:#553c9a;margin-bottom:4px;">🔮 Simulación: ${absentCount} ${pl(absentCount, 'persona ausente', 'personas ausentes')}</div>
     <div style="border-top:1px solid #d6bcfa;padding-top:4px;margin-bottom:4px;">${absentHtml}</div>
     <div style="border-top:1px solid #d6bcfa;padding-top:4px;">
       <div style="color:${scoreDiff < 0 ? 'var(--red)' : 'var(--green)'};">📉 Score: ${baseScore.score}% → ${simScore.score}% (${scoreDiff >= 0 ? '+' : ''}${scoreDiff} pts)</div>
-      ${newUncovered > 0 ? `<div style="color:var(--red);">🔴 ${newUncovered} slot${newUncovered !== 1 ? 's' : ''} nuevo${newUncovered !== 1 ? 's' : ''} sin cobertura mínima</div>` : ''}
+      ${newUncovered > 0 ? `<div style="color:var(--red);">🔴 ${newUncovered} ${pl(newUncovered, 'slot nuevo', 'slots nuevos')} sin cobertura mínima</div>` : ''}
       ${peakAffected ? '<div style="color:var(--orange);">⚠️ Horas pico 12:00-14:00 afectadas</div>' : ''}
       ${suggHtml}
     </div>`;
