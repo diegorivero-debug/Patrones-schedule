@@ -855,10 +855,10 @@ function showToast(msg, type) {
 }
 
 function countDays(from, to) {
-  // Use UTC to avoid DST issues
-  const a = Date.UTC(...from.split('-').map((v,i) => i===1 ? +v-1 : +v));
-  const b = Date.UTC(...to.split('-').map((v,i) => i===1 ? +v-1 : +v));
-  return Math.max(0, Math.round((b - a) / 86400000) + 1);
+  // Use UTC to avoid DST issues. 'from'/'to' are 'YYYY-MM-DD' strings.
+  // split gives [year, month, day]; month is index 1 (0-based in JS Date).
+  const toUTC = s => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y, m-1, d); };
+  return Math.max(0, Math.round((toUTC(to) - toUTC(from)) / 86400000) + 1);
 }
 
 function getWeekNumber(date) {
@@ -1443,12 +1443,16 @@ function saveMemberEdit(id) {
   closeModal();
   renderRoster();
   showToast('Datos guardados correctamente', 'ok');
+}
+
+function deleteMember(id) {
   if (!confirm('¿Eliminar esta persona del equipo?')) return;
   teamData.leads = teamData.leads.filter(m => m.id !== id);
   teamData.managers = teamData.managers.filter(m => m.id !== id);
   saveTeam();
   closeModal();
   renderRoster();
+  showToast('Persona eliminada del equipo', 'info');
 }
 
 // ===== VIEW MEMBER MODAL (FICHA) =====
