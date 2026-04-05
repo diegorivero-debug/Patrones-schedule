@@ -459,7 +459,6 @@
   td.act-cell.drag-target-invalid { box-shadow: inset 0 0 0 3px var(--red); }
   @keyframes cellDragFlash { from { filter: brightness(1.6); } to { filter: brightness(1); } }
   td.act-cell.drag-flash { animation: cellDragFlash 0.3s ease; }
-
 </style>
 </head>
 <body>
@@ -1186,6 +1185,11 @@ function getActiveRows(patIdx) {
   return rows.filter((_, i) => !whatifAbsent.includes(i));
 }
 
+// Returns all rows for a pattern regardless of what-if mode (for base-score comparisons).
+function getBaseRows(patIdx) {
+  return currentState[patIdx];
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ALERTS / VALIDATION
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1531,8 +1535,8 @@ function buildPersonRow(patIdx, rowIdx, row, cls) {
 }
 
 // ── Summary ──────────────────────────────────────────────────────────────────
-function calcSummary(patIdx) {
-  const rows = getActiveRows(patIdx), n = TIME_SLOTS.length;
+function calcSummaryForRows(rows) {
+  const n = TIME_SLOTS.length;
   const c = {LDSup:new Array(n).fill(0),LDOPS:new Array(n).fill(0),Coach:new Array(n).fill(0),MgrSup:new Array(n).fill(0),AOR:new Array(n).fill(0),Lunch:new Array(n).fill(0),DD:new Array(n).fill(0),MEETING:new Array(n).fill(0)};
   for (const row of rows) {
     for (let i=0;i<n;i++) {
@@ -1552,6 +1556,10 @@ function calcSummary(patIdx) {
   const MgrsOnFloor = c.Coach.map((v,i)=>v+c.MgrSup[i]);
   const hasMeeting = c.MEETING.some(v=>v>0);
   return {counts:c, TotalSupport, TotalFloor, MgrsOnFloor, hasMeeting};
+}
+
+function calcSummary(patIdx) {
+  return calcSummaryForRows(getActiveRows(patIdx));
 }
 
 function buildSummaryTable(patIdx) {
@@ -1763,8 +1771,7 @@ function buildRulesSection() {
 }
 
 // ── Score de Cobertura ────────────────────────────────────────────────────────
-function calculateScore(patIdx) {
-  const rows = getActiveRows(patIdx);
+function calculateScoreForRows(rows, patIdx) {
   const n = TIME_SLOTS.length;
   const openStart = getOpenStart(patIdx);
   const openEnd   = getOpenEnd();
@@ -1909,6 +1916,10 @@ function calculateScore(patIdx) {
       text: `${peakLowSlots} slot${peakLowSlots > 1 ? 's' : ''} hora pico bajo mínimo (-${peakLowSlots * 3})` });
 
   return { score, obtained, max: maxSlotPoints, details };
+}
+
+function calculateScore(patIdx) {
+  return calculateScoreForRows(getActiveRows(patIdx), patIdx);
 }
 
 function scoreColor(score) {
@@ -2716,16 +2727,13 @@ function renderWhatifImpact() {
 
   const allRows = currentState[activePattern];
 
-  // Base score (temporarily disable what-if filter)
-  const savedAbsent = whatifAbsent;
-  whatifAbsent = [];
-  const baseScore   = calculateScore(activePattern);
-  const baseSummary = calcSummary(activePattern);
-  whatifAbsent = savedAbsent;
+  // Base score computed directly from all rows (no filtering)
+  const baseScore   = calculateScoreForRows(getBaseRows(activePattern), activePattern);
+  const baseSummary = calcSummaryForRows(getBaseRows(activePattern));
 
   // Simulated score with absent persons removed
-  const simScore   = calculateScore(activePattern);
-  const simSummary = calcSummary(activePattern);
+  const simScore   = calculateScoreForRows(getActiveRows(activePattern), activePattern);
+  const simSummary = calcSummaryForRows(getActiveRows(activePattern));
   const scoreDiff  = simScore.score - baseScore.score;
 
   // Count new uncovered slots
@@ -2843,8 +2851,8 @@ function renderWhatifImpact() {
     if (!cellDragData) return;
     const td = e.target.closest && e.target.closest('td.act-cell');
     if (!td) return;
-    // Only remove if truly leaving the cell (not moving to a child element)
-    if (!td.contains(e.relatedTarget)) {
+    // Only remove if truly leaving the cell (relatedTarget may be null when leaving the viewport)
+    if (e.relatedTarget === null || !td.contains(e.relatedTarget)) {
       td.classList.remove('drag-target-valid', 'drag-target-invalid');
     }
   });
@@ -2894,7 +2902,7 @@ function renderWhatifImpact() {
       );
       if (destTd) {
         destTd.classList.add('drag-flash');
-        setTimeout(() => destTd.classList.remove('drag-flash'), 350);
+        setTimeout(() => destTd.classList.remove('drag-flash'), 300);
       }
     });
   });
