@@ -434,6 +434,31 @@
   body.dark .shift-popover { background: var(--surface); }
   body.dark .shift-popover select { background: var(--surface-alt); color: var(--text); }
 
+  /* ── What-if Simulator ─────────────────────────────────── */
+  .btn-whatif { color: #6b46c1 !important; border-color: #d6bcfa !important; }
+  #whatif-banner { display: none; background: #f5f0ff; border-bottom: 2px solid #805ad5; }
+  #whatif-banner.active { display: block; }
+  body.dark #whatif-banner { background: #1a0d2e; border-bottom-color: #553c9a; }
+  .whatif-banner-msg { font-size: .85rem; font-weight: 700; color: #6b46c1; padding: 8px 24px; }
+  body.dark .whatif-banner-msg { color: #b794f4; }
+  #whatif-impact { padding: 0 24px 12px; font-size: .82rem; line-height: 1.6; }
+  tr.whatif-absent td:not(.col-drag):not(.col-role):not(.col-shift):not(.col-hours):not(.col-actions) { opacity: 0.18; }
+  tr.whatif-absent td.col-role { background: #faf5ff !important; color: #6b46c1 !important; text-decoration: line-through; }
+  body.dark tr.whatif-absent td.col-role { background: #2d1f4a !important; color: #b794f4 !important; }
+  .whatif-mode tr.lead-row td.col-role,
+  .whatif-mode tr.mgr-row td.col-role { cursor: pointer; }
+  .whatif-mode tr.lead-row td.col-role:hover,
+  .whatif-mode tr.mgr-row td.col-role:hover { box-shadow: inset 0 0 0 2px #805ad5; }
+  body.dark .whatif-mode tr.lead-row td.col-role:hover,
+  body.dark .whatif-mode tr.mgr-row td.col-role:hover { box-shadow: inset 0 0 0 2px #b794f4; }
+
+  /* ── Activity Drag & Drop ─────────────────────────────── */
+  td.act-cell[draggable="true"] { cursor: grab; }
+  td.act-cell.cell-dragging { opacity: 0.4; outline: 2px dashed var(--accent); cursor: grabbing; }
+  td.act-cell.drag-target-valid { box-shadow: inset 0 0 0 3px var(--accent); }
+  td.act-cell.drag-target-invalid { box-shadow: inset 0 0 0 3px var(--red); }
+  @keyframes cellDragFlash { from { filter: brightness(1.6); } to { filter: brightness(1); } }
+  td.act-cell.drag-flash { animation: cellDragFlash 0.3s ease; }
 </style>
 </head>
 <body>
@@ -466,6 +491,7 @@
     <button class="btn-alerts" id="alerts-btn" onclick="toggleAlertDrawer()">🔔 Alertas<span id="alerts-badge" class="alert-badge ok">0</span></button>
     <button class="btn-add"    onclick="openAddFigure()">➕ Añadir Figura</button>
     <button class="btn-gen"    onclick="openGenerate()">⚙️ Generar Patrón</button>
+    <button class="btn-whatif" id="btn-whatif" onclick="toggleWhatif()">🔮 What-if</button>
     <button class="btn-rules"  onclick="openRules()">📋 Reglas</button>
     <button class="btn-export" onclick="exportCSV()">⬇️ Exportar CSV</button>
     <button class="btn-export" onclick="window.print()">🖨️ Imprimir</button>
@@ -480,6 +506,11 @@
     <button class="alert-drawer-toggle" id="alert-drawer-btn">▼</button>
   </div>
   <div id="alert-drawer-list" class="alert-drawer-list"></div>
+</div>
+
+<div id="whatif-banner">
+  <div class="whatif-banner-msg">🔮 MODO WHAT-IF — Haz clic en una persona para simular su ausencia</div>
+  <div id="whatif-impact"></div>
 </div>
 <div class="main">
   <div id="quick-stats" class="quick-stats"></div>
@@ -879,6 +910,13 @@ let rules = loadRules();
 let activePattern = 0;
 let openDropdownEl = null;
 
+// ── What-if state ────────────────────────────────────────────────────────────
+let whatifMode   = false;
+let whatifAbsent = []; // rowIdx values of absent persons in activePattern (not persisted)
+
+// ── Cell Drag & Drop state ───────────────────────────────────────────────────
+let cellDragData = null; // {patIdx, rowIdx, colIdx, activity}
+
 // ── Team data ────────────────────────────────────────────────────────────────
 function loadTeam() {
   try {
@@ -1086,6 +1124,8 @@ function renderNameCell(row) {
 
 // ── Manual assignment dropdown ────────────────────────────────────────────────
 function openAssignDropdown(e, patIdx, rowIdx) {
+  // In What-if mode, clicking a name cell toggles absence instead of opening dropdown
+  if (whatifMode) { toggleAbsence(patIdx, rowIdx); return; }
   e.stopPropagation();
   closeAssignDropdown();
   const row     = currentState[patIdx][rowIdx];
@@ -1136,10 +1176,25 @@ function assignPerson(patIdx, rowIdx, memberId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// WHAT-IF: ACTIVE ROWS FILTER
+// ═══════════════════════════════════════════════════════════════════════════════
+// Returns the rows for a pattern, filtering out absent persons when in what-if mode.
+function getActiveRows(patIdx) {
+  const rows = currentState[patIdx];
+  if (!whatifMode || whatifAbsent.length === 0) return rows;
+  return rows.filter((_, i) => !whatifAbsent.includes(i));
+}
+
+// Returns all rows for a pattern regardless of what-if mode (for base-score comparisons).
+function getBaseRows(patIdx) {
+  return currentState[patIdx];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ALERTS / VALIDATION
 // ═══════════════════════════════════════════════════════════════════════════════
 function validatePattern(patIdx) {
-  const rows = currentState[patIdx];
+  const rows = getActiveRows(patIdx);
   const n = TIME_SLOTS.length;
   const alerts = [];
   const openEnd = getOpenEnd();
@@ -1471,7 +1526,8 @@ function buildPersonRow(patIdx, rowIdx, row, cls) {
   h += `<td class="col-shift" onclick="openShiftEdit(event,${patIdx},${rowIdx})" title="Clic para editar turno"><span class="shift-text">${esc(row.shift)}</span><span class="shift-edit-icon">✏️</span></td>`;
   for (let c=0;c<TIME_SLOTS.length;c++) {
     const a=row.acts[c], bg=getColor(a), fg=textColor(bg);
-    h += `<td class="act-cell" data-pat="${patIdx}" data-row="${rowIdx}" data-col="${c}" style="background:${bg};color:${fg}" onclick="cellClick(event,${patIdx},${rowIdx},${c})">${esc(a)}</td>`;
+    const draggable = a ? ' draggable="true"' : '';
+    h += `<td class="act-cell"${draggable} data-pat="${patIdx}" data-row="${rowIdx}" data-col="${c}" style="background:${bg};color:${fg}" onclick="cellClick(event,${patIdx},${rowIdx},${c})">${esc(a)}</td>`;
   }
   h += `<td class="col-hours">${buildHoursCell(row)}</td>`;
   h += `<td class="col-actions"><button class="del-btn" title="Eliminar persona" onclick="deletePerson(${patIdx},${rowIdx})">✕</button></td>`;
@@ -1479,8 +1535,8 @@ function buildPersonRow(patIdx, rowIdx, row, cls) {
 }
 
 // ── Summary ──────────────────────────────────────────────────────────────────
-function calcSummary(patIdx) {
-  const rows = currentState[patIdx], n = TIME_SLOTS.length;
+function calcSummaryForRows(rows) {
+  const n = TIME_SLOTS.length;
   const c = {LDSup:new Array(n).fill(0),LDOPS:new Array(n).fill(0),Coach:new Array(n).fill(0),MgrSup:new Array(n).fill(0),AOR:new Array(n).fill(0),Lunch:new Array(n).fill(0),DD:new Array(n).fill(0),MEETING:new Array(n).fill(0)};
   for (const row of rows) {
     for (let i=0;i<n;i++) {
@@ -1500,6 +1556,10 @@ function calcSummary(patIdx) {
   const MgrsOnFloor = c.Coach.map((v,i)=>v+c.MgrSup[i]);
   const hasMeeting = c.MEETING.some(v=>v>0);
   return {counts:c, TotalSupport, TotalFloor, MgrsOnFloor, hasMeeting};
+}
+
+function calcSummary(patIdx) {
+  return calcSummaryForRows(getActiveRows(patIdx));
 }
 
 function buildSummaryTable(patIdx) {
@@ -1711,8 +1771,7 @@ function buildRulesSection() {
 }
 
 // ── Score de Cobertura ────────────────────────────────────────────────────────
-function calculateScore(patIdx) {
-  const rows = currentState[patIdx];
+function calculateScoreForRows(rows, patIdx) {
   const n = TIME_SLOTS.length;
   const openStart = getOpenStart(patIdx);
   const openEnd   = getOpenEnd();
@@ -1859,6 +1918,10 @@ function calculateScore(patIdx) {
   return { score, obtained, max: maxSlotPoints, details };
 }
 
+function calculateScore(patIdx) {
+  return calculateScoreForRows(getActiveRows(patIdx), patIdx);
+}
+
 function scoreColor(score) {
   if (score >= 90) return 'var(--green)';
   if (score >= 70) return 'var(--orange)';
@@ -1875,7 +1938,7 @@ function toggleScoreTooltip(id) {
 
 // ── Quick Stats ──────────────────────────────────────────────────────────────
 function buildQuickStats(patIdx) {
-  const rows = currentState[patIdx];
+  const rows = getActiveRows(patIdx);
   const leads = rows.filter(r=>r.role==='Lead').length;
   const mgrs = rows.filter(r=>r.role==='Manager').length;
   const {TotalFloor, TotalSupport} = calcSummary(patIdx);
@@ -1932,6 +1995,17 @@ function buildQuickStats(patIdx) {
   `;
 }
 
+// ── Apply what-if visuals after render ───────────────────────────────────────
+function applyWhatifVisuals() {
+  if (!whatifMode) return;
+  const main = document.querySelector('.main');
+  if (main) main.classList.add('whatif-mode');
+  for (const rowIdx of whatifAbsent) {
+    const tr = document.querySelector(`tr[data-pat="${activePattern}"][data-row="${rowIdx}"]`);
+    if (tr) tr.classList.add('whatif-absent');
+  }
+}
+
 // ── Main render ──────────────────────────────────────────────────────────────
 function render(patIdx) {
   closeDropdown();
@@ -1941,6 +2015,7 @@ function render(patIdx) {
   document.getElementById('quick-stats').innerHTML = buildQuickStats(patIdx);
   document.getElementById('schedule-container').innerHTML =
     buildScheduleTable(patIdx) + buildSummaryTable(patIdx) + buildCoverageChart(patIdx) + buildLegend() + buildRulesSection();
+  applyWhatifVisuals();
 }
 
 // ── Weekly View ──────────────────────────────────────────────────────────────
@@ -2131,6 +2206,11 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
+    // Clear what-if absences when switching patterns (indices differ per pattern)
+    if (whatifMode) {
+      whatifAbsent = [];
+      renderWhatifImpact();
+    }
     if (btn.dataset.pat === 'week') {
       renderWeeklyView();
     } else {
@@ -2210,6 +2290,11 @@ document.addEventListener('click', e => { if (openDropdownEl&&!openDropdownEl.co
 // ═══════════════════════════════════════════════════════════════════════════════
 function switchSeason(season) {
   if (season === activeSeason) return;
+  // Clear what-if absences when switching season
+  if (whatifMode) {
+    whatifAbsent = [];
+    renderWhatifImpact();
+  }
   // Save current state for current season
   allSeasonState[activeSeason] = currentState;
   try { localStorage.setItem(LS_KEY_PATTERNS, JSON.stringify(allSeasonState)); } catch(e) {}
@@ -2471,6 +2556,8 @@ function resetPattern() {
 let dragSrcPat = -1, dragSrcRow = -1;
 
 function onDragStart(e, pat, row) {
+  // If the drag originated on an act-cell, let the cell DnD handler take over
+  if (e.target.closest && e.target.closest('td.act-cell[draggable]')) return;
   dragSrcPat = pat; dragSrcRow = row;
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', String(row));
@@ -2479,6 +2566,7 @@ function onDragStart(e, pat, row) {
 }
 
 function onDragOver(e) {
+  if (cellDragData) return; // Cell drag in progress — skip row highlight
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
   document.querySelectorAll('tr.drag-over').forEach(el => el.classList.remove('drag-over'));
@@ -2486,10 +2574,12 @@ function onDragOver(e) {
 }
 
 function onDragLeave(e) {
+  if (cellDragData) return; // Cell drag in progress
   e.currentTarget.classList.remove('drag-over');
 }
 
 function onDrop(e, pat, targetRow) {
+  if (cellDragData) return; // Cell drag in progress — skip row drop
   e.preventDefault();
   document.querySelectorAll('tr.drag-over, tr.dragging').forEach(el => { el.classList.remove('drag-over'); el.classList.remove('dragging'); });
   if (dragSrcPat !== pat || dragSrcRow === targetRow) { dragSrcPat = -1; dragSrcRow = -1; return; }
@@ -2568,6 +2658,263 @@ function confirmShiftEdit(patIdx, rowIdx) {
   saveState();
   render(activePattern);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WHAT-IF SIMULATOR
+// ═══════════════════════════════════════════════════════════════════════════════
+function toggleWhatif() {
+  // What-if only works on individual pattern views (not weekly)
+  const activeTab = document.querySelector('.tab-btn.active');
+  if (activeTab && activeTab.dataset.pat === 'week') return;
+
+  whatifMode = !whatifMode;
+
+  if (!whatifMode) {
+    // Exiting what-if mode
+    whatifAbsent = [];
+    const btn = document.getElementById('btn-whatif');
+    if (btn) btn.textContent = '🔮 What-if';
+    const banner = document.getElementById('whatif-banner');
+    if (banner) banner.classList.remove('active');
+    const main = document.querySelector('.main');
+    if (main) main.classList.remove('whatif-mode');
+    render(activePattern);
+    return;
+  }
+
+  // Entering what-if mode
+  const btn = document.getElementById('btn-whatif');
+  if (btn) btn.textContent = '🔮 Salir What-if';
+  const banner = document.getElementById('whatif-banner');
+  if (banner) banner.classList.add('active');
+  const main = document.querySelector('.main');
+  if (main) main.classList.add('whatif-mode');
+  renderWhatifImpact();
+}
+
+function toggleAbsence(patIdx, rowIdx) {
+  if (!whatifMode) return;
+  const idx = whatifAbsent.indexOf(rowIdx);
+  if (idx >= 0) {
+    whatifAbsent.splice(idx, 1);
+  } else {
+    whatifAbsent.push(rowIdx);
+  }
+  // Toggle visual class on the row without full re-render
+  const tr = document.querySelector(`tr[data-pat="${patIdx}"][data-row="${rowIdx}"]`);
+  if (tr) tr.classList.toggle('whatif-absent', whatifAbsent.includes(rowIdx));
+
+  // Update impact panel
+  renderWhatifImpact();
+
+  // Update quick stats, alerts, summary, and chart (partial update)
+  renderAlerts(activePattern);
+  document.getElementById('quick-stats').innerHTML = buildQuickStats(activePattern);
+  const sc = document.querySelector('.summary-section');
+  if (sc) { const t = document.createElement('div'); t.innerHTML = buildSummaryTable(activePattern); sc.replaceWith(t.firstChild); }
+  const cc = document.querySelector('.coverage-chart');
+  if (cc) { const t2 = document.createElement('div'); t2.innerHTML = buildCoverageChart(activePattern); cc.replaceWith(t2.firstChild); }
+}
+
+function renderWhatifImpact() {
+  const panel = document.getElementById('whatif-impact');
+  if (!panel) return;
+
+  if (whatifAbsent.length === 0) {
+    panel.innerHTML = '<p style="font-size:.82rem;color:#6b46c1;font-style:italic;margin:0">Haz clic en el nombre de una persona para simular su ausencia.</p>';
+    return;
+  }
+
+  const allRows = currentState[activePattern];
+
+  // Base score computed directly from all rows (no filtering)
+  const baseScore   = calculateScoreForRows(getBaseRows(activePattern), activePattern);
+  const baseSummary = calcSummaryForRows(getBaseRows(activePattern));
+
+  // Simulated score with absent persons removed
+  const simScore   = calculateScoreForRows(getActiveRows(activePattern), activePattern);
+  const simSummary = calcSummaryForRows(getActiveRows(activePattern));
+  const scoreDiff  = simScore.score - baseScore.score;
+
+  // Count new uncovered slots
+  const openStart = getOpenStart(activePattern);
+  const openEnd   = getOpenEnd();
+  let newUncovered = 0;
+  for (let i = openStart; i <= openEnd; i++) {
+    if (baseSummary.TotalFloor[i] >= BUSINESS_RULES.coverage.lunchTrans.totalFloor &&
+        simSummary.TotalFloor[i]  <  BUSINESS_RULES.coverage.lunchTrans.totalFloor) {
+      newUncovered++;
+    }
+  }
+
+  // Check peak 12:00–14:00
+  const peakIdx1 = TIME_SLOTS.indexOf('12:00');
+  const peakIdx2 = TIME_SLOTS.indexOf('14:00');
+  let peakAffected = false;
+  for (let i = peakIdx1; i < peakIdx2 && i >= 0; i++) {
+    if (simSummary.TotalFloor[i] < BUSINESS_RULES.coverage.normal.totalFloor) { peakAffected = true; break; }
+  }
+
+  // Build absent list
+  let absentHtml = '';
+  for (const rowIdx of whatifAbsent) {
+    const row = allRows[rowIdx];
+    if (!row) continue;
+    let name = row.role;
+    if (row.assignedId) {
+      const isLead = row.role === 'Lead';
+      const m = isLead
+        ? teamData.leads.find(x => x.id === row.assignedId)
+        : teamData.managers.find(x => x.id === row.assignedId);
+      if (m) name = memberShortDisplay(m);
+    }
+    const floorRole = getFloorRoleForRow(row) || '—';
+    absentHtml += `<div>❌ <strong>${esc(name)}</strong> (${esc(floorRole)}, ${esc(row.shift)}) — ausente</div>`;
+  }
+
+  // Suggestion based on worst simulated floor slot
+  let minSimFloor = Infinity;
+  for (let i = openStart; i <= openEnd; i++) {
+    if (simSummary.TotalFloor[i] < minSimFloor) minSimFloor = simSummary.TotalFloor[i];
+  }
+  if (minSimFloor === Infinity) minSimFloor = 0;
+  const needed = Math.max(0, BUSINESS_RULES.coverage.lunchTrans.totalFloor - minSimFloor);
+  // pl(n, sg, pl) — Spanish pluralizer helper for this panel
+  const pl = (n, sg, plr) => n === 1 ? sg : plr;
+  const suggHtml = needed > 0
+    ? `<div style="color:#553c9a;">💡 Sugerencia: Necesitas ${needed} ${pl(needed, 'persona adicional', 'personas adicionales')} en floor</div>`
+    : '';
+
+  const absentCount = whatifAbsent.length;
+  panel.innerHTML = `
+    <div style="font-weight:700;color:#553c9a;margin-bottom:4px;">🔮 Simulación: ${absentCount} ${pl(absentCount, 'persona ausente', 'personas ausentes')}</div>
+    <div style="border-top:1px solid #d6bcfa;padding-top:4px;margin-bottom:4px;">${absentHtml}</div>
+    <div style="border-top:1px solid #d6bcfa;padding-top:4px;">
+      <div style="color:${scoreDiff < 0 ? 'var(--red)' : 'var(--green)'};">📉 Score: ${baseScore.score}% → ${simScore.score}% (${scoreDiff >= 0 ? '+' : ''}${scoreDiff} pts)</div>
+      ${newUncovered > 0 ? `<div style="color:var(--red);">🔴 ${newUncovered} ${pl(newUncovered, 'slot nuevo', 'slots nuevos')} sin cobertura mínima</div>` : ''}
+      ${peakAffected ? '<div style="color:var(--orange);">⚠️ Horas pico 12:00-14:00 afectadas</div>' : ''}
+      ${suggHtml}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTIVITY CELL DRAG & DROP  (event delegation on #schedule-container)
+// ═══════════════════════════════════════════════════════════════════════════════
+(function initCellDragDrop() {
+  const container = document.getElementById('schedule-container');
+  if (!container) return;
+
+  container.addEventListener('dragstart', function(e) {
+    const td = e.target.closest && e.target.closest('td.act-cell[draggable]');
+    if (!td) return;
+
+    const pat = +td.dataset.pat;
+    const row = +td.dataset.row;
+    const col = +td.dataset.col;
+    const act = currentState[pat][row].acts[col];
+    if (!act) { e.preventDefault(); return; }
+
+    cellDragData = { patIdx: pat, rowIdx: row, colIdx: col, activity: act };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', 'celldrag');
+    setTimeout(() => td.classList.add('cell-dragging'), 0);
+  });
+
+  container.addEventListener('dragover', function(e) {
+    if (!cellDragData) return;
+    const td = e.target.closest && e.target.closest('td.act-cell');
+    if (!td) return;
+
+    e.preventDefault();
+    e.stopPropagation(); // Prevent row drag-over from also firing
+    e.dataTransfer.dropEffect = 'move';
+
+    const pat = +td.dataset.pat;
+    const row = +td.dataset.row;
+    const col = +td.dataset.col;
+
+    // Same cell: remove indicators
+    if (pat === cellDragData.patIdx && row === cellDragData.rowIdx && col === cellDragData.colIdx) {
+      td.classList.remove('drag-target-valid', 'drag-target-invalid');
+      return;
+    }
+
+    // Validate: target col must be within target row's shift
+    const rowData = currentState[pat][row];
+    const [si, ei] = shiftIndices(rowData.shift);
+    const isValid  = col >= si && col < ei;
+
+    document.querySelectorAll('td.act-cell.drag-target-valid, td.act-cell.drag-target-invalid')
+      .forEach(el => el.classList.remove('drag-target-valid', 'drag-target-invalid'));
+    td.classList.add(isValid ? 'drag-target-valid' : 'drag-target-invalid');
+  });
+
+  container.addEventListener('dragleave', function(e) {
+    if (!cellDragData) return;
+    const td = e.target.closest && e.target.closest('td.act-cell');
+    if (!td) return;
+    // Only remove if truly leaving the cell (relatedTarget may be null when leaving the viewport)
+    if (e.relatedTarget === null || !td.contains(e.relatedTarget)) {
+      td.classList.remove('drag-target-valid', 'drag-target-invalid');
+    }
+  });
+
+  container.addEventListener('drop', function(e) {
+    if (!cellDragData) return;
+    const td = e.target.closest && e.target.closest('td.act-cell');
+    if (!td) { cellDragData = null; return; }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    document.querySelectorAll('td.act-cell.drag-target-valid, td.act-cell.drag-target-invalid, td.act-cell.cell-dragging')
+      .forEach(el => el.classList.remove('drag-target-valid', 'drag-target-invalid', 'cell-dragging'));
+
+    const pat = +td.dataset.pat;
+    const row = +td.dataset.row;
+    const col = +td.dataset.col;
+
+    // Same cell: no-op
+    if (pat === cellDragData.patIdx && row === cellDragData.rowIdx && col === cellDragData.colIdx) {
+      cellDragData = null; return;
+    }
+
+    // Validate: target col must be within destination row's shift
+    const destRowData = currentState[pat][row];
+    const [si, ei] = shiftIndices(destRowData.shift);
+    if (col < si || col >= ei) { cellDragData = null; return; }
+
+    // Swap activities between source and destination cells
+    const srcRowData = currentState[cellDragData.patIdx][cellDragData.rowIdx];
+    const srcAct = srcRowData.acts[cellDragData.colIdx];
+    const dstAct = destRowData.acts[col];
+    srcRowData.acts[cellDragData.colIdx] = dstAct;
+    destRowData.acts[col] = srcAct;
+
+    saveState();
+    const savedDest = { pat, row, col };
+    cellDragData = null;
+
+    render(activePattern);
+
+    // Flash destination cell after render
+    requestAnimationFrame(() => {
+      const destTd = document.querySelector(
+        `td.act-cell[data-pat="${savedDest.pat}"][data-row="${savedDest.row}"][data-col="${savedDest.col}"]`
+      );
+      if (destTd) {
+        destTd.classList.add('drag-flash');
+        setTimeout(() => destTd.classList.remove('drag-flash'), 300);
+      }
+    });
+  });
+
+  container.addEventListener('dragend', function() {
+    document.querySelectorAll('td.act-cell.cell-dragging, td.act-cell.drag-target-valid, td.act-cell.drag-target-invalid')
+      .forEach(el => el.classList.remove('cell-dragging', 'drag-target-valid', 'drag-target-invalid'));
+    cellDragData = null;
+  });
+})();
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // INITIAL RENDER
