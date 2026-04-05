@@ -1697,7 +1697,7 @@ function renderAbsencesResumen() {
     const vacAbs = (m.absences||[]).filter(a => a.type === 'vacation');
     const used = vacAbs.filter(a => a.status === 'approved' || a.status === 'confirmed')
       .reduce((s,a) => s + countDays(a.from, a.to), 0);
-    const pending = vacAbs.filter(a => a.status === 'approved' && a.from > today)
+    const pending = vacAbs.filter(a => a.status === 'pending')
       .reduce((s,a) => s + countDays(a.from, a.to), 0);
     const total = m.stats?.vacationDaysTotal ?? 22;
     const available = Math.max(0, total - used);
@@ -1960,7 +1960,7 @@ function renderCalendario() {
       </span>`;
     }).join('');
     return `
-      <div class="week-row" id="${rowId}" onclick="toggleWeekDetail('${detailId}','${rowId}')">
+      <div class="week-row" id="${rowId}" onclick="toggleWeekDetail('${detailId}')">
         <span class="week-label">Sem ${w.weekNum} <span class="text-muted text-sm">(${fmtShort(w.start)}–${fmtShort(w.end)})</span></span>
         <div class="coverage-bar-wrap"><div class="coverage-bar ${barClass}" style="width:${barPct}%"></div></div>
         <span class="coverage-label">${available}/${total} disponibles</span>
