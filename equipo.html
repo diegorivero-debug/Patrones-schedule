@@ -810,7 +810,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
 <script>
 // ===== UTILITY FUNCTIONS =====
 
-function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 function countDays(from, to) {
   const a = new Date(from), b = new Date(to);
@@ -1517,8 +1517,21 @@ function importJSON(event) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if (!Array.isArray(data.leads) || !Array.isArray(data.managers))
-        throw new Error('Formato inválido');
+      if (!data || typeof data !== 'object' || !Array.isArray(data.leads) || !Array.isArray(data.managers))
+        throw new Error('Formato inválido: se esperan arrays leads y managers');
+      const validRoles = ['lead', 'manager'];
+      const validContractTypes = ['full-time', 'part-time', 'temporal'];
+      [...data.leads, ...data.managers].forEach(m => {
+        if (!m.id || typeof m.id !== 'string') throw new Error('Miembro sin ID válido');
+        if (!m.name || typeof m.name !== 'string') throw new Error('Miembro sin nombre válido');
+        if (!validRoles.includes(m.defaultRole)) throw new Error(`Rol inválido: ${m.defaultRole}`);
+        if (m.contract && !validContractTypes.includes(m.contract.type)) throw new Error(`Tipo contrato inválido: ${m.contract?.type}`);
+        if (!Array.isArray(m.absences)) m.absences = [];
+        if (!Array.isArray(m.requests)) m.requests = [];
+        if (!Array.isArray(m.daysOff)) m.daysOff = [];
+        if (!Array.isArray(m.scheduleRestrictions)) m.scheduleRestrictions = [];
+        if (!m.stats) m.stats = { vacationDaysUsed: 0, vacationDaysTotal: 22, sickDaysThisYear: 0 };
+      });
       teamData = data;
       saveTeam();
       renderRoster();
