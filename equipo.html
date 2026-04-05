@@ -1,0 +1,2207 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión del Equipo · Patrones de Schedule</title>
+<style>
+/* ===== CSS VARIABLES ===== */
+:root {
+  --primary: #1a1a2e;
+  --primary-light: #16213e;
+  --accent: #2b6cb0;
+  --accent-light: #bee3f8;
+  --surface: #fff;
+  --surface-alt: #f7fafc;
+  --bg: #f0f2f5;
+  --border: #e2e8f0;
+  --text: #2d3748;
+  --text-muted: #718096;
+  --text-light: #a0aec0;
+  --green: #276749;
+  --red: #e53e3e;
+  --orange: #dd6b20;
+  --yellow: #d69e2e;
+  --radius: 8px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+[data-theme="dark"] {
+  --primary: #0d0d1a;
+  --primary-light: #0a0f1e;
+  --surface: #1a202c;
+  --surface-alt: #2d3748;
+  --bg: #171923;
+  --border: #4a5568;
+  --text: #e2e8f0;
+  --text-muted: #a0aec0;
+  --text-light: #718096;
+}
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.2s, color 0.2s;
+}
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: 0.93rem;
+  color: var(--text);
+}
+button { cursor: pointer; }
+a { color: var(--accent); text-decoration: none; }
+
+/* ===== HEADER ===== */
+.site-header {
+  background: var(--primary);
+  color: #fff;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.site-header h1 { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
+.site-header .subtitle { font-size: 0.82rem; color: rgba(255,255,255,0.65); margin-left: 0.5rem; }
+.header-actions { margin-left: auto; display: flex; gap: 0.5rem; align-items: center; }
+.btn-header {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  transition: background 0.15s;
+}
+.btn-header:hover { background: rgba(255,255,255,0.22); }
+
+/* ===== TABS ===== */
+.tab-nav {
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  padding: 0 1.5rem;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  padding: 0.75rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.badge {
+  background: var(--red);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+.badge-blue { background: var(--accent); }
+
+/* ===== MAIN CONTENT ===== */
+.main { padding: 1.25rem 1.5rem; max-width: 1400px; margin: 0 auto; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ===== SUB-TABS ===== */
+.subtab-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+.subtab-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+.subtab-btn:hover { background: var(--surface-alt); color: var(--text); }
+.subtab-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ===== TOOLBAR ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.search-input {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  width: 220px;
+  transition: border-color 0.15s;
+}
+.search-input:focus { outline: none; border-color: var(--accent); }
+.select-filter {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.btn {
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #2558a0; border-color: #2558a0; }
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-secondary:hover { background: var(--surface-alt); }
+.btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
+.btn-danger:hover { background: #c53030; }
+.btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+.btn-icon { padding: 0.3rem 0.5rem; font-size: 0.85rem; }
+
+/* ===== TABLE ===== */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  font-size: 0.87rem;
+}
+thead th {
+  background: var(--surface-alt);
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-alt); }
+
+/* ===== AVATAR ===== */
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+.avatar-lead { background: var(--green); }
+.avatar-manager { background: var(--orange); }
+
+/* ===== BADGES ===== */
+.role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.role-lead { background: #c6f6d5; color: var(--green); }
+.role-manager { background: #feebc8; color: var(--orange); }
+[data-theme="dark"] .role-lead { background: #1c4532; color: #68d391; }
+[data-theme="dark"] .role-manager { background: #4a2c0a; color: #f6ad55; }
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.status-approved { background: #c6f6d5; color: var(--green); }
+.status-pending { background: #fefcbf; color: var(--yellow); }
+.status-rejected { background: #fed7d7; color: var(--red); }
+.status-confirmed { background: var(--accent-light); color: var(--accent); }
+[data-theme="dark"] .status-approved { background: #1c4532; color: #68d391; }
+[data-theme="dark"] .status-pending { background: #3d2f00; color: #f6e05e; }
+[data-theme="dark"] .status-rejected { background: #4a1010; color: #fc8181; }
+[data-theme="dark"] .status-confirmed { background: #1a365d; color: #90cdf4; }
+
+/* ===== CARDS / STATS ===== */
+.stats-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  flex: 1 1 130px;
+  box-shadow: var(--shadow);
+}
+.stat-card .stat-icon { font-size: 1.4rem; margin-bottom: 0.3rem; }
+.stat-card .stat-value { font-size: 1.7rem; font-weight: 700; color: var(--accent); }
+.stat-card .stat-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; }
+
+/* ===== MODAL ===== */
+#modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 1000;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+#modal-overlay.open { display: flex; }
+#modal-content {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 1.5rem;
+  max-width: 680px;
+  width: 100%;
+  margin: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+  position: relative;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h2 { font-size: 1.05rem; font-weight: 700; }
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--text-muted);
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+}
+.modal-close:hover { color: var(--text); }
+.modal-section { margin-bottom: 1.2rem; }
+.modal-section-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+.form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.65rem; }
+.form-group { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 180px; }
+.form-group label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { outline: none; border-color: var(--accent); }
+.form-group textarea { resize: vertical; min-height: 68px; }
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+.checkbox-group { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; }
+.checkbox-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.83rem; }
+.checkbox-item input[type=checkbox] { cursor: pointer; }
+
+/* ===== RESTRICTION BUILDER ===== */
+.restriction-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem; }
+.restriction-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.75rem;
+  background: var(--surface-alt);
+  position: relative;
+}
+.restriction-item .rm-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--red);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* ===== CALENDAR ===== */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.cal-header h3 { font-size: 1rem; font-weight: 600; }
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.cal-day-label {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 0.3rem;
+  text-transform: uppercase;
+}
+.cal-cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  min-height: 72px;
+  padding: 0.3rem;
+  font-size: 0.78rem;
+}
+.cal-cell.today { border-color: var(--accent); border-width: 2px; }
+.cal-cell.other-month { background: var(--bg); opacity: 0.6; }
+.cal-cell .day-num {
+  font-weight: 600;
+  font-size: 0.82rem;
+  margin-bottom: 0.2rem;
+  color: var(--text-muted);
+}
+.cal-cell.today .day-num { color: var(--accent); font-weight: 800; }
+.abs-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 1px;
+}
+.dot-vacation { background: var(--green); }
+.dot-sick { background: var(--red); }
+.dot-personal { background: var(--text-muted); }
+.dot-training { background: var(--accent); }
+
+/* ===== ANNUAL CALENDAR ===== */
+.week-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.week-row:hover { background: var(--surface-alt); }
+.week-label { font-size: 0.82rem; font-weight: 600; min-width: 130px; }
+.coverage-bar-wrap { flex: 1; background: var(--bg); border-radius: 999px; height: 8px; overflow: hidden; max-width: 180px; }
+.coverage-bar { height: 100%; border-radius: 999px; transition: width 0.3s; }
+.coverage-green { background: #48bb78; }
+.coverage-yellow { background: #ecc94b; }
+.coverage-red { background: var(--red); }
+.coverage-label { font-size: 0.78rem; color: var(--text-muted); min-width: 80px; }
+.absent-chips { display: flex; flex-wrap: wrap; gap: 3px; flex: 1; }
+.absent-chip {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 0.72rem;
+  padding: 1px 5px;
+  color: var(--text-muted);
+}
+.week-detail {
+  display: none;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  margin-top: -4px;
+  margin-bottom: 4px;
+}
+.week-detail.open { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.week-person-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* ===== MATRIX ===== */
+.matrix-libre { color: var(--text-light); font-size: 0.75rem; font-style: italic; }
+td.libre-cell { background: var(--surface-alt); }
+
+/* ===== PROGRESS BAR ===== */
+.vac-bar { height: 6px; background: var(--bg); border-radius: 999px; margin-top: 4px; overflow: hidden; }
+.vac-bar-fill { height: 100%; border-radius: 999px; background: var(--accent); }
+
+/* ===== FICHA (READ-ONLY VIEW) ===== */
+.ficha-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.5rem; }
+.ficha-item label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+.ficha-item p { font-size: 0.9rem; margin-top: 0.1rem; }
+.ficha-section { margin-bottom: 1rem; }
+.ficha-section h4 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+.ficha-abs-list, .ficha-req-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.ficha-abs-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.83rem;
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.65rem;
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.empty-state p { font-size: 0.9rem; }
+
+/* ===== MISC ===== */
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: 0.8rem; }
+.ml-auto { margin-left: auto; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.gap-1 { gap: 0.35rem; }
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 0; }
+.info-chip {
+  display: inline-block;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  padding: 1px 6px;
+  color: var(--text-muted);
+  margin: 1px;
+}
+
+/* ===== TOAST ===== */
+#eq-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+.eq-toast-item {
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+}
+.eq-toast-item.show { opacity: 1; transform: translateY(0); }
+.eq-toast-item.toast-ok   { background: #276749; }
+.eq-toast-item.toast-err  { background: #c53030; }
+.eq-toast-item.toast-info { background: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+  <h1>👥 Gestión del Equipo</h1>
+  <span class="subtitle" id="header-subtitle">Patrones de Schedule · 0 personas</span>
+  <div class="header-actions">
+    <button class="btn-header" id="theme-toggle" onclick="toggleTheme()">🌙 Oscuro</button>
+    <a href="dashboard.html" class="btn-header">📊 Dashboard ↗</a>
+  </div>
+</header>
+
+<!-- ===== TAB NAVIGATION ===== -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('roster')">👥 Roster</button>
+  <button class="tab-btn" onclick="showTab('vacaciones')">🏖️ Vacaciones <span class="badge badge-blue" id="badge-vacaciones" style="display:none">0</span></button>
+  <button class="tab-btn" onclick="showTab('peticiones')">📋 Peticiones <span class="badge" id="badge-peticiones" style="display:none">0</span></button>
+  <button class="tab-btn" onclick="showTab('horarios')">⏰ Horarios</button>
+  <button class="tab-btn" onclick="showTab('calendario')">📅 Calendario</button>
+  <button class="tab-btn" onclick="showTab('resumen')">📊 Resumen</button>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+  <!-- ===== TAB: ROSTER ===== -->
+  <section id="tab-roster" class="tab-panel active">
+    <div class="toolbar">
+      <input type="text" class="search-input" id="roster-search" placeholder="🔍 Buscar por nombre…" oninput="renderRoster()">
+      <select class="select-filter" id="roster-filter" onchange="renderRoster()">
+        <option value="all">Todos</option>
+        <option value="lead">Leads</option>
+        <option value="manager">Managers</option>
+      </select>
+      <button class="btn btn-primary" onclick="openAddMemberModal()">➕ Añadir Persona</button>
+      <button class="btn btn-secondary" onclick="exportJSON()">⬇️ Exportar JSON</button>
+      <label class="btn btn-secondary" style="cursor:pointer">
+        ⬆️ Importar JSON
+        <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
+      </label>
+    </div>
+    <div class="table-wrap">
+      <table id="roster-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Nombre</th>
+            <th>Rol</th>
+            <th>Turno</th>
+            <th>Contrato</th>
+            <th>Días libres</th>
+            <th>Restricciones</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="roster-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== TAB: VACACIONES ===== -->
+  <section id="tab-vacaciones" class="tab-panel">
+    <div class="subtab-nav">
+      <button class="subtab-btn active" onclick="showSubTab('vacaciones','lista')">📋 Lista</button>
+      <button class="subtab-btn" onclick="showSubTab('vacaciones','calendario')">📅 Calendario</button>
+      <button class="subtab-btn" onclick="showSubTab('vacaciones','resumen-vac')">📊 Resumen</button>
+    </div>
+
+    <div id="subtab-vacaciones-lista" class="subtab-panel">
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="openAddAbsenceModal()">➕ Registrar Ausencia</button>
+        <button class="btn btn-secondary ml-auto" onclick="exportAbsencesCSV()">⬇️ Exportar CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>Persona</th>
+              <th>Tipo</th>
+              <th>Desde</th>
+              <th>Hasta</th>
+              <th>Días</th>
+              <th>Notas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="absences-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="subtab-vacaciones-calendario" class="subtab-panel" style="display:none">
+      <div class="cal-header">
+        <button class="btn btn-secondary btn-sm" onclick="prevMonth()">← Anterior</button>
+        <h3 id="cal-month-label"></h3>
+        <button class="btn btn-secondary btn-sm" onclick="nextMonth()">Siguiente →</button>
+      </div>
+      <div id="cal-grid-wrap"></div>
+    </div>
+
+    <div id="subtab-vacaciones-resumen-vac" class="subtab-panel" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Persona</th>
+              <th>Total días vacaciones</th>
+              <th>Días usados</th>
+              <th>Días pendientes</th>
+              <th>Días disponibles</th>
+              <th>Progreso</th>
+            </tr>
+          </thead>
+          <tbody id="vac-resumen-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TAB: PETICIONES ===== -->
+  <section id="tab-peticiones" class="tab-panel">
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="openAddRequestModal()">➕ Nueva Petición</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Estado</th>
+            <th>Persona</th>
+            <th>Tipo</th>
+            <th>Semana</th>
+            <th>Día</th>
+            <th>Detalle</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="requests-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== TAB: HORARIOS ===== -->
+  <section id="tab-horarios" class="tab-panel">
+    <div class="subtab-nav">
+      <button class="subtab-btn active" onclick="showSubTab('horarios','concreciones')">⏰ Concreciones</button>
+      <button class="subtab-btn" onclick="showSubTab('horarios','matriz')">🗓️ Matriz</button>
+      <button class="subtab-btn" onclick="showSubTab('horarios','fines')">🗓️ Fines de semana</button>
+    </div>
+
+    <div id="subtab-horarios-concreciones" class="subtab-panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Persona</th>
+              <th>Tipo Restricción</th>
+              <th>Días</th>
+              <th>Motivo</th>
+              <th>Tiempo</th>
+            </tr>
+          </thead>
+          <tbody id="concreciones-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="subtab-horarios-matriz" class="subtab-panel" style="display:none">
+      <div class="table-wrap">
+        <table id="matriz-table">
+          <thead>
+            <tr>
+              <th>Persona</th>
+              <th>L</th><th>M</th><th>X</th><th>J</th><th>V</th><th>S</th><th>D</th>
+            </tr>
+          </thead>
+          <tbody id="matriz-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="subtab-horarios-fines" class="subtab-panel" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Persona</th>
+              <th>Rol</th>
+              <th>Patrón fines de semana</th>
+              <th>Notas</th>
+            </tr>
+          </thead>
+          <tbody id="weekends-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TAB: CALENDARIO ANUAL ===== -->
+  <section id="tab-calendario" class="tab-panel">
+    <div class="cal-header">
+      <button class="btn btn-secondary btn-sm" onclick="prevYear()">← Anterior</button>
+      <h3 id="anual-year-label"></h3>
+      <button class="btn btn-secondary btn-sm" onclick="nextYear()">Siguiente →</button>
+    </div>
+    <div id="anual-calendar-wrap"></div>
+  </section>
+
+  <!-- ===== TAB: RESUMEN ===== -->
+  <section id="tab-resumen" class="tab-panel">
+    <div class="stats-row" id="resumen-stats-row"></div>
+    <div class="stats-row" id="resumen-vac-cards"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Persona</th>
+            <th>Rol</th>
+            <th>Max Cierres</th>
+            <th>Max Aperturas</th>
+            <th>Prefer Mañana</th>
+            <th>Vacaciones usadas</th>
+            <th>Vacaciones total</th>
+          </tr>
+        </thead>
+        <tbody id="resumen-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== MODAL OVERLAY ===== -->
+<div id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div id="modal-content"></div>
+</div>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+// ===== UTILITY FUNCTIONS =====
+
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function showToast(msg, type) {
+  const container = document.getElementById('eq-toast');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'eq-toast-item toast-' + (type || 'info');
+  el.textContent = msg;
+  container.appendChild(el);
+  requestAnimationFrame(() => { requestAnimationFrame(() => { el.classList.add('show'); }); });
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+  }, 3500);
+}
+
+function countDays(from, to) {
+  // Use UTC to avoid DST issues. 'from'/'to' are 'YYYY-MM-DD' strings.
+  // split gives [year, month, day]; month is index 1 (0-based in JS Date).
+  const toUTC = s => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y, m-1, d); };
+  return Math.max(0, Math.round((toUTC(to) - toUTC(from)) / 86400000) + 1);
+}
+
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const year = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - year) / 86400000) + 1) / 7);
+}
+
+function dateInRange(date, from, to) {
+  const d = new Date(date), a = new Date(from), b = new Date(to);
+  return d >= a && d <= b;
+}
+
+function getISOWeekStart(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  const dayOfWeek = (jan4.getDay() + 6) % 7;
+  const weekStart = new Date(jan4);
+  weekStart.setDate(jan4.getDate() - dayOfWeek + (week - 1) * 7);
+  return weekStart;
+}
+
+function getCurrentWeekAbsences() {
+  const now = new Date();
+  const week = getWeekNumber(now);
+  const year = now.getFullYear();
+  const weekStart = getISOWeekStart(year, week);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+  const fmt = d => d.toISOString().split('T')[0];
+  return getAllAbsences().filter(abs =>
+    dateInRange(fmt(weekStart), abs.from, abs.to) ||
+    dateInRange(fmt(weekEnd), abs.from, abs.to) ||
+    (new Date(abs.from) >= weekStart && new Date(abs.from) <= weekEnd)
+  );
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function dayName(n) {
+  return ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][n] || '';
+}
+
+function daysListText(arr) {
+  if (!arr || arr.length === 0) return '—';
+  return arr.map(d => dayName(d)).join(', ');
+}
+
+const RESTRICTION_DAY_LABELS = ['L','M','X','J','V','S','D'];
+const RESTRICTION_DAY_VALUES = [1,2,3,4,5,6,0];
+
+function restrictionDaysText(days) {
+  if (!days || days.length === 0) return '—';
+  return days.map(d => {
+    const idx = RESTRICTION_DAY_VALUES.indexOf(d);
+    return idx >= 0 ? RESTRICTION_DAY_LABELS[idx] : dayName(d);
+  }).join(' ');
+}
+
+function restrictionTypeLabel(type) {
+  const map = {
+    'no-before': 'No antes de',
+    'no-after': 'No después de',
+    'fixed-shift': 'Turno fijo',
+    'reduced-hours': 'Reducción horas'
+  };
+  return map[type] || type;
+}
+
+function weekendPatternLabel(p) {
+  const map = {
+    'all': 'Todos los fines de semana',
+    'alternate': 'Alternos',
+    'none': 'Nunca trabaja',
+    'custom': 'Personalizado'
+  };
+  return map[p] || p || '—';
+}
+
+function absenceTypeLabel(t) {
+  const map = { vacation:'🏖️ Vacaciones', sick:'🤒 Baja', personal:'📋 Personal', training:'📚 Formación' };
+  return map[t] || t || '—';
+}
+
+function absenceTypeDotClass(t) {
+  const map = { vacation:'dot-vacation', sick:'dot-sick', personal:'dot-personal', training:'dot-training' };
+  return map[t] || 'dot-personal';
+}
+
+function requestTypeLabel(t) {
+  const map = {
+    'shift-preference': 'Preferencia turno',
+    'day-off': 'Día libre',
+    'swap': 'Cambio',
+    'permanent-change': 'Cambio permanente',
+    'other': 'Otro'
+  };
+  return map[t] || t;
+}
+
+function statusBadgeHTML(status) {
+  const map = {
+    approved: ['status-approved','✅ Aprobada'],
+    pending: ['status-pending','🟡 Pendiente'],
+    rejected: ['status-rejected','❌ Rechazada'],
+    confirmed: ['status-confirmed','📌 Confirmada']
+  };
+  const [cls, label] = map[status] || ['status-pending', status];
+  return `<span class="status-badge ${cls}">${label}</span>`;
+}
+
+function contractTypeLabel(t) {
+  const map = { 'full-time':'Jornada completa', 'part-time':'Jornada parcial', 'temporal':'Temporal' };
+  return map[t] || t;
+}
+
+// ===== DATA LAYER =====
+
+const STORAGE_TEAM = 'schedule_team';
+const STORAGE_ABSENCES = 'schedule_absences';
+const STORAGE_REQUESTS = 'schedule_requests';
+const STORAGE_THEME = 'schedule_theme';
+
+let teamData = { leads: [], managers: [] };
+
+function getAllMembers() {
+  return [...(teamData.leads || []), ...(teamData.managers || [])];
+}
+
+function getMemberById(id) {
+  return (teamData.leads || []).find(m => m.id === id)
+      || (teamData.managers || []).find(m => m.id === id)
+      || null;
+}
+
+function getAllAbsences() {
+  return getAllMembers().flatMap(m => (m.absences || []).map(a => ({...a, memberId: m.id, memberName: m.name, memberShort: m.shortName})));
+}
+
+function getAllRequests() {
+  return getAllMembers().flatMap(m => (m.requests || []).map(r => ({...r, memberId: m.id, memberName: m.name})));
+}
+
+function syncAbsences() {
+  const flat = getAllAbsences();
+  localStorage.setItem(STORAGE_ABSENCES, JSON.stringify(flat));
+}
+
+function syncRequests() {
+  const flat = getAllRequests();
+  localStorage.setItem(STORAGE_REQUESTS, JSON.stringify(flat));
+}
+
+function saveTeam() {
+  localStorage.setItem(STORAGE_TEAM, JSON.stringify(teamData));
+  syncAbsences();
+  syncRequests();
+  updateBadges();
+  updateHeaderCount();
+}
+
+function loadTeam() {
+  const raw = localStorage.getItem(STORAGE_TEAM);
+  if (raw) {
+    try { teamData = JSON.parse(raw); } catch(e) { teamData = { leads: [], managers: [] }; }
+  } else {
+    teamData = getSampleData();
+    saveTeam();
+  }
+}
+
+function updateBadges() {
+  const pending = getAllRequests().filter(r => r.status === 'pending').length;
+  const badgePet = document.getElementById('badge-peticiones');
+  if (badgePet) {
+    badgePet.textContent = pending;
+    badgePet.style.display = pending > 0 ? 'inline-block' : 'none';
+  }
+  const thisWeekAbs = getCurrentWeekAbsences().length;
+  const badgeVac = document.getElementById('badge-vacaciones');
+  if (badgeVac) {
+    badgeVac.textContent = thisWeekAbs;
+    badgeVac.style.display = thisWeekAbs > 0 ? 'inline-block' : 'none';
+  }
+}
+
+function updateHeaderCount() {
+  const el = document.getElementById('header-subtitle');
+  if (el) el.textContent = `Patrones de Schedule · ${getAllMembers().length} personas`;
+}
+
+// ===== THEME =====
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem(STORAGE_THEME, next);
+  document.getElementById('theme-toggle').textContent = next === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+}
+
+function applyTheme() {
+  const t = localStorage.getItem(STORAGE_THEME) || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = t === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+}
+
+// ===== TAB NAVIGATION =====
+
+const TAB_NAMES = ['roster','vacaciones','peticiones','horarios','calendario','resumen'];
+
+function showTab(name) {
+  TAB_NAMES.forEach(t => {
+    const panel = document.getElementById('tab-' + t);
+    if (panel) panel.classList.toggle('active', t === name);
+  });
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', TAB_NAMES[i] === name);
+  });
+  if (name === 'vacaciones') renderAbsencesList();
+  if (name === 'peticiones') renderRequests();
+  if (name === 'horarios') { renderConcreciones(); renderMatriz(); renderWeekends(); }
+  if (name === 'calendario') renderCalendario();
+  if (name === 'resumen') renderResumen();
+}
+
+function showSubTab(parent, sub) {
+  const allPanels = document.querySelectorAll(`#tab-${parent} .subtab-panel`);
+  allPanels.forEach(p => { p.style.display = 'none'; });
+  const target = document.getElementById(`subtab-${parent}-${sub}`);
+  if (target) target.style.display = 'block';
+  const allBtns = document.querySelectorAll(`#tab-${parent} .subtab-btn`);
+  allBtns.forEach(b => {
+    const onclick = b.getAttribute('onclick') || '';
+    b.classList.toggle('active', onclick.includes(`'${sub}'`));
+  });
+  if (parent === 'vacaciones' && sub === 'calendario') renderAbsencesCalendar();
+  if (parent === 'vacaciones' && sub === 'resumen-vac') renderAbsencesResumen();
+  if (parent === 'horarios' && sub === 'matriz') renderMatriz();
+  if (parent === 'horarios' && sub === 'fines') renderWeekends();
+  if (parent === 'horarios' && sub === 'concreciones') renderConcreciones();
+}
+
+// ===== MODAL =====
+
+function openModal(html) {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  content.innerHTML = html;
+  overlay.classList.add('open');
+  document.addEventListener('keydown', handleEsc);
+}
+
+function closeModal() {
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.remove('open');
+  document.removeEventListener('keydown', handleEsc);
+}
+
+function handleEsc(e) { if (e.key === 'Escape') closeModal(); }
+
+function handleOverlayClick(e) {
+  if (e.target.id === 'modal-overlay') closeModal();
+}
+
+// ===== MODAL CLOSE BUTTON =====
+function closeBtn() {
+  return `<button class="modal-close" onclick="closeModal()">✕</button>`;
+}
+
+// ===== ROSTER RENDER =====
+
+function getInitials(name) {
+  return (name || '').split(' ').map(p => p[0]).join('').substring(0,2).toUpperCase();
+}
+
+function renderRoster() {
+  const search = (document.getElementById('roster-search')?.value || '').toLowerCase();
+  const filter = document.getElementById('roster-filter')?.value || 'all';
+  const members = getAllMembers().filter(m => {
+    const matchName = m.name.toLowerCase().includes(search);
+    const matchRole = filter === 'all' || m.defaultRole === filter;
+    return matchName && matchRole;
+  });
+  const tbody = document.getElementById('roster-tbody');
+  if (!tbody) return;
+  if (members.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🔍</div><p>No se encontraron personas</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = members.map(m => {
+    const isLead = m.defaultRole === 'lead';
+    const daysOffText = (m.daysOff || []).map(d => dayName(d)).join(', ') || '—';
+    const restCount = (m.scheduleRestrictions || []).length;
+    const contractText = `${m.contract?.hoursPerWeek || '?'}h/sem · ${m.contract?.type || '?'}`;
+    return `<tr>
+      <td><div class="avatar ${isLead ? 'avatar-lead' : 'avatar-manager'}">${esc(getInitials(m.name))}</div></td>
+      <td>
+        <strong>${esc(m.name)}</strong><br>
+        <span class="text-muted text-sm">(${esc(m.shortName)})</span>
+      </td>
+      <td><span class="role-badge ${isLead ? 'role-lead' : 'role-manager'}">${isLead ? 'Lead' : 'Manager'}</span></td>
+      <td>${esc(m.defaultShift || '—')}</td>
+      <td class="text-sm text-muted">${esc(contractText)}</td>
+      <td class="text-sm">${esc(daysOffText)}</td>
+      <td><span class="info-chip">${restCount} restricción${restCount !== 1 ? 'es' : ''}</span></td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="openEditMemberModal('${esc(m.id)}')">✏️ Editar</button>
+        <button class="btn btn-secondary btn-sm" onclick="openViewMemberModal('${esc(m.id)}')">👁️ Ver</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== ADD MEMBER MODAL =====
+
+function openAddMemberModal() {
+  openModal(`
+    <div class="modal-header">
+      <h2>➕ Añadir Persona</h2>${closeBtn()}
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Nombre completo</label><input type="text" id="add-name" placeholder="Ana García"></div>
+      <div class="form-group"><label>Nombre corto</label><input type="text" id="add-short" placeholder="Ana"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Rol</label>
+        <select id="add-role"><option value="lead">Lead</option><option value="manager">Manager</option></select>
+      </div>
+      <div class="form-group"><label>Turno por defecto</label><input type="text" id="add-shift" placeholder="09:00-18:00"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="addMember()">Añadir</button>
+    </div>
+  `);
+}
+
+function addMember() {
+  const name = document.getElementById('add-name')?.value.trim();
+  const shortName = document.getElementById('add-short')?.value.trim();
+  const role = document.getElementById('add-role')?.value;
+  const shift = document.getElementById('add-shift')?.value.trim();
+  if (!name) { showToast('El nombre es obligatorio', 'err'); return; }
+  const member = {
+    id: 'M' + Date.now(),
+    name, shortName: shortName || name.split(' ')[0],
+    defaultShift: shift || '09:00-18:00',
+    defaultRole: role || 'manager',
+    contract: { hoursPerWeek: 40, type: 'full-time', startDate: '', endDate: '' },
+    daysOff: [],
+    maxClosings: 3, maxOpenings: 3, preferMorning: false,
+    weekendPattern: 'alternate', weekendNotes: '',
+    scheduleRestrictions: [],
+    absences: [], requests: [],
+    notes: '',
+    stats: { vacationDaysUsed: 0, vacationDaysTotal: 22, sickDaysThisYear: 0 }
+  };
+  if (role === 'lead') teamData.leads.push(member);
+  else teamData.managers.push(member);
+  saveTeam();
+  closeModal();
+  renderRoster();
+  showToast('Persona añadida correctamente', 'ok');
+}
+
+// ===== EDIT MEMBER MODAL =====
+
+function openEditMemberModal(id) {
+  const m = getMemberById(id);
+  if (!m) return;
+  const daysLabels = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const daysChecks = [0,1,2,3,4,5,6].map(d =>
+    `<label class="checkbox-item"><input type="checkbox" value="${d}" ${(m.daysOff||[]).includes(d)?'checked':''}> ${daysLabels[d]}</label>`
+  ).join('');
+
+  const restrictionRows = (m.scheduleRestrictions || []).map((r,i) => buildRestrictionRow(r, i)).join('');
+
+  openModal(`
+    <div class="modal-header">
+      <h2>✏️ Editar — ${esc(m.name)}</h2>${closeBtn()}
+    </div>
+    <div style="max-height:72vh;overflow-y:auto;padding-right:4px">
+
+      <div class="modal-section">
+        <div class="modal-section-title">1. Datos básicos</div>
+        <div class="form-row">
+          <div class="form-group"><label>Nombre completo</label><input id="e-name" value="${esc(m.name)}"></div>
+          <div class="form-group"><label>Nombre corto</label><input id="e-short" value="${esc(m.shortName)}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Turno por defecto</label><input id="e-shift" value="${esc(m.defaultShift)}"></div>
+          <div class="form-group"><label>Rol</label>
+            <select id="e-role">
+              <option value="lead" ${m.defaultRole==='lead'?'selected':''}>Lead</option>
+              <option value="manager" ${m.defaultRole==='manager'?'selected':''}>Manager</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">2. Contrato</div>
+        <div class="form-row">
+          <div class="form-group"><label>Horas semanales</label><input type="number" id="e-hours" value="${m.contract?.hoursPerWeek||40}" min="1" max="48"></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="e-ctype">
+              <option value="full-time" ${m.contract?.type==='full-time'?'selected':''}>Jornada completa</option>
+              <option value="part-time" ${m.contract?.type==='part-time'?'selected':''}>Jornada parcial</option>
+              <option value="temporal" ${m.contract?.type==='temporal'?'selected':''}>Temporal</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Fecha inicio</label><input type="date" id="e-start" value="${esc(m.contract?.startDate||'')}"></div>
+          <div class="form-group"><label>Fecha fin (opcional)</label><input type="date" id="e-end" value="${esc(m.contract?.endDate||'')}"></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">3. Días libres fijos</div>
+        <div class="checkbox-group" id="e-daysoff">${daysChecks}</div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">4. Restricciones de horario</div>
+        <div class="form-row">
+          <div class="form-group"><label>Máx. cierres / semana</label><input type="number" id="e-maxclosings" value="${m.maxClosings??3}" min="0" max="7"></div>
+          <div class="form-group"><label>Máx. aperturas / semana</label><input type="number" id="e-maxopenings" value="${m.maxOpenings??3}" min="0" max="7"></div>
+        </div>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" id="e-prefermorning" ${m.preferMorning?'checked':''}> Prefiere mañanas</label>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">5. Patrón fines de semana</div>
+        <div class="form-row">
+          <div class="form-group"><label>Patrón</label>
+            <select id="e-wpattern">
+              <option value="all" ${m.weekendPattern==='all'?'selected':''}>Todos</option>
+              <option value="alternate" ${m.weekendPattern==='alternate'?'selected':''}>Alternos</option>
+              <option value="none" ${m.weekendPattern==='none'?'selected':''}>Nunca</option>
+              <option value="custom" ${m.weekendPattern==='custom'?'selected':''}>Personalizado</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Notas fin de semana</label><input id="e-wnotes" value="${esc(m.weekendNotes||'')}"></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">6. Concreciones horarias</div>
+        <div id="e-restrictions-list" class="restriction-list">${restrictionRows}</div>
+        <button class="btn btn-secondary btn-sm" onclick="addRestrictionRow()">➕ Añadir restricción</button>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">7. Notas</div>
+        <div class="form-group"><textarea id="e-notes" rows="3">${esc(m.notes||'')}</textarea></div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">8. Vacaciones</div>
+        <div class="form-row">
+          <div class="form-group"><label>Total días vacaciones</label><input type="number" id="e-vactotal" value="${m.stats?.vacationDaysTotal??22}" min="0" max="60"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="deleteMember('${esc(id)}')">🗑️ Eliminar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMemberEdit('${esc(id)}')">💾 Guardar</button>
+    </div>
+  `);
+}
+
+function buildRestrictionRow(r, i) {
+  const dayChecks = [1,2,3,4,5,6,0].map((d,idx) => {
+    const lbl = ['L','M','X','J','V','S','D'][idx];
+    const checked = (r.days||[]).includes(d) ? 'checked' : '';
+    return `<label class="checkbox-item" style="font-size:0.77rem"><input type="checkbox" class="rday" value="${d}" ${checked}>${lbl}</label>`;
+  }).join('');
+  return `<div class="restriction-item" data-rid="${esc(r.id||'')}">
+    <button class="rm-btn" onclick="removeRestrictionRow(this)">✕</button>
+    <div class="form-row" style="margin-bottom:0.4rem">
+      <div class="form-group" style="flex:0 0 160px">
+        <label>Tipo</label>
+        <select class="rtype">
+          <option value="no-before" ${r.type==='no-before'?'selected':''}>No antes de</option>
+          <option value="no-after" ${r.type==='no-after'?'selected':''}>No después de</option>
+          <option value="fixed-shift" ${r.type==='fixed-shift'?'selected':''}>Turno fijo</option>
+          <option value="reduced-hours" ${r.type==='reduced-hours'?'selected':''}>Reducción horas</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:0 0 120px">
+        <label>Hora/Valor</label>
+        <input type="text" class="rtime" value="${esc(r.time||'')}" placeholder="09:00">
+      </div>
+      <div class="form-group">
+        <label>Motivo</label>
+        <input type="text" class="rreason" value="${esc(r.reason||'')}" placeholder="Motivo">
+      </div>
+    </div>
+    <div class="checkbox-group">${dayChecks}</div>
+  </div>`;
+}
+
+function addRestrictionRow() {
+  const list = document.getElementById('e-restrictions-list');
+  if (!list) return;
+  const empty = { id: 'sr_' + Date.now(), type: 'no-before', time: '', reason: '', days: [] };
+  const idx = list.children.length;
+  const div = document.createElement('div');
+  div.innerHTML = buildRestrictionRow(empty, idx);
+  list.appendChild(div.firstElementChild);
+}
+
+function removeRestrictionRow(btn) {
+  btn.closest('.restriction-item').remove();
+}
+
+function collectRestrictions() {
+  const items = document.querySelectorAll('#e-restrictions-list .restriction-item');
+  return Array.from(items).map(item => {
+    const days = Array.from(item.querySelectorAll('.rday:checked')).map(c => parseInt(c.value));
+    return {
+      id: item.dataset.rid || ('sr_' + Date.now()),
+      type: item.querySelector('.rtype')?.value || 'no-before',
+      time: item.querySelector('.rtime')?.value || '',
+      reason: item.querySelector('.rreason')?.value || '',
+      days
+    };
+  });
+}
+
+function saveMemberEdit(id) {
+  const m = getMemberById(id);
+  if (!m) return;
+  const newRole = document.getElementById('e-role')?.value;
+  const oldRole = m.defaultRole;
+
+  m.name = document.getElementById('e-name')?.value.trim() || m.name;
+  m.shortName = document.getElementById('e-short')?.value.trim() || m.shortName;
+  m.defaultShift = document.getElementById('e-shift')?.value.trim() || m.defaultShift;
+  m.defaultRole = newRole || m.defaultRole;
+  m.contract = {
+    hoursPerWeek: parseInt(document.getElementById('e-hours')?.value) || 40,
+    type: document.getElementById('e-ctype')?.value || 'full-time',
+    startDate: document.getElementById('e-start')?.value || '',
+    endDate: document.getElementById('e-end')?.value || ''
+  };
+  m.daysOff = Array.from(document.querySelectorAll('#e-daysoff input:checked')).map(c => parseInt(c.value));
+  m.maxClosings = parseInt(document.getElementById('e-maxclosings')?.value) || 0;
+  m.maxOpenings = parseInt(document.getElementById('e-maxopenings')?.value) || 0;
+  m.preferMorning = document.getElementById('e-prefermorning')?.checked || false;
+  m.weekendPattern = document.getElementById('e-wpattern')?.value || 'alternate';
+  m.weekendNotes = document.getElementById('e-wnotes')?.value || '';
+  m.scheduleRestrictions = collectRestrictions();
+  m.notes = document.getElementById('e-notes')?.value || '';
+  if (!m.stats) m.stats = {};
+  m.stats.vacationDaysTotal = parseInt(document.getElementById('e-vactotal')?.value) || 22;
+
+  // Handle role change
+  if (newRole !== oldRole) {
+    if (oldRole === 'lead') {
+      teamData.leads = teamData.leads.filter(x => x.id !== id);
+      teamData.managers.push(m);
+    } else {
+      teamData.managers = teamData.managers.filter(x => x.id !== id);
+      teamData.leads.push(m);
+    }
+  }
+
+  saveTeam();
+  closeModal();
+  renderRoster();
+  showToast('Datos guardados correctamente', 'ok');
+}
+
+function deleteMember(id) {
+  if (!confirm('¿Eliminar esta persona del equipo?')) return;
+  teamData.leads = teamData.leads.filter(m => m.id !== id);
+  teamData.managers = teamData.managers.filter(m => m.id !== id);
+  saveTeam();
+  closeModal();
+  renderRoster();
+  showToast('Persona eliminada del equipo', 'info');
+}
+
+// ===== VIEW MEMBER MODAL (FICHA) =====
+
+function openViewMemberModal(id) {
+  const m = getMemberById(id);
+  if (!m) return;
+  const isLead = m.defaultRole === 'lead';
+  const daysOffText = (m.daysOff||[]).map(d => dayName(d)).join(', ') || 'Ninguno';
+  const restRows = (m.scheduleRestrictions||[]).map(r =>
+    `<div class="ficha-abs-item">
+      <span>${restrictionTypeLabel(r.type)}</span>
+      <strong>${esc(r.time)}</strong>
+      <span class="text-muted">· ${esc(r.reason)}</span>
+      <span class="info-chip">${restrictionDaysText(r.days)}</span>
+    </div>`
+  ).join('') || '<span class="text-muted text-sm">Sin concreciones</span>';
+
+  const absRows = (m.absences||[]).map(a =>
+    `<div class="ficha-abs-item">
+      ${absenceTypeLabel(a.type)}
+      ${formatDate(a.from)} → ${formatDate(a.to)}
+      · ${statusBadgeHTML(a.status)}
+      <span class="text-muted text-sm">${esc(a.notes||'')}</span>
+    </div>`
+  ).join('') || '<span class="text-muted text-sm">Sin ausencias registradas</span>';
+
+  const reqRows = (m.requests||[]).map(r =>
+    `<div class="ficha-abs-item">
+      ${esc(requestTypeLabel(r.type))} · ${esc(r.week)} ${esc(r.day||'')}
+      ${statusBadgeHTML(r.status)}
+      <span class="text-muted text-sm">${esc(r.detail||'')}</span>
+    </div>`
+  ).join('') || '<span class="text-muted text-sm">Sin peticiones registradas</span>';
+
+  openModal(`
+    <div class="modal-header">
+      <h2>
+        <div class="avatar ${isLead?'avatar-lead':'avatar-manager'}" style="display:inline-flex;margin-right:8px">${esc(getInitials(m.name))}</div>
+        ${esc(m.name)}
+        <span class="role-badge ${isLead?'role-lead':'role-manager'}" style="margin-left:6px">${isLead?'Lead':'Manager'}</span>
+      </h2>
+      ${closeBtn()}
+    </div>
+    <div style="max-height:72vh;overflow-y:auto;padding-right:4px">
+      <div class="ficha-section">
+        <h4>Datos básicos</h4>
+        <div class="ficha-grid">
+          <div class="ficha-item"><label>Nombre corto</label><p>${esc(m.shortName)}</p></div>
+          <div class="ficha-item"><label>Turno por defecto</label><p>${esc(m.defaultShift)}</p></div>
+          <div class="ficha-item"><label>Contrato</label><p>${m.contract?.hoursPerWeek||'?'}h/sem · ${contractTypeLabel(m.contract?.type)}</p></div>
+          <div class="ficha-item"><label>Inicio contrato</label><p>${formatDate(m.contract?.startDate)} ${m.contract?.endDate ? '→ '+formatDate(m.contract.endDate) : ''}</p></div>
+        </div>
+      </div>
+      <div class="ficha-section">
+        <h4>Disponibilidad</h4>
+        <div class="ficha-grid">
+          <div class="ficha-item"><label>Días libres fijos</label><p>${esc(daysOffText)}</p></div>
+          <div class="ficha-item"><label>Patrón fines de semana</label><p>${weekendPatternLabel(m.weekendPattern)}</p></div>
+          <div class="ficha-item"><label>Máx. cierres</label><p>${m.maxClosings??'—'}</p></div>
+          <div class="ficha-item"><label>Máx. aperturas</label><p>${m.maxOpenings??'—'}</p></div>
+          <div class="ficha-item"><label>Prefiere mañanas</label><p>${m.preferMorning ? '✅ Sí' : '—'}</p></div>
+          <div class="ficha-item"><label>Notas fin de semana</label><p>${esc(m.weekendNotes||'—')}</p></div>
+        </div>
+      </div>
+      <div class="ficha-section">
+        <h4>Vacaciones</h4>
+        <div class="ficha-grid">
+          <div class="ficha-item"><label>Días usados</label><p>${m.stats?.vacationDaysUsed??0}</p></div>
+          <div class="ficha-item"><label>Días total</label><p>${m.stats?.vacationDaysTotal??22}</p></div>
+          <div class="ficha-item"><label>Bajas este año</label><p>${m.stats?.sickDaysThisYear??0}</p></div>
+        </div>
+      </div>
+      <div class="ficha-section">
+        <h4>Concreciones horarias</h4>
+        <div class="ficha-abs-list">${restRows}</div>
+      </div>
+      <div class="ficha-section">
+        <h4>Ausencias</h4>
+        <div class="ficha-abs-list">${absRows}</div>
+      </div>
+      <div class="ficha-section">
+        <h4>Peticiones</h4>
+        <div class="ficha-req-list">${reqRows}</div>
+      </div>
+      ${m.notes ? `<div class="ficha-section"><h4>Notas</h4><p style="font-size:0.88rem">${esc(m.notes)}</p></div>` : ''}
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+      <button class="btn btn-primary" onclick="closeModal();openEditMemberModal('${esc(id)}')">✏️ Editar</button>
+    </div>
+  `);
+}
+
+// ===== EXPORT / IMPORT =====
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(teamData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'equipo-schedule.json';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data || typeof data !== 'object' || !Array.isArray(data.leads) || !Array.isArray(data.managers))
+        throw new Error('Formato inválido: se esperan arrays leads y managers');
+      const validRoles = ['lead', 'manager'];
+      const validContractTypes = ['full-time', 'part-time', 'temporal'];
+      [...data.leads, ...data.managers].forEach(m => {
+        if (!m.id || typeof m.id !== 'string') throw new Error('Miembro sin ID válido');
+        if (!m.name || typeof m.name !== 'string') throw new Error('Miembro sin nombre válido');
+        if (!validRoles.includes(m.defaultRole)) throw new Error(`Rol inválido: ${m.defaultRole}`);
+        if (m.contract && !validContractTypes.includes(m.contract.type)) throw new Error(`Tipo contrato inválido: ${m.contract?.type}`);
+        if (!Array.isArray(m.absences)) m.absences = [];
+        if (!Array.isArray(m.requests)) m.requests = [];
+        if (!Array.isArray(m.daysOff)) m.daysOff = [];
+        if (!Array.isArray(m.scheduleRestrictions)) m.scheduleRestrictions = [];
+        if (!m.stats) m.stats = { vacationDaysUsed: 0, vacationDaysTotal: 22, sickDaysThisYear: 0 };
+      });
+      teamData = data;
+      saveTeam();
+      renderRoster();
+      showToast('Importación completada correctamente', 'ok');
+    } catch(err) {
+      const msg = (err && err.message) ? err.message : 'Formato de archivo no válido';
+      showToast('Error al importar: ' + msg, 'err');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ===== ABSENCES =====
+
+function openAddAbsenceModal() {
+  const options = getAllMembers().map(m =>
+    `<option value="${esc(m.id)}">${esc(m.name)}</option>`
+  ).join('');
+  openModal(`
+    <div class="modal-header"><h2>➕ Registrar Ausencia</h2>${closeBtn()}</div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1 1 100%"><label>Persona</label>
+        <select id="abs-member">${options}</select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Tipo</label>
+        <select id="abs-type">
+          <option value="vacation">🏖️ Vacaciones</option>
+          <option value="sick">🤒 Baja médica</option>
+          <option value="personal">📋 Personal</option>
+          <option value="training">📚 Formación</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Estado</label>
+        <select id="abs-status">
+          <option value="pending">Pendiente</option>
+          <option value="approved">Aprobada</option>
+          <option value="confirmed">Confirmada</option>
+          <option value="rejected">Rechazada</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Fecha inicio</label><input type="date" id="abs-from"></div>
+      <div class="form-group"><label>Fecha fin</label><input type="date" id="abs-to"></div>
+    </div>
+    <div class="form-group"><label>Notas</label><textarea id="abs-notes" rows="2"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAbsence()">Guardar</button>
+    </div>
+  `);
+}
+
+function saveAbsence() {
+  const memberId = document.getElementById('abs-member')?.value;
+  const from = document.getElementById('abs-from')?.value;
+  const to = document.getElementById('abs-to')?.value;
+  if (!memberId || !from || !to) { showToast('Completa todos los campos obligatorios', 'err'); return; }
+  const m = getMemberById(memberId);
+  if (!m) return;
+  if (!m.absences) m.absences = [];
+  m.absences.push({
+    id: 'abs_' + Date.now(),
+    type: document.getElementById('abs-type')?.value || 'vacation',
+    from, to,
+    status: document.getElementById('abs-status')?.value || 'pending',
+    notes: document.getElementById('abs-notes')?.value || ''
+  });
+  saveTeam();
+  closeModal();
+  renderAbsencesList();
+  showToast('Ausencia registrada correctamente', 'ok');
+}
+
+function deleteAbsence(memberId, absId) {
+  if (!confirm('¿Eliminar esta ausencia?')) return;
+  const m = getMemberById(memberId);
+  if (!m) return;
+  m.absences = (m.absences||[]).filter(a => a.id !== absId);
+  saveTeam();
+  renderAbsencesList();
+}
+
+function renderAbsencesList() {
+  const tbody = document.getElementById('absences-tbody');
+  if (!tbody) return;
+  const absences = getAllAbsences().sort((a,b) => b.from.localeCompare(a.from));
+  if (absences.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🏖️</div><p>No hay ausencias registradas</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = absences.map(a => {
+    const days = countDays(a.from, a.to);
+    return `<tr>
+      <td>${statusBadgeHTML(a.status)}</td>
+      <td><strong>${esc(a.memberName)}</strong></td>
+      <td>${absenceTypeLabel(a.type)}</td>
+      <td>${formatDate(a.from)}</td>
+      <td>${formatDate(a.to)}</td>
+      <td><span class="info-chip">${days}d</span></td>
+      <td class="text-sm text-muted">${esc(a.notes||'')}</td>
+      <td><button class="btn btn-danger btn-sm btn-icon" onclick="deleteAbsence('${esc(a.memberId)}','${esc(a.id)}')">🗑️</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function exportAbsencesCSV() {
+  const absences = getAllAbsences().sort((a,b) => b.from.localeCompare(a.from));
+  const rows = [['Persona','Tipo','Desde','Hasta','Días','Estado','Notas']];
+  absences.forEach(a => {
+    rows.push([a.memberName, a.type, a.from, a.to, countDays(a.from, a.to), a.status, a.notes||'']);
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ausencias.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ===== ABSENCES CALENDAR =====
+
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+function prevMonth() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderAbsencesCalendar(); }
+function nextMonth() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderAbsencesCalendar(); }
+
+function renderAbsencesCalendar() {
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('cal-month-label').textContent = `${monthNames[calMonth]} ${calYear}`;
+  const today = new Date();
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const absences = getAllAbsences();
+  let html = '<div class="cal-grid">';
+  ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].forEach(d => {
+    html += `<div class="cal-day-label">${d}</div>`;
+  });
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-cell other-month"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = today.getDate()===d && today.getMonth()===calMonth && today.getFullYear()===calYear;
+    const dayAbs = absences.filter(a => dateInRange(dateStr, a.from, a.to));
+    const dots = dayAbs.map(a =>
+      `<span class="abs-dot ${absenceTypeDotClass(a.type)}" title="${esc(a.memberName)} · ${absenceTypeLabel(a.type)}">${esc((a.memberShort||a.memberName||'?').substring(0,2))}</span>`
+    ).join('');
+    html += `<div class="cal-cell${isToday?' today':''}">
+      <div class="day-num">${d}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:1px">${dots}</div>
+    </div>`;
+  }
+  html += '</div>';
+  document.getElementById('cal-grid-wrap').innerHTML = html;
+}
+
+// ===== ABSENCES RESUMEN =====
+
+function renderAbsencesResumen() {
+  const tbody = document.getElementById('vac-resumen-tbody');
+  if (!tbody) return;
+  const members = getAllMembers();
+  const today = new Date().toISOString().split('T')[0];
+  tbody.innerHTML = members.map(m => {
+    const vacAbs = (m.absences||[]).filter(a => a.type === 'vacation');
+    const used = vacAbs.filter(a => a.status === 'approved' || a.status === 'confirmed')
+      .reduce((s,a) => s + countDays(a.from, a.to), 0);
+    const pending = vacAbs.filter(a => a.status === 'pending')
+      .reduce((s,a) => s + countDays(a.from, a.to), 0);
+    const total = m.stats?.vacationDaysTotal ?? 22;
+    const available = Math.max(0, total - used);
+    const pct = total > 0 ? Math.min(100, Math.round(used/total*100)) : 0;
+    return `<tr>
+      <td><strong>${esc(m.name)}</strong></td>
+      <td>${total}</td>
+      <td>${used}</td>
+      <td>${pending}</td>
+      <td>${available}</td>
+      <td style="min-width:100px">
+        <div class="vac-bar"><div class="vac-bar-fill" style="width:${pct}%"></div></div>
+        <span class="text-sm text-muted">${pct}%</span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== REQUESTS =====
+
+function openAddRequestModal() {
+  const options = getAllMembers().map(m =>
+    `<option value="${esc(m.id)}">${esc(m.name)}</option>`
+  ).join('');
+  const now = new Date();
+  const week = `${now.getFullYear()}-W${String(getWeekNumber(now)).padStart(2,'0')}`;
+  openModal(`
+    <div class="modal-header"><h2>➕ Nueva Petición</h2>${closeBtn()}</div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1 1 100%"><label>Persona</label>
+        <select id="req-member">${options}</select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Tipo</label>
+        <select id="req-type">
+          <option value="shift-preference">Preferencia turno</option>
+          <option value="day-off">Día libre</option>
+          <option value="swap">Cambio</option>
+          <option value="permanent-change">Cambio permanente</option>
+          <option value="other">Otro</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Semana (ej: ${esc(week)})</label>
+        <input type="text" id="req-week" value="${esc(week)}" placeholder="${esc(week)}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Día</label>
+        <select id="req-day">
+          <option>Lunes</option><option>Martes</option><option>Miércoles</option>
+          <option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Detalle / Motivo</label><textarea id="req-detail" rows="3"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveRequest()">Guardar</button>
+    </div>
+  `);
+}
+
+function saveRequest() {
+  const memberId = document.getElementById('req-member')?.value;
+  if (!memberId) return;
+  const m = getMemberById(memberId);
+  if (!m) return;
+  if (!m.requests) m.requests = [];
+  m.requests.push({
+    id: 'req_' + Date.now(),
+    type: document.getElementById('req-type')?.value || 'other',
+    week: document.getElementById('req-week')?.value || '',
+    day: document.getElementById('req-day')?.value || '',
+    detail: document.getElementById('req-detail')?.value || '',
+    status: 'pending'
+  });
+  saveTeam();
+  closeModal();
+  renderRequests();
+  showToast('Petición guardada correctamente', 'ok');
+}
+
+function updateRequestStatus(memberId, reqId, status) {
+  const m = getMemberById(memberId);
+  if (!m) return;
+  const req = (m.requests||[]).find(r => r.id === reqId);
+  if (req) req.status = status;
+  saveTeam();
+  renderRequests();
+  showToast(status === 'approved' ? 'Petición aprobada' : 'Petición rechazada', status === 'approved' ? 'ok' : 'err');
+}
+
+function renderRequests() {
+  const tbody = document.getElementById('requests-tbody');
+  if (!tbody) return;
+  const requests = getAllRequests().sort((a,b) => b.week.localeCompare(a.week));
+  if (requests.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div><p>No hay peticiones registradas</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = requests.map(r => {
+    const actions = r.status === 'pending'
+      ? `<button class="btn btn-secondary btn-sm" onclick="updateRequestStatus('${esc(r.memberId)}','${esc(r.id)}','approved')">✅ Aprobar</button>
+         <button class="btn btn-danger btn-sm" onclick="updateRequestStatus('${esc(r.memberId)}','${esc(r.id)}','rejected')">❌ Rechazar</button>`
+      : '—';
+    return `<tr>
+      <td>${statusBadgeHTML(r.status)}</td>
+      <td><strong>${esc(r.memberName)}</strong></td>
+      <td><span class="info-chip">${esc(requestTypeLabel(r.type))}</span></td>
+      <td>${esc(r.week)}</td>
+      <td>${esc(r.day||'—')}</td>
+      <td class="text-sm">${esc(r.detail||'—')}</td>
+      <td style="white-space:nowrap">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== CONCRECIONES =====
+
+function renderConcreciones() {
+  const tbody = document.getElementById('concreciones-tbody');
+  if (!tbody) return;
+  const rows = [];
+  getAllMembers().forEach(m => {
+    (m.scheduleRestrictions||[]).forEach(r => {
+      rows.push({ member: m, r });
+    });
+  });
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">⏰</div><p>Sin concreciones horarias</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(({member: m, r}) => `<tr>
+    <td>
+      <div class="flex items-center gap-1">
+        <div class="avatar ${m.defaultRole==='lead'?'avatar-lead':'avatar-manager'}" style="width:26px;height:26px;font-size:0.68rem">${esc(getInitials(m.name))}</div>
+        ${esc(m.name)}
+      </div>
+    </td>
+    <td><span class="info-chip">${restrictionTypeLabel(r.type)}</span></td>
+    <td class="text-sm">${restrictionDaysText(r.days)}</td>
+    <td class="text-sm text-muted">${esc(r.reason||'—')}</td>
+    <td><strong>${esc(r.time||'—')}</strong></td>
+  </tr>`).join('');
+}
+
+// ===== MATRIZ =====
+
+function renderMatriz() {
+  const tbody = document.getElementById('matriz-tbody');
+  if (!tbody) return;
+  const members = getAllMembers();
+  // Cols: L=1,M=2,X=3,J=4,V=5,S=6,D=0
+  const cols = [1,2,3,4,5,6,0];
+  tbody.innerHTML = members.map(m => {
+    const cells = cols.map(d => {
+      const isOff = (m.daysOff||[]).includes(d);
+      if (isOff) return `<td class="libre-cell" style="text-align:center"><span class="matrix-libre">LIBRE</span></td>`;
+      return `<td style="text-align:center;font-size:0.8rem">${esc(m.defaultShift||'—')}</td>`;
+    }).join('');
+    const isLead = m.defaultRole === 'lead';
+    return `<tr>
+      <td>
+        <div class="flex items-center gap-1">
+          <div class="avatar ${isLead?'avatar-lead':'avatar-manager'}" style="width:26px;height:26px;font-size:0.68rem">${esc(getInitials(m.name))}</div>
+          ${esc(m.name)}
+          <span class="role-badge ${isLead?'role-lead':'role-manager'}" style="margin-left:4px">${isLead?'Lead':'Mgr'}</span>
+        </div>
+      </td>
+      ${cells}
+    </tr>`;
+  }).join('');
+}
+
+// ===== WEEKENDS =====
+
+function renderWeekends() {
+  const tbody = document.getElementById('weekends-tbody');
+  if (!tbody) return;
+  const members = getAllMembers();
+  tbody.innerHTML = members.map(m => {
+    const isLead = m.defaultRole === 'lead';
+    return `<tr>
+      <td>
+        <div class="flex items-center gap-1">
+          <div class="avatar ${isLead?'avatar-lead':'avatar-manager'}" style="width:26px;height:26px;font-size:0.68rem">${esc(getInitials(m.name))}</div>
+          ${esc(m.name)}
+        </div>
+      </td>
+      <td><span class="role-badge ${isLead?'role-lead':'role-manager'}">${isLead?'Lead':'Manager'}</span></td>
+      <td><span class="info-chip">${weekendPatternLabel(m.weekendPattern)}</span></td>
+      <td class="text-sm text-muted">${esc(m.weekendNotes||'—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== ANNUAL CALENDAR =====
+
+let anualYear = new Date().getFullYear();
+function prevYear() { anualYear--; renderCalendario(); }
+function nextYear() { anualYear++; renderCalendario(); }
+
+function getWeeksInYear(year) {
+  const weeks = [];
+  let d = new Date(year, 0, 1);
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day + (day > 3 ? 7 : 0));
+  while (d.getFullYear() <= year) {
+    const start = new Date(d);
+    const end = new Date(d); end.setDate(end.getDate() + 6);
+    if (start.getFullYear() < year && end.getFullYear() < year) { d.setDate(d.getDate()+7); continue; }
+    if (start.getFullYear() > year) break;
+    const wn = getWeekNumber(start);
+    weeks.push({ weekNum: wn, start, end });
+    d.setDate(d.getDate() + 7);
+  }
+  return weeks;
+}
+
+function renderCalendario() {
+  document.getElementById('anual-year-label').textContent = `Calendario ${anualYear}`;
+  const wrap = document.getElementById('anual-calendar-wrap');
+  if (!wrap) return;
+  const members = getAllMembers();
+  const total = members.length;
+  const absences = getAllAbsences();
+  const weeks = getWeeksInYear(anualYear);
+  const fmtShort = d => {
+    const m = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return `${d.getDate()} ${m[d.getMonth()]}`;
+  };
+  wrap.innerHTML = weeks.map(w => {
+    const wStart = w.start.toISOString().split('T')[0];
+    const wEnd = w.end.toISOString().split('T')[0];
+    const absentMembers = members.filter(m =>
+      (m.absences||[]).some(a =>
+        (a.status === 'approved' || a.status === 'confirmed') &&
+        (dateInRange(wStart, a.from, a.to) || dateInRange(wEnd, a.from, a.to) ||
+         (new Date(a.from) >= w.start && new Date(a.from) <= w.end))
+      )
+    );
+    const absentCount = absentMembers.length;
+    const available = total - absentCount;
+    const pct = total > 0 ? available / total : 1;
+    const barClass = pct >= 0.85 ? 'coverage-green' : pct >= 0.70 ? 'coverage-yellow' : 'coverage-red';
+    const barPct = Math.round(pct * 100);
+    const chips = absentMembers.map(m => `<span class="absent-chip">${esc(m.shortName)}</span>`).join('');
+    const detailId = `week-detail-${anualYear}-${w.weekNum}`;
+    const rowId = `week-row-${anualYear}-${w.weekNum}`;
+    const presentList = members.map(m => {
+      const isAbsent = absentMembers.some(am => am.id === m.id);
+      const absInfo = isAbsent ? (m.absences||[]).find(a =>
+        (a.status==='approved'||a.status==='confirmed') &&
+        (dateInRange(wStart,a.from,a.to)||dateInRange(wEnd,a.from,a.to)||
+         (new Date(a.from)>=w.start&&new Date(a.from)<=w.end))
+      ) : null;
+      return `<span class="week-person-chip">
+        ${isAbsent ? '❌' : '✅'}
+        ${esc(m.name)}
+        ${isAbsent && absInfo ? `<span class="text-muted text-sm">· ${absenceTypeLabel(absInfo.type)}</span>` : ''}
+      </span>`;
+    }).join('');
+    return `
+      <div class="week-row" id="${rowId}" onclick="toggleWeekDetail('${detailId}')">
+        <span class="week-label">Sem ${w.weekNum} <span class="text-muted text-sm">(${fmtShort(w.start)}–${fmtShort(w.end)})</span></span>
+        <div class="coverage-bar-wrap"><div class="coverage-bar ${barClass}" style="width:${barPct}%"></div></div>
+        <span class="coverage-label">${available}/${total} disponibles</span>
+        <div class="absent-chips">${chips}</div>
+      </div>
+      <div class="week-detail" id="${detailId}">${presentList}</div>
+    `;
+  }).join('');
+}
+
+function toggleWeekDetail(detailId) {
+  const el = document.getElementById(detailId);
+  if (!el) return;
+  el.classList.toggle('open');
+}
+
+// ===== RESUMEN =====
+
+function renderResumen() {
+  const members = getAllMembers();
+  const leads = members.filter(m => m.defaultRole === 'lead').length;
+  const managers = members.filter(m => m.defaultRole === 'manager').length;
+  const pendingReqs = getAllRequests().filter(r => r.status === 'pending').length;
+  const thisWeekAbs = getCurrentWeekAbsences().length;
+  const withRestrictions = members.filter(m => (m.scheduleRestrictions||[]).length > 0).length;
+
+  const statsRow = document.getElementById('resumen-stats-row');
+  if (statsRow) statsRow.innerHTML = [
+    ['👥','Total personas', members.length],
+    ['🟢','Leads', leads],
+    ['🟠','Managers', managers],
+    ['📋','Peticiones pendientes', pendingReqs],
+    ['🏖️','Ausencias esta semana', thisWeekAbs],
+    ['⚠️','Con restricciones', withRestrictions]
+  ].map(([icon, label, value]) => `
+    <div class="stat-card">
+      <div class="stat-icon">${icon}</div>
+      <div class="stat-value">${value}</div>
+      <div class="stat-label">${label}</div>
+    </div>
+  `).join('');
+
+  const totalVacDays = members.reduce((s,m) => s + (m.stats?.vacationDaysTotal||0), 0);
+  const mediaVac = members.length > 0 ? (totalVacDays / members.length).toFixed(1) : 0;
+  const today = new Date().toISOString().split('T')[0];
+  const conMas15 = members.filter(m => {
+    const used = (m.absences||[]).filter(a => a.type==='vacation' && (a.status==='approved'||a.status==='confirmed'))
+      .reduce((s,a)=>s+countDays(a.from,a.to),0);
+    return (m.stats?.vacationDaysTotal||0) - used > 15;
+  }).length;
+
+  const vacCards = document.getElementById('resumen-vac-cards');
+  if (vacCards) vacCards.innerHTML = [
+    ['📅','Días vacaciones equipo (total)', totalVacDays],
+    ['📊','Media por persona', mediaVac + ' días'],
+    ['🕐','Con >15 días pendientes', conMas15 + ' personas']
+  ].map(([icon, label, value]) => `
+    <div class="stat-card">
+      <div class="stat-icon">${icon}</div>
+      <div class="stat-value">${value}</div>
+      <div class="stat-label">${label}</div>
+    </div>
+  `).join('');
+
+  const tbody = document.getElementById('resumen-tbody');
+  if (tbody) {
+    tbody.innerHTML = members.map(m => {
+      const isLead = m.defaultRole === 'lead';
+      return `<tr>
+        <td>
+          <div class="flex items-center gap-1">
+            <div class="avatar ${isLead?'avatar-lead':'avatar-manager'}" style="width:26px;height:26px;font-size:0.68rem">${esc(getInitials(m.name))}</div>
+            ${esc(m.name)}
+          </div>
+        </td>
+        <td><span class="role-badge ${isLead?'role-lead':'role-manager'}">${isLead?'Lead':'Manager'}</span></td>
+        <td style="text-align:center">${m.maxClosings??'—'}</td>
+        <td style="text-align:center">${m.maxOpenings??'—'}</td>
+        <td style="text-align:center">${m.preferMorning ? '✅' : '—'}</td>
+        <td style="text-align:center">${m.stats?.vacationDaysUsed??0}</td>
+        <td style="text-align:center">${m.stats?.vacationDaysTotal??22}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ===== SAMPLE DATA =====
+
+function getSampleData() {
+  return {
+    leads: [
+      { id:'L1', name:'Ana García', shortName:'Ana', defaultShift:'09:00-18:00', defaultRole:'lead',
+        contract:{hoursPerWeek:40,type:'full-time',startDate:'2022-01-10',endDate:''},
+        daysOff:[0,6], maxClosings:2, maxOpenings:3, preferMorning:true,
+        weekendPattern:'alternate', weekendNotes:'Alterna sábados con Carlos',
+        scheduleRestrictions:[{id:'sr1',type:'no-before',time:'09:00',reason:'Colegio niños',days:[1,2,3,4,5]}],
+        absences:[{id:'abs_1',type:'vacation',from:'2025-04-14',to:'2025-04-25',status:'approved',notes:'Semana Santa'}],
+        requests:[{id:'req_1',type:'shift-preference',week:'2025-W16',day:'Martes',detail:'Prefiere 08:00-17:00',status:'pending'}],
+        notes:'Responsable aperturas lunes y miércoles',
+        stats:{vacationDaysUsed:12,vacationDaysTotal:22,sickDaysThisYear:0} },
+
+      { id:'L2', name:'Carlos López', shortName:'Carlos', defaultShift:'12:00-21:00', defaultRole:'lead',
+        contract:{hoursPerWeek:40,type:'full-time',startDate:'2021-03-15',endDate:''},
+        daysOff:[0,1], maxClosings:4, maxOpenings:1, preferMorning:false,
+        weekendPattern:'alternate', weekendNotes:'Alterna sábados con Ana',
+        scheduleRestrictions:[],
+        absences:[{id:'abs_2',type:'sick',from:'2025-03-10',to:'2025-03-12',status:'confirmed',notes:'Gripe'}],
+        requests:[{id:'req_2',type:'day-off',week:'2025-W17',day:'Viernes',detail:'Cita médica',status:'approved'}],
+        notes:'Especialista en cierres y gestión de stock',
+        stats:{vacationDaysUsed:5,vacationDaysTotal:22,sickDaysThisYear:3} },
+
+      { id:'L3', name:'María Rodríguez', shortName:'María', defaultShift:'09:00-18:00', defaultRole:'lead',
+        contract:{hoursPerWeek:35,type:'part-time',startDate:'2023-06-01',endDate:''},
+        daysOff:[0,6], maxClosings:1, maxOpenings:2, preferMorning:true,
+        weekendPattern:'none', weekendNotes:'No trabaja fines de semana por conciliación',
+        scheduleRestrictions:[{id:'sr2',type:'no-after',time:'18:00',reason:'Reducción jornada',days:[1,2,3,4,5]}],
+        absences:[{id:'abs_3',type:'personal',from:'2025-05-01',to:'2025-05-01',status:'pending',notes:'Trámite personal'}],
+        requests:[],
+        notes:'Jornada reducida por guarda legal',
+        stats:{vacationDaysUsed:3,vacationDaysTotal:20,sickDaysThisYear:1} },
+
+      { id:'L4', name:'Pedro Martínez', shortName:'Pedro', defaultShift:'10:00-19:00', defaultRole:'lead',
+        contract:{hoursPerWeek:40,type:'full-time',startDate:'2020-09-01',endDate:''},
+        daysOff:[0,4], maxClosings:3, maxOpenings:2, preferMorning:false,
+        weekendPattern:'all', weekendNotes:'',
+        scheduleRestrictions:[],
+        absences:[], requests:[],
+        notes:'Más antiguo del equipo, formador de nuevos leads',
+        stats:{vacationDaysUsed:8,vacationDaysTotal:25,sickDaysThisYear:0} }
+    ],
+    managers: [
+      { id:'M1', name:'Laura Sánchez', shortName:'Laura', defaultShift:'09:00-18:00', defaultRole:'manager',
+        contract:{hoursPerWeek:40,type:'full-time',startDate:'2023-01-09',endDate:''},
+        daysOff:[0,6], maxClosings:2, maxOpenings:3, preferMorning:true,
+        weekendPattern:'alternate', weekendNotes:'',
+        scheduleRestrictions:[], absences:[], requests:[],
+        notes:'', stats:{vacationDaysUsed:6,vacationDaysTotal:22,sickDaysThisYear:0} },
+
+      { id:'M2', name:'Jorge Pérez', shortName:'Jorge', defaultShift:'12:00-21:00', defaultRole:'manager',
+        contract:{hoursPerWeek:40,type:'full-time',startDate:'2022-07-04',endDate:''},
+        daysOff:[0,3], maxClosings:4, maxOpenings:1, preferMorning:false,
+        weekendPattern:'all', weekendNotes:'Disponible todos los fines de semana',
+        scheduleRestrictions:[{id:'sr3',type:'fixed-shift',time:'12:00-21:00',reason:'Preferencia personal',days:[6]}],
+        absences:[], requests:[],
+        notes:'Especialista turno tarde', stats:{vacationDaysUsed:10,vacationDaysTotal:22,sickDaysThisYear:2} },
+
+      { id:'M3', name:'Isabel Torres', shortName:'Isabel', defaultShift:'09:00-18:00', defaultRole:'manager',
+        contract:{hoursPerWeek:30,type:'part-time',startDate:'2024-01-15',endDate:''},
+        daysOff:[0,6,5], maxClosings:1, maxOpenings:2, preferMorning:true,
+        weekendPattern:'none', weekendNotes:'',
+        scheduleRestrictions:[{id:'sr4',type:'reduced-hours',time:'6',reason:'Jornada parcial',days:[1,2,3,4,5]}],
+        absences:[], requests:[],
+        notes:'Contratación reciente', stats:{vacationDaysUsed:2,vacationDaysTotal:18,sickDaysThisYear:0} },
+
+      { id:'M4', name:'Miguel Ruiz', shortName:'Miguel', defaultShift:'10:00-19:00', defaultRole:'manager',
+        contract:{hoursPerWeek:40,type:'full-time',startDate:'2021-11-22',endDate:''},
+        daysOff:[0,2], maxClosings:3, maxOpenings:3, preferMorning:false,
+        weekendPattern:'alternate', weekendNotes:'',
+        scheduleRestrictions:[], absences:[], requests:[],
+        notes:'', stats:{vacationDaysUsed:14,vacationDaysTotal:22,sickDaysThisYear:1} },
+
+      { id:'M5', name:'Elena Morales', shortName:'Elena', defaultShift:'09:00-18:00', defaultRole:'manager',
+        contract:{hoursPerWeek:40,type:'full-time',startDate:'2023-04-03',endDate:''},
+        daysOff:[0,6], maxClosings:2, maxOpenings:2, preferMorning:true,
+        weekendPattern:'alternate', weekendNotes:'',
+        scheduleRestrictions:[], absences:[], requests:[],
+        notes:'', stats:{vacationDaysUsed:7,vacationDaysTotal:22,sickDaysThisYear:0} },
+
+      { id:'M6', name:'Roberto Díaz', shortName:'Roberto', defaultShift:'12:00-21:00', defaultRole:'manager',
+        contract:{hoursPerWeek:40,type:'full-time',startDate:'2022-03-14',endDate:''},
+        daysOff:[0,1], maxClosings:5, maxOpenings:1, preferMorning:false,
+        weekendPattern:'all', weekendNotes:'Trabaja todos los fines de semana sin problema',
+        scheduleRestrictions:[], absences:[], requests:[],
+        notes:'Disponible para cierres', stats:{vacationDaysUsed:9,vacationDaysTotal:22,sickDaysThisYear:0} }
+    ]
+  };
+}
+
+// ===== INITIALIZATION =====
+
+(function init() {
+  applyTheme();
+  loadTeam();
+  updateHeaderCount();
+  updateBadges();
+  renderRoster();
+})();
+</script>
+<div id="eq-toast"></div>
+</body>
+</html>
