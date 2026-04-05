@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📅 Planificador 13 Semanas · Patrones de Schedule</title>
+<link rel="stylesheet" href="css/planificador.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+  <div>
+    <h1>📅 Planificador de 13 Semanas</h1>
+    <span class="subtitle">Motor de generación automática de horarios trimestrales</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-header" id="theme-toggle" onclick="toggleTheme()">🌙 Oscuro</button>
+  </div>
+</header>
+
+<!-- ===== NAV ===== -->
+<nav class="site-nav">
+  <a class="nav-btn" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
+  <a class="nav-btn" href="equipo.html">👥 Equipo</a>
+  <a class="nav-btn" href="vacaciones.html">🌴 Vacaciones</a>
+  <a class="nav-btn active" href="planificador-13w.html">📅 Planificador</a>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+  <!-- Alerts panel -->
+  <div class="alerts-panel" id="alerts-container"></div>
+
+  <!-- ── 1. CONFIG CARD ── -->
+  <div class="config-card">
+    <h2>⚙️ Configuración del trimestre</h2>
+    <div class="config-row">
+      <div class="config-field">
+        <label for="q-start-date">Inicio del Q (Lunes W1):</label>
+        <input type="date" id="q-start-date" value="2026-03-30">
+      </div>
+      <div class="config-field">
+        <label for="season-select">Temporada:</label>
+        <select id="season-select">
+          <option value="verano">☀️ Verano (Jun–Sep, Close 13-22)</option>
+          <option value="invierno">❄️ Invierno (Oct–May, Close 12:30-21:30)</option>
+        </select>
+      </div>
+      <span class="config-sep"></span>
+      <span class="config-info" id="config-info">Calculando…</span>
+      <button class="btn btn-primary" id="btn-generate">⚙️ Generar horario</button>
+    </div>
+    <div style="margin-top:10px;font-size:.78rem;color:var(--text-muted)">
+      💡 Las vacaciones se leen automáticamente de <strong>localStorage (vacaciones_2026)</strong>.
+      Si no hay datos, visita el módulo <a href="vacaciones.html">🌴 Vacaciones</a> primero.
+    </div>
+  </div>
+
+  <!-- ── 2. VARIANTS ── -->
+  <div class="section-title">
+    📊 Variantes generadas
+    <span class="badge" id="variants-badge">0</span>
+  </div>
+  <div class="variants-row" id="variants-container">
+    <p style="color:var(--text-muted);font-size:.85rem">
+      Pulsa "Generar horario" para crear variantes.
+    </p>
+  </div>
+
+  <!-- ── 3. SCHEDULE TABLE ── -->
+  <div class="section-title" style="margin-top:20px">
+    📋 Horario trimestral
+    <span class="badge">13 semanas · 24 personas</span>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <strong style="color:var(--text-muted);font-size:.78rem">Turnos:</strong>
+    <span class="legend-item"><span class="legend-dot" style="background:#dbeafe;border:1px solid #93c5fd"></span>Mañana</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#fef3c7;border:1px solid #fcd34d"></span>Tarde</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#f3f4f6;border:1px solid #d1d5db"></span>Libre (OFF)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#bbf7d0;border:1px solid #86efac"></span>Vacaciones (V)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#a7f3d0;border:1px solid #6ee7b7"></span>TGD</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#7c3aed;border-radius:50%"></span>QBR day</span>
+    <span style="flex:1"></span>
+    <button class="btn btn-danger btn-sm" id="btn-reset-sched" style="font-size:.76rem;padding:4px 10px">
+      🔄 Resetear a variante
+    </button>
+  </div>
+
+  <!-- Schedule section (populated by JS) -->
+  <div id="schedule-section">
+    <div class="placeholder-box">
+      <div class="icon">📅</div>
+      <h3>Sin horario generado</h3>
+      <p>Configura los parámetros y pulsa "Generar horario" para comenzar.</p>
+    </div>
+  </div>
+
+  <!-- ── 4. VALIDATION ── -->
+  <div class="validation-panel" id="validation-panel" style="margin-top:16px">
+    <div class="section-title">🔍 Validación</div>
+    <p class="no-violations">Genera un horario para ver la validación.</p>
+  </div>
+
+  <!-- ── 5. RULES SUMMARY ── -->
+  <details style="margin-top:20px">
+    <summary style="cursor:pointer;font-size:.88rem;font-weight:700;color:var(--text-muted);
+      padding:10px 14px;background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius)">
+      📋 Resumen de reglas aplicadas (clic para expandir)
+    </summary>
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:none;
+      border-radius:0 0 var(--radius) var(--radius);padding:16px 20px;font-size:.82rem;
+      line-height:1.7;color:var(--text-muted)">
+      <strong style="color:var(--text)">Concreciones inquebrantables:</strong>
+      <ul style="margin:6px 0 12px 16px">
+        <li><strong>Cris Carcel</strong>: Lun–Vie siempre mañana (entre 7-17)</li>
+        <li><strong>Eva Hernandez</strong>: Siempre mañana. 32h. Finde sí/no alternando</li>
+        <li><strong>Eli Moreno</strong>: Siempre mañana. Finde sí/no alternando</li>
+        <li><strong>Meri Alvarez</strong>: Lun/Mar tarde (10+), Mié–Vie mañana (7-16)</li>
+        <li><strong>Ane Pazos</strong>: Semana A (impar) = Lun–Vie mañana, Sáb libre</li>
+        <li><strong>Clara González</strong>: Nunca libre jueves. Sindicales Jue 9-13</li>
+        <li><strong>Jorge Gil</strong>: Lun y Mié siempre mañana</li>
+        <li><strong>Javi Sánchez</strong>: AOR fijo Lun + Vie</li>
+      </ul>
+      <strong style="color:var(--text)">Senior Managers:</strong>
+      <ul style="margin:6px 0 12px 16px">
+        <li>Lun+Mar: todos los 4 SM de mañana (sin excepción)</li>
+        <li>Mié: Jorge+Cris mañana, Sheila+Itziar tarde</li>
+        <li>Jue–Sáb: 2 SM mañana + 2 SM tarde (rotación semanal)</li>
+      </ul>
+      <strong style="color:var(--text)">Managers:</strong>
+      <ul style="margin:6px 0 12px 16px">
+        <li>Semana completa en el mismo turno (mañana o tarde)</li>
+        <li>Balance 50/50 medido por Q completo</li>
+        <li>Mix departamental: nunca todos del mismo dpto en mismo turno</li>
+      </ul>
+      <strong style="color:var(--text)">Ops Leads (Aurora, Rubén):</strong>
+      <ul style="margin:6px 0 12px 16px">
+        <li>Siempre cruzados: uno mañana (Open 7:00), otro tarde (Close)</li>
+        <li>Si uno de vacaciones → el otro de mañana</li>
+      </ul>
+      <strong style="color:var(--text)">Leads:</strong>
+      <ul style="margin:6px 0 12px 16px">
+        <li>Eva H: siempre mañana | Eva F + Alberto: rotan con equidad</li>
+        <li>Eli: siempre mañana | Clara: rota, nunca libre jueves</li>
+      </ul>
+      <strong style="color:var(--text)">Libranzas:</strong>
+      <ul style="margin:6px 0 12px 16px">
+        <li>Máx 5 días trabajados por semana (regla sagrada)</li>
+        <li>Finde sí/no para SM y Managers: equidad al final del Q</li>
+        <li>SM: evitar librar Lun–Mié | Managers: evitar librar Mar–Mié</li>
+        <li>Siempre 2 días libres por semana</li>
+      </ul>
+      <strong style="color:var(--text)">Cobertura mínima:</strong>
+      <ul style="margin:6px 0 12px 16px">
+        <li>Entre semana: ≥ 14 personas/día</li>
+        <li>Sábados: ≥ 12 personas/día</li>
+        <li>Apertura 07:00: 2 Leads (Open) | Apertura 08:00: +2 Managers</li>
+        <li>Cierre: 2 Leads + 2 Managers</li>
+      </ul>
+      <strong style="color:var(--text)">QBR:</strong>
+      Miércoles 1 de julio 2026 — todos disponibles (celdas marcadas en morado)
+    </div>
+  </details>
+
+</main>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- SheetJS for Excel export -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="js/planificador.js"></script>
+</body>
+</html>
