@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔍 Auditor de Horarios · Patrones de Schedule</title>
+<link rel="stylesheet" href="css/auditor.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+  <div>
+    <h1>🔍 Auditor de Horarios</h1>
+    <span class="subtitle">Importa, visualiza y audita horarios automáticamente</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-header" id="theme-toggle" onclick="toggleTheme()">🌙 Oscuro</button>
+  </div>
+</header>
+
+<!-- ===== NAV ===== -->
+<nav class="site-nav">
+  <a class="nav-btn" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-btn active" href="auditor.html">🔍 Auditor</a>
+  <a class="nav-btn" href="equipo.html">👥 Equipo</a>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+  <!-- Loading bar (hidden by default) -->
+  <div id="loading-bar" class="loading-bar" style="display:none;margin-bottom:12px;"></div>
+
+  <!-- Upload section -->
+  <section class="upload-section" id="upload-section">
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv,.numbers" aria-label="Seleccionar archivo de horario">
+      <span class="upload-icon">📁</span>
+      <h2>Arrastra tu archivo de horario aquí</h2>
+      <p>Formatos aceptados: <strong>.xlsx</strong>, <strong>.xls</strong>, <strong>.csv</strong>, <strong>.numbers</strong> (exportado como xlsx)</p>
+      <span class="btn-browse">Seleccionar archivo</span>
+    </div>
+  </section>
+
+  <!-- File info bar (shown after upload) -->
+  <div class="file-info" id="file-info" style="display:none;">
+    <span class="file-icon">📋</span>
+    <div>
+      <div class="file-name" id="file-name-display">—</div>
+      <div class="file-meta" id="file-meta-display">—</div>
+    </div>
+    <button class="btn-clear-file" onclick="clearFile()" title="Quitar archivo y empezar de nuevo">✕ Quitar</button>
+  </div>
+
+  <!-- Summary cards (shown after upload) -->
+  <div class="summary-cards" id="summary-cards"></div>
+
+  <!-- Content tabs -->
+  <div class="content-tabs">
+    <div class="content-tabs-header">
+      <button class="content-tab-btn active" data-tab="schedule">📋 Horario Importado</button>
+      <button class="content-tab-btn" data-tab="audit">🔍 Resultados de Auditoría</button>
+    </div>
+
+    <!-- Schedule table tab -->
+    <div class="content-tab-panel active" id="tab-schedule">
+      <div id="schedule-table-container"></div>
+    </div>
+
+    <!-- Audit results tab -->
+    <div class="content-tab-panel" id="tab-audit">
+      <div id="audit-results-container"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== ACTION BAR (sticky bottom) ===== -->
+<div class="action-bar" id="action-bar" style="display:none;">
+  <button class="btn-success" onclick="applyAllSafeFixes()" title="Acepta automáticamente todos los fixes de tipo Importante y Sugerencia">⚡ Aplicar Fixes Seguros</button>
+  <button class="btn-secondary" onclick="runAudit(); renderSummaryCards(); renderScheduleTable(); renderAuditResults();" title="Re-ejecutar auditoría">🔄 Re-auditar</button>
+  <span class="action-bar-sep"></span>
+  <button class="btn-primary" onclick="exportCSV()" title="Exportar horario como CSV">⬇️ Exportar CSV</button>
+  <button class="btn-secondary" onclick="exportReport()" title="Exportar informe de auditoría">📄 Exportar Informe</button>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- SheetJS via CDN -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="js/auditor.js"></script>
+</body>
+</html>
