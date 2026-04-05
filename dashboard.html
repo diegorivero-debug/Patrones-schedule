@@ -473,6 +473,190 @@
   .undo-toast.visible { opacity: 1; transform: translateY(0); }
   @keyframes tableUndoFlash { 0%,100% { box-shadow: var(--shadow); } 50% { box-shadow: 0 0 0 3px var(--accent); } }
   .table-wrapper.undo-flash { animation: tableUndoFlash 0.3s ease; }
+
+  /* ── AI Advisor ────────────────────────────────────────── */
+  .btn-ai {
+    background: linear-gradient(135deg, #805ad5, #4299e1) !important;
+    color: #fff !important; border-color: transparent !important;
+    font-weight: 700 !important;
+  }
+  .btn-ai:hover { filter: brightness(1.1); box-shadow: 0 2px 8px rgba(128,90,213,.4) !important; }
+  @keyframes ai-btn-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(128,90,213,.5); } 60% { box-shadow: 0 0 0 6px rgba(128,90,213,0); } }
+  .btn-ai.has-suggestions { animation: ai-btn-pulse 2s ease infinite; }
+  .ai-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; border-radius: 9px;
+    background: var(--accent); color: #fff; font-size: 10px; font-weight: 700;
+    margin-left: 4px; padding: 0 5px;
+  }
+  .ai-badge.critical { background: var(--red); }
+
+  /* AI Panel */
+  .ai-panel {
+    position: fixed; top: 0; right: -440px; width: 440px; height: 100vh;
+    background: var(--surface); box-shadow: -4px 0 24px rgba(0,0,0,.2);
+    z-index: 150; transition: right .3s ease;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .ai-panel.open { right: 0; }
+  .ai-panel-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.25);
+    z-index: 149; opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  .ai-panel-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .ai-panel-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 16px 12px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(128,90,213,.12), rgba(66,153,225,.12));
+    flex-shrink: 0;
+  }
+  .ai-panel-title { font-size: 1.05rem; font-weight: 700; color: var(--text); flex: 1; }
+  .ai-panel-badge { font-size: .78rem; }
+  .ai-panel-close {
+    background: none; border: none; cursor: pointer; font-size: 1.2rem;
+    color: var(--text-muted); padding: 2px 6px; border-radius: 4px;
+    line-height: 1;
+  }
+  .ai-panel-close:hover { background: var(--border); }
+
+  .ai-tabs {
+    display: flex; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; background: var(--surface);
+  }
+  .ai-tab {
+    flex: 1; padding: 8px 4px; border: none; background: none; cursor: pointer;
+    font-size: .75rem; font-weight: 600; color: var(--text-muted);
+    border-bottom: 2px solid transparent; transition: .15s;
+  }
+  .ai-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .ai-tab-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; border-radius: 8px; background: var(--border);
+    color: var(--text-muted); font-size: 10px; margin-left: 3px; padding: 0 4px;
+  }
+  .ai-tab.active .ai-tab-count { background: var(--accent); color: #fff; }
+
+  .ai-panel-body {
+    flex: 1; overflow-y: auto; padding: 12px 12px 8px;
+  }
+  .ai-panel-actions {
+    padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0;
+    display: flex; gap: 8px;
+  }
+  .ai-apply-all-btn {
+    flex: 1; padding: 8px; background: linear-gradient(135deg,#805ad5,#4299e1);
+    color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: .82rem;
+    cursor: pointer; transition: .15s;
+  }
+  .ai-apply-all-btn:hover { filter: brightness(1.1); }
+  .ai-apply-all-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .ai-rerun-btn {
+    padding: 8px 12px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; font-size: .82rem; font-weight: 600; color: var(--text);
+    cursor: pointer; transition: .15s;
+  }
+  .ai-rerun-btn:hover { background: var(--border); }
+
+  /* Suggestion cards */
+  .ai-card {
+    border-radius: 8px; border: 1px solid var(--border);
+    margin-bottom: 10px; overflow: hidden;
+    border-left-width: 4px;
+    transition: box-shadow .15s;
+  }
+  .ai-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+  .ai-card.level-tactical  { border-left-color: #4299e1; }
+  .ai-card.level-strategic { border-left-color: #805ad5; }
+  .ai-card.level-rules     { border-left-color: #d69e2e; }
+  .ai-card.dismissed { opacity: .4; }
+
+  .ai-card-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px; cursor: pointer; user-select: none;
+    background: rgba(0,0,0,.02);
+  }
+  body.dark .ai-card-header { background: rgba(255,255,255,.02); }
+  .ai-card-level-tag {
+    font-size: .68rem; font-weight: 800; text-transform: uppercase;
+    padding: 1px 6px; border-radius: 3px; white-space: nowrap;
+  }
+  .level-tactical  .ai-card-level-tag { background: #ebf8ff; color: #2b6cb0; }
+  .level-strategic .ai-card-level-tag { background: #faf5ff; color: #553c9a; }
+  .level-rules     .ai-card-level-tag { background: #fffff0; color: #744210; }
+  body.dark .level-tactical  .ai-card-level-tag { background: #1a365d; color: #90cdf4; }
+  body.dark .level-strategic .ai-card-level-tag { background: #2d1f4a; color: #d6bcfa; }
+  body.dark .level-rules     .ai-card-level-tag { background: #2d2500; color: #faf089; }
+  .ai-card-title {
+    flex: 1; font-size: .82rem; font-weight: 700; color: var(--text);
+  }
+  .ai-card-delta {
+    font-size: .78rem; font-weight: 800; white-space: nowrap;
+    padding: 1px 6px; border-radius: 4px;
+  }
+  .ai-card-delta.pos { background: #c6f6d5; color: #276749; }
+  .ai-card-delta.neg { background: #fed7d7; color: #9b2c2c; }
+  body.dark .ai-card-delta.pos { background: #1c4532; color: #9ae6b4; }
+  body.dark .ai-card-delta.neg { background: #4a1c1c; color: #fc8181; }
+  .ai-card-confidence {
+    font-size: .72rem; margin-left: 2px;
+  }
+  .ai-card-chevron { font-size: .75rem; color: var(--text-muted); transition: transform .2s; }
+  .ai-card.expanded .ai-card-chevron { transform: rotate(180deg); }
+
+  .ai-card-body {
+    display: none; padding: 0 10px 10px; border-top: 1px solid var(--border);
+  }
+  .ai-card.expanded .ai-card-body { display: block; }
+  .ai-card-desc {
+    font-size: .8rem; color: var(--text); line-height: 1.5;
+    margin: 8px 0 6px;
+  }
+  .ai-card-impact {
+    font-size: .78rem; color: var(--text-muted); background: rgba(0,0,0,.03);
+    border-radius: 4px; padding: 6px 8px; margin-bottom: 8px; line-height: 1.6;
+  }
+  body.dark .ai-card-impact { background: rgba(255,255,255,.05); }
+  .ai-card-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ai-card-btn {
+    padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border);
+    background: var(--surface); font-size: .75rem; font-weight: 600;
+    cursor: pointer; transition: .12s; color: var(--text);
+  }
+  .ai-card-btn:hover { background: var(--border); }
+  .ai-card-btn.apply  { background: #276749; color: #fff; border-color: #276749; }
+  .ai-card-btn.apply:hover { background: #2f855a; }
+  .ai-card-btn.preview { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .ai-card-btn.preview:hover { filter: brightness(1.1); }
+
+  .ai-empty-state {
+    text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: .85rem;
+  }
+  .ai-empty-state .ai-empty-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .ai-loading { text-align: center; padding: 24px; color: var(--text-muted); font-size: .85rem; }
+
+  /* Preview highlight */
+  @keyframes ai-pulse {
+    0%, 100% { box-shadow: inset 0 0 0 2px rgba(214,188,250,.5); }
+    50%       { box-shadow: inset 0 0 0 2px rgba(128,90,213,.9); }
+  }
+  td.ai-preview { animation: ai-pulse 1s ease infinite; }
+
+  /* Preview banner */
+  #ai-preview-banner {
+    position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg,#805ad5,#4299e1); color: #fff;
+    padding: 10px 20px; border-radius: 20px; font-weight: 700; font-size: .85rem;
+    z-index: 200; box-shadow: 0 4px 16px rgba(128,90,213,.4);
+    display: none; gap: 12px; align-items: center;
+  }
+  #ai-preview-banner.visible { display: flex; }
+  #ai-preview-banner button {
+    background: rgba(255,255,255,.25); border: 1px solid rgba(255,255,255,.5);
+    color: #fff; padding: 3px 10px; border-radius: 10px; cursor: pointer;
+    font-weight: 700; font-size: .8rem;
+  }
+  #ai-preview-banner button:hover { background: rgba(255,255,255,.4); }
 </style>
 </head>
 <body>
@@ -509,6 +693,7 @@
     <button class="btn-rules"  onclick="openRules()">📋 Reglas</button>
     <button class="btn-export" onclick="exportCSV()">⬇️ Exportar CSV</button>
     <button class="btn-export" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="btn-ai" id="btn-ai" onclick="openAIPanel()" title="Análisis inteligente del patrón">🤖 IA Advisor<span id="ai-badge" class="ai-badge" style="display:none"></span></button>
     <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer (Ctrl+Z)" aria-label="Deshacer cambio (Ctrl+Z)">↩️ Deshacer</button>
     <button class="btn-redo" id="btn-redo" onclick="redo()" disabled title="Rehacer (Ctrl+Y)" aria-label="Rehacer cambio (Ctrl+Y)">↪️ Rehacer</button>
     <button class="btn-reset"  onclick="resetPattern()">🔄 Reset</button>
@@ -937,6 +1122,19 @@ let cellDragData = null; // {patIdx, rowIdx, colIdx, activity}
 const MAX_UNDO = 50;
 const undoHistory = { 0: [], 1: [], 2: [], 3: [] };
 const redoHistory = { 0: [], 1: [], 2: [], 3: [] };
+
+// ── AI Advisor state ─────────────────────────────────────────────────────────
+let aiSuggestions   = [];
+let aiActiveTab     = 'tactical';
+let aiPreviewState  = null;
+let aiDismissed     = new Set();
+let aiAnalysisTimer = null;
+
+// ── AI Advisor constants ──────────────────────────────────────────────────────
+const MIN_SWAP_SLOTS    = 4;   // minimum shared floor slots to suggest a Manager role swap
+const FRAGILITY_THRESHOLD = 0.5; // fraction of critical persons that makes a pattern "fragile"
+const HOURS_PER_SHIFT   = 8;   // standard working hours per shift (for staffing math)
+const SLOTS_PER_HOUR    = 2;   // 30-minute slots per hour
 
 function pushUndo(patIdx) {
   if (whatifMode) return; // no snapshots during simulation
@@ -2096,6 +2294,7 @@ function render(patIdx) {
   document.getElementById('schedule-container').innerHTML =
     buildScheduleTable(patIdx) + buildSummaryTable(patIdx) + buildCoverageChart(patIdx) + buildLegend() + buildRulesSection();
   applyWhatifVisuals();
+  scheduleAIAnalysis(patIdx);
 }
 
 // ── Weekly View ──────────────────────────────────────────────────────────────
@@ -3032,8 +3231,1248 @@ document.addEventListener('keydown', function(e) {
   else if (ctrl && !e.shiftKey && key === 'y') { e.preventDefault(); redo(); }
   else if (ctrl && e.shiftKey && key === 'z') { e.preventDefault(); redo(); }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI ADVISOR ENGINE  — Fase 2
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Panel open/close ──────────────────────────────────────────────────────────
+function openAIPanel() {
+  document.getElementById('ai-panel').classList.add('open');
+  document.getElementById('ai-panel-overlay').classList.add('open');
+  renderAIPanel();
+}
+function closeAIPanel() {
+  document.getElementById('ai-panel').classList.remove('open');
+  document.getElementById('ai-panel-overlay').classList.remove('open');
+  if (aiPreviewState) cancelAIPreview();
+}
+function switchAITab(level) {
+  aiActiveTab = level;
+  document.querySelectorAll('.ai-tab').forEach(t => t.classList.toggle('active', t.dataset.level === level));
+  renderAIPanelBody();
+}
+
+// ── Badge / button update ─────────────────────────────────────────────────────
+function updateAIBadge() {
+  const active = aiSuggestions.filter(s => !s.dismissed);
+  const hasRules = active.some(s => s.level === 'rules');
+  const count = active.length;
+  const btn = document.getElementById('btn-ai');
+  const badge = document.getElementById('ai-badge');
+  const panelBadge = document.getElementById('ai-panel-badge');
+  if (!badge) return;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = '';
+    badge.classList.toggle('critical', hasRules);
+    if (btn) btn.classList.add('has-suggestions');
+  } else {
+    badge.style.display = 'none';
+    if (btn) btn.classList.remove('has-suggestions');
+  }
+  if (panelBadge) {
+    panelBadge.textContent = count;
+    panelBadge.style.display = count > 0 ? '' : 'none';
+    panelBadge.classList.toggle('critical', hasRules);
+  }
+  // Update tab counts
+  ['tactical','strategic','rules'].forEach(lv => {
+    const el = document.getElementById('tab-count-' + lv);
+    if (el) el.textContent = active.filter(s => s.level === lv).length;
+  });
+  // Apply-all button
+  const applyAllBtn = document.getElementById('ai-apply-all-btn');
+  if (applyAllBtn) applyAllBtn.disabled = !active.some(s => s.confidence === 'high' && !s.conflictsWith.length);
+}
+
+// ── Render panel ──────────────────────────────────────────────────────────────
+function renderAIPanel() {
+  updateAIBadge();
+  renderAIPanelBody();
+}
+function renderAIPanelBody() {
+  const body = document.getElementById('ai-panel-body');
+  if (!body) return;
+  const filtered = aiSuggestions.filter(s => s.level === aiActiveTab);
+  if (filtered.length === 0) {
+    body.innerHTML = `<div class="ai-empty-state"><div class="ai-empty-icon">${aiActiveTab==='tactical'?'🔧':aiActiveTab==='strategic'?'🧠':'💡'}</div><div>Sin sugerencias en este nivel</div><div style="margin-top:6px;font-size:.75rem">El patrón está bien optimizado en esta categoría</div></div>`;
+    return;
+  }
+  body.innerHTML = filtered.map(s => renderAICard(s)).join('');
+}
+function renderAICard(s) {
+  const levelLabel = s.level === 'tactical' ? '🔧 TÁCTICO' : s.level === 'strategic' ? '🧠 ESTRATÉGICO' : '💡 REGLA';
+  const confIcon   = s.confidence === 'high' ? '✅' : s.confidence === 'medium' ? '⚠️' : '🔴';
+  const deltaClass = s.scoreDelta >= 0 ? 'pos' : 'neg';
+  const deltaStr   = (s.scoreDelta >= 0 ? '+' : '') + s.scoreDelta + ' pts';
+  const dismissedCls = s.dismissed ? ' dismissed' : '';
+  const expandedCls  = s._expanded ? ' expanded' : '';
+  let btns = '';
+  if (!s.dismissed) {
+    if (s.changes && s.changes.length) {
+      btns += `<button class="ai-card-btn preview" onclick="previewSuggestion('${s.id}')">👀 Preview</button>`;
+      btns += `<button class="ai-card-btn apply"   onclick="applySuggestion('${s.id}')">✅ Aplicar</button>`;
+    }
+    btns += `<button class="ai-card-btn" onclick="dismissSuggestion('${s.id}')">❌ Ignorar</button>`;
+  } else {
+    btns += `<button class="ai-card-btn" onclick="undismissSuggestion('${s.id}')">↩️ Restaurar</button>`;
+  }
+  return `<div class="ai-card level-${s.level}${dismissedCls}${expandedCls}" id="ai-card-${s.id}">
+  <div class="ai-card-header" onclick="toggleAICard('${s.id}')">
+    <span class="ai-card-level-tag">${levelLabel}</span>
+    <span class="ai-card-title">${esc(s.title)}</span>
+    <span class="ai-card-delta ${deltaClass}">${deltaStr}</span>
+    <span class="ai-card-confidence" title="Confianza">${confIcon}</span>
+    <span class="ai-card-chevron">▼</span>
+  </div>
+  <div class="ai-card-body">
+    <div class="ai-card-desc">${esc(s.description)}</div>
+    <div class="ai-card-impact">${esc(s.impact)}</div>
+    <div class="ai-card-btns">${btns}</div>
+  </div>
+</div>`;
+}
+function toggleAICard(id) {
+  const s = aiSuggestions.find(x => x.id === id);
+  if (!s) return;
+  s._expanded = !s._expanded;
+  const card = document.getElementById('ai-card-' + id);
+  if (card) card.classList.toggle('expanded', s._expanded);
+}
+
+// ── Suggestion actions ────────────────────────────────────────────────────────
+function dismissSuggestion(id) {
+  const s = aiSuggestions.find(x => x.id === id);
+  if (!s) return;
+  s.dismissed = true;
+  aiDismissed.add(id);
+  renderAIPanel();
+}
+function undismissSuggestion(id) {
+  const s = aiSuggestions.find(x => x.id === id);
+  if (!s) return;
+  s.dismissed = false;
+  aiDismissed.delete(id);
+  renderAIPanel();
+}
+
+function previewSuggestion(id) {
+  const s = aiSuggestions.find(x => x.id === id);
+  if (!s || !s.changes || !s.changes.length) return;
+  if (aiPreviewState) cancelAIPreview();
+  const patIdx = activePattern;
+  const original = currentState[patIdx].map(r => ({ role:r.role, shift:r.shift, acts:[...r.acts], assignedId:r.assignedId }));
+  aiPreviewState = { patIdx, original, suggestionId: id };
+  // Apply changes temporarily
+  applyChangesToState(patIdx, s.changes);
+  render(patIdx);
+  // Highlight affected cells
+  setTimeout(() => {
+    if (s.affectedSlots && s.affectedRows) {
+      s.affectedRows.forEach(ri => {
+        s.affectedSlots.forEach(ci => {
+          const td = document.querySelector(`td.act-cell[data-pat="${patIdx}"][data-row="${ri}"][data-col="${ci}"]`);
+          if (td) td.classList.add('ai-preview');
+        });
+      });
+    }
+  }, 50);
+  // Show preview banner
+  const banner = document.getElementById('ai-preview-banner');
+  const msg = document.getElementById('ai-preview-msg');
+  if (banner) {
+    if (msg) msg.textContent = `Previsualizando: ${s.title}`;
+    banner.classList.add('visible');
+  }
+}
+
+function cancelAIPreview() {
+  if (!aiPreviewState) return;
+  const { patIdx, original } = aiPreviewState;
+  currentState[patIdx] = original;
+  aiPreviewState = null;
+  render(patIdx);
+  document.querySelectorAll('td.ai-preview').forEach(td => td.classList.remove('ai-preview'));
+  const banner = document.getElementById('ai-preview-banner');
+  if (banner) banner.classList.remove('visible');
+}
+
+function confirmAIPreview() {
+  if (!aiPreviewState) return;
+  const { patIdx, suggestionId } = aiPreviewState;
+  const original = aiPreviewState.original;
+  // Restore original first, then apply with undo
+  currentState[patIdx] = original;
+  aiPreviewState = null;
+  applySuggestion(suggestionId);
+  document.querySelectorAll('td.ai-preview').forEach(td => td.classList.remove('ai-preview'));
+  const banner = document.getElementById('ai-preview-banner');
+  if (banner) banner.classList.remove('visible');
+}
+
+function applySuggestion(id) {
+  const s = aiSuggestions.find(x => x.id === id);
+  if (!s || !s.changes || !s.changes.length) return;
+  const patIdx = activePattern;
+  pushUndo(patIdx);
+  applyChangesToState(patIdx, s.changes);
+  saveState();
+  render(patIdx);
+  s.dismissed = true; // hide after applying
+  scheduleAIAnalysis(patIdx);
+  renderAIPanel();
+  showUndoToast('✅ Sugerencia aplicada');
+}
+
+function applyChangesToState(patIdx, changes) {
+  for (const ch of changes) {
+    const row = currentState[patIdx][ch.rowIdx];
+    if (row && ch.colIdx >= 0 && ch.colIdx < row.acts.length) {
+      row.acts[ch.colIdx] = ch.to;
+    }
+  }
+}
+
+function applyAllSafe() {
+  const safe = aiSuggestions.filter(s => !s.dismissed && s.confidence === 'high' && !s.conflictsWith.length);
+  if (!safe.length) return;
+  let applied = 0;
+  const patIdx = activePattern;
+  pushUndo(patIdx);
+  // Apply in order of impact
+  const sorted = [...safe].sort((a,b) => b.scoreDelta - a.scoreDelta);
+  for (const s of sorted) {
+    if (!s.changes || !s.changes.length) continue;
+    applyChangesToState(patIdx, s.changes);
+    s.dismissed = true;
+    applied++;
+  }
+  saveState();
+  render(patIdx);
+  scheduleAIAnalysis(patIdx);
+  renderAIPanel();
+  showUndoToast(`⚡ ${applied} sugerencias aplicadas`);
+}
+
+// ── Debounced analysis trigger ────────────────────────────────────────────────
+function scheduleAIAnalysis(patIdx) {
+  clearTimeout(aiAnalysisTimer);
+  aiAnalysisTimer = setTimeout(() => {
+    aiSuggestions = runAIAnalysis(patIdx != null ? patIdx : activePattern);
+    updateAIBadge();
+    const panel = document.getElementById('ai-panel');
+    if (panel && panel.classList.contains('open')) renderAIPanelBody();
+  }, 500);
+}
+function triggerAIAnalysis() {
+  const body = document.getElementById('ai-panel-body');
+  if (body) body.innerHTML = '<div class="ai-loading">⏳ Analizando patrón…</div>';
+  clearTimeout(aiAnalysisTimer);
+  aiAnalysisTimer = setTimeout(() => {
+    aiSuggestions = runAIAnalysis(activePattern);
+    updateAIBadge();
+    renderAIPanelBody();
+  }, 100);
+}
+
+// ── Core: runAIAnalysis ───────────────────────────────────────────────────────
+function runAIAnalysis(patIdx) {
+  const t0 = performance.now();
+  const allSuggestions = [
+    ...analyzeLunches(patIdx),
+    ...analyzeOffFloor(patIdx),
+    ...analyzeShifts(patIdx),
+    ...analyzeDD(patIdx),
+    ...analyzePairSwaps(patIdx),
+    ...analyzeSupplyDemand(patIdx),
+    ...analyzePersonEfficiency(patIdx),
+    ...analyzeRoleDistribution(patIdx),
+    ...analyzeResilience(patIdx),
+    ...analyzeCrossPattern(),
+    ...questionCoverageMins(patIdx),
+    ...questionPeakHours(),
+    ...questionRoleHours(),
+    ...questionStaffing(patIdx),
+    ...questionMeetings(patIdx),
+  ];
+  const result = deduplicateAndSort(allSuggestions);
+  // Restore dismissed status
+  result.forEach(s => { if (aiDismissed.has(s.id)) s.dismissed = true; });
+  const t1 = performance.now();
+  console.debug(`[AI] Analysis: ${result.length} suggestions in ${(t1-t0).toFixed(1)}ms`);
+  return result;
+}
+
+function deduplicateAndSort(suggestions) {
+  const seen = new Set();
+  const unique = suggestions.filter(s => {
+    if (seen.has(s.id)) return false;
+    seen.add(s.id);
+    return true;
+  });
+  return unique.sort((a,b) => b.scoreDelta - a.scoreDelta);
+}
+
+// ── Helper: build counts for a patIdx ────────────────────────────────────────
+function buildCounts(rows) {
+  const n = TIME_SLOTS.length;
+  const counts = { Floor: new Array(n).fill(0), Coach: new Array(n).fill(0), Support: new Array(n).fill(0), LDSup: new Array(n).fill(0), Lunch: new Array(n).fill(0), AOR: new Array(n).fill(0), Mgrs: new Array(n).fill(0) };
+  for (const row of rows) {
+    const isMgr = row.role === 'Manager';
+    for (let c = 0; c < n; c++) {
+      const a = row.acts[c];
+      if (a === 'Coach')   { counts.Coach[c]++; counts.Floor[c]++; if (isMgr) counts.Mgrs[c]++; }
+      if (a === 'Support') { counts.Support[c]++; counts.Floor[c]++; if (isMgr) counts.Mgrs[c]++; }
+      if (a === 'LDSup')   { counts.LDSup[c]++; counts.Floor[c]++; }
+      if (a === 'Lunch')   counts.Lunch[c]++;
+      if (a === 'AOR' || a === 'LDOPS') counts.AOR[c]++;
+    }
+  }
+  return counts;
+}
+
+function scoreDelta(patIdx, changes) {
+  // Calculate score before and after changes
+  const rows = currentState[patIdx];
+  const before = calculateScoreForRows(rows, patIdx).score;
+  // Clone and apply
+  const cloned = rows.map(r => ({ ...r, acts: [...r.acts] }));
+  for (const ch of changes) { if (cloned[ch.rowIdx]) cloned[ch.rowIdx].acts[ch.colIdx] = ch.to; }
+  const after = calculateScoreForRows(cloned, patIdx).score;
+  return after - before;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LEVEL 1 — TACTICAL ANALYZERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function analyzeLunches(patIdx) {
+  const rows = currentState[patIdx];
+  const BR = BUSINESS_RULES;
+  const n = TIME_SLOTS.length;
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+  const suggestions = [];
+
+  const lunchWinStart = TIME_SLOTS.indexOf(BR.lunch.windowStart);
+  const lunchWinEnd   = TIME_SLOTS.indexOf(BR.lunch.windowEnd);
+
+  // Peak hours set
+  const peakSet = new Set();
+  for (const ph of BR.coverage.peakHours) {
+    const s = TIME_SLOTS.indexOf(ph.start), e = TIME_SLOTS.indexOf(ph.end);
+    if (s>=0 && e>=0) for (let i=s;i<=e;i++) peakSet.add(i);
+  }
+
+  // Quiet hours set
+  const quietSet = new Set();
+  for (const qh of (BR.quietHours||[])) {
+    const s = TIME_SLOTS.indexOf(qh.start), e = TIME_SLOTS.indexOf(qh.end);
+    if (s>=0 && e>=0) for (let i=s;i<=e;i++) quietSet.add(i);
+  }
+
+  // Count lunches per slot
+  const counts = buildCounts(rows);
+  const currentScore = calculateScoreForRows(rows, patIdx).score;
+
+  rows.forEach((row, rowIdx) => {
+    const [si, ei] = shiftIndices(row.shift);
+    const lunchSlots = [];
+    for (let c=si; c<ei; c++) if (row.acts[c]==='Lunch') lunchSlots.push(c);
+    if (!lunchSlots.length) return;
+
+    const firstLunch = Math.min(...lunchSlots);
+    const lastLunch  = Math.max(...lunchSlots);
+
+    // Lunch in peak hour?
+    if (peakSet.has(firstLunch)) {
+      // Try to find a quiet slot to move lunch to
+      let bestSlot = -1;
+      for (let c = lunchWinStart; c <= lunchWinEnd - 1; c++) {
+        if (!peakSet.has(c) && c >= si && c + lunchSlots.length - 1 < ei) {
+          // Check target slots are within shift and not reserved
+          let ok = true;
+          for (let k=0; k<lunchSlots.length; k++) {
+            const tgt = c + k;
+            if (row.acts[tgt] === 'Lunch') continue; // already lunch
+            // Reject empty (outside shift) or DD slots — can't place lunch there
+            if (row.acts[tgt] === '' || row.acts[tgt] === 'DD') { ok = false; break; }
+          }
+          if (ok && counts.Lunch[c] < BR.lunch.maxSimultaneous) {
+            bestSlot = c; break;
+          }
+        }
+      }
+      if (bestSlot >= 0) {
+        const changes = [];
+        for (let k=0; k<lunchSlots.length; k++) {
+          changes.push({ rowIdx, colIdx: lunchSlots[k], from:'Lunch', to: row.role==='Manager' ? (getFloorRoleForRow(row)||'Support') : 'LDSup' });
+          changes.push({ rowIdx, colIdx: bestSlot+k, from: row.acts[bestSlot+k], to:'Lunch' });
+        }
+        const delta = scoreDelta(patIdx, changes);
+        if (delta >= 0) {
+          suggestions.push({
+            id: `lunch-peak-${rowIdx}`,
+            level: 'tactical', category: 'lunch',
+            title: `Mover Lunch de ${row.role} ${rowIdx+1} fuera de hora pico`,
+            description: `El lunch a las ${TIME_SLOTS[firstLunch]} cae en hora pico. Moverlo a las ${TIME_SLOTS[bestSlot]} (franja tranquila) mejora la cobertura en los slots más críticos.`,
+            impact: `📊 Score: ${currentScore}% → ${currentScore + delta}%\n✅ Floor ${TIME_SLOTS[firstLunch]}: +${lunchSlots.length} personas`,
+            confidence: delta >= 2 ? 'high' : 'medium',
+            scoreDelta: delta,
+            currentScore,
+            projectedScore: currentScore + delta,
+            affectedSlots: [...lunchSlots, ...lunchSlots.map((_,k)=>bestSlot+k)],
+            affectedRows: [rowIdx],
+            changes,
+            conflictsWith: [],
+            dismissed: false,
+          });
+        }
+      }
+    }
+
+    // Too many lunches at the same time?
+    for (const ls of lunchSlots) {
+      if (counts.Lunch[ls] > BR.lunch.maxSimultaneous) {
+        suggestions.push({
+          id: `lunch-simultaneous-${ls}`,
+          level: 'tactical', category: 'lunch',
+          title: `${counts.Lunch[ls]} lunches simultáneos a las ${TIME_SLOTS[ls]}`,
+          description: `Hay ${counts.Lunch[ls]} personas en Lunch al mismo tiempo en el slot ${TIME_SLOTS[ls]}, superando el máximo recomendado de ${BR.lunch.maxSimultaneous}. Esto puede dejar la tienda con cobertura insuficiente.`,
+          impact: `⚠️ Máximo simultáneo: ${BR.lunch.maxSimultaneous} — actual: ${counts.Lunch[ls]}\n✅ Escalonar los lunches mejora la cobertura`,
+          confidence: 'medium',
+          scoreDelta: 2,
+          currentScore,
+          projectedScore: currentScore + 2,
+          affectedSlots: [ls],
+          affectedRows: [],
+          changes: [],
+          conflictsWith: [],
+          dismissed: false,
+        });
+        break; // one suggestion per excess cluster
+      }
+    }
+
+    // Lunch out of window?
+    if (firstLunch < lunchWinStart || firstLunch > lunchWinEnd) {
+      suggestions.push({
+        id: `lunch-window-${rowIdx}`,
+        level: 'tactical', category: 'lunch',
+        title: `Lunch de ${row.role} ${rowIdx+1} fuera de ventana horaria`,
+        description: `El lunch empieza a las ${TIME_SLOTS[firstLunch]}, fuera de la ventana permitida (${BR.lunch.windowStart}–${BR.lunch.windowEnd}). Esto penaliza el score.`,
+        impact: `🔴 Ventana: ${BR.lunch.windowStart}–${BR.lunch.windowEnd} — actual: ${TIME_SLOTS[firstLunch]}`,
+        confidence: 'high',
+        scoreDelta: 3,
+        currentScore,
+        projectedScore: currentScore + 3,
+        affectedSlots: lunchSlots,
+        affectedRows: [rowIdx],
+        changes: [],
+        conflictsWith: [],
+        dismissed: false,
+      });
+    }
+  });
+
+  return suggestions;
+}
+
+function analyzeOffFloor(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const counts = buildCounts(rows);
+  const BR = BUSINESS_RULES;
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+  const minFloor  = BR.coverage.lunchTrans.totalFloor;
+
+  const peakSet = new Set();
+  for (const ph of BR.coverage.peakHours) {
+    const s = TIME_SLOTS.indexOf(ph.start), e = TIME_SLOTS.indexOf(ph.end);
+    if (s>=0 && e>=0) for (let i=s;i<=e;i++) peakSet.add(i);
+  }
+
+  rows.forEach((row, rowIdx) => {
+    if (row.role !== 'Manager') return;
+    const [si, ei] = shiftIndices(row.shift);
+    // AOR during peak when floor is low?
+    for (let c=si; c<ei; c++) {
+      if ((row.acts[c]==='AOR') && peakSet.has(c) && counts.Floor[c] < minFloor) {
+        const floorRole = getFloorRoleForRow(row) || 'Support';
+        const changes = [{ rowIdx, colIdx: c, from:'AOR', to: floorRole }];
+        const delta = scoreDelta(patIdx, changes);
+        if (delta > 0) {
+          suggestions.push({
+            id: `aor-peak-${rowIdx}-${c}`,
+            level: 'tactical', category: 'aor',
+            title: `${row.role} ${rowIdx+1} en AOR durante hora pico (${TIME_SLOTS[c]})`,
+            description: `${row.role} ${rowIdx+1} está haciendo AOR a las ${TIME_SLOTS[c]} cuando el floor tiene solo ${counts.Floor[c]} personas (mínimo: ${minFloor}). Cambiar a ${floorRole} mejora la cobertura.`,
+            impact: `📊 Floor ${TIME_SLOTS[c]}: ${counts.Floor[c]} → ${counts.Floor[c]+1} (+1)\n✅ Score estimado: +${delta} pts`,
+            confidence: delta >= 2 ? 'high' : 'medium',
+            scoreDelta: delta,
+            currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+            projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + delta,
+            affectedSlots: [c],
+            affectedRows: [rowIdx],
+            changes,
+            conflictsWith: [],
+            dismissed: false,
+          });
+          break; // one suggestion per person
+        }
+      }
+    }
+  });
+
+  return suggestions;
+}
+
+function analyzeShifts(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const counts = buildCounts(rows);
+  const BR = BUSINESS_RULES;
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+
+  // Check for coverage gap between morning and afternoon shifts
+  let gapSlots = [];
+  for (let c=openStart; c<=openEnd; c++) {
+    if (counts.Floor[c] === 0) gapSlots.push(c);
+  }
+  if (gapSlots.length > 0) {
+    suggestions.push({
+      id: `shifts-gap-${patIdx}`,
+      level: 'tactical', category: 'shifts',
+      title: `Sin cobertura en ${gapSlots.length} slot(s) dentro del horario`,
+      description: `Los slots ${gapSlots.map(c=>TIME_SLOTS[c]).join(', ')} no tienen nadie en floor durante el horario de apertura. Esto genera una penalización grave en el score.`,
+      impact: `🔴 ${gapSlots.length} slots sin cobertura — penalización: -${gapSlots.length*10} pts\n✅ Cubrir estos slots podría mejorar el score significativamente`,
+      confidence: 'high',
+      scoreDelta: gapSlots.length * 8,
+      currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+      projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + gapSlots.length*8,
+      affectedSlots: gapSlots,
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  // Check closing shift coverage
+  const leadsAtClose = rows.filter(r => r.role==='Lead'    && r.acts[openEnd]!=='').length;
+  const mgrsAtClose  = rows.filter(r => r.role==='Manager' && r.acts[openEnd]!=='').length;
+  if (leadsAtClose < BR.closing.minLeads || mgrsAtClose < BR.closing.minManagers) {
+    suggestions.push({
+      id: `shifts-closing-${patIdx}`,
+      level: 'tactical', category: 'shifts',
+      title: `Cobertura de cierre insuficiente`,
+      description: `Al cierre (${TIME_SLOTS[openEnd]}) hay ${leadsAtClose} Lead(s) y ${mgrsAtClose} Mgr(s). Se necesitan mínimo ${BR.closing.minLeads} Leads y ${BR.closing.minManagers} Mgr.`,
+      impact: `🔴 Cierre: ${leadsAtClose}/${BR.closing.minLeads} Leads, ${mgrsAtClose}/${BR.closing.minManagers} Mgr\n✅ Añadir un turno de tarde o extender turnos existentes`,
+      confidence: 'high',
+      scoreDelta: 4,
+      currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+      projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + 4,
+      affectedSlots: [openEnd],
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  return suggestions;
+}
+
+function analyzeDD(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const ddSlot = TIME_SLOTS.indexOf(BUSINESS_RULES.dd.time); // 09:15
+  if (ddSlot < 0) return suggestions;
+
+  rows.forEach((row, rowIdx) => {
+    const [si, ei] = shiftIndices(row.shift);
+    const inTurnAtDD = si <= ddSlot && ddSlot < ei;
+    const hasDD = row.acts[ddSlot] === 'DD';
+    // Morning shift without DD
+    if (inTurnAtDD && !hasDD && row.acts[ddSlot] !== '') {
+      suggestions.push({
+        id: `dd-missing-${rowIdx}`,
+        level: 'tactical', category: 'dd',
+        title: `${row.role} ${rowIdx+1} en turno a las 09:15 sin DD`,
+        description: `${row.role} ${rowIdx+1} (turno ${row.shift}) tiene ${row.acts[ddSlot]} a las 09:15 en lugar de DD. Todos los que están en turno a esa hora deben hacer el Daily Download.`,
+        impact: `⚠️ Actividad actual a las 09:15: ${row.acts[ddSlot] || '(vacío)'}\n✅ Cambiar a DD para cumplir la regla`,
+        confidence: 'high',
+        scoreDelta: 1,
+        currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+        projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + 1,
+        affectedSlots: [ddSlot],
+        affectedRows: [rowIdx],
+        changes: [{ rowIdx, colIdx: ddSlot, from: row.acts[ddSlot], to:'DD' }],
+        conflictsWith: [],
+        dismissed: false,
+      });
+    }
+    // Afternoon/late shift WITH DD (shouldn't have DD)
+    if (!inTurnAtDD && hasDD) {
+      suggestions.push({
+        id: `dd-wrong-${rowIdx}`,
+        level: 'tactical', category: 'dd',
+        title: `${row.role} ${rowIdx+1} tiene DD fuera de turno`,
+        description: `${row.role} ${rowIdx+1} (turno ${row.shift}) no empieza hasta las ${TIME_SLOTS[si]} pero tiene DD marcado a las 09:15 — fuera de su turno.`,
+        impact: `🔴 DD a las 09:15 pero turno empieza a ${TIME_SLOTS[si]}\n✅ Eliminar DD de este slot`,
+        confidence: 'high',
+        scoreDelta: 1,
+        currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+        projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + 1,
+        affectedSlots: [ddSlot],
+        affectedRows: [rowIdx],
+        changes: [{ rowIdx, colIdx: ddSlot, from:'DD', to:'' }],
+        conflictsWith: [],
+        dismissed: false,
+      });
+    }
+  });
+  return suggestions;
+}
+
+function analyzePairSwaps(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+  const BR = BUSINESS_RULES;
+
+  // For each pair of Managers, check if swapping their floor role improves Coach count
+  const mgrs = rows.map((r,i)=>({...r,rowIdx:i})).filter(r=>r.role==='Manager');
+  for (let a=0; a<mgrs.length; a++) {
+    for (let b=a+1; b<mgrs.length; b++) {
+      const mA = mgrs[a], mB = mgrs[b];
+      const [siA,eiA] = shiftIndices(mA.shift);
+      const [siB,eiB] = shiftIndices(mB.shift);
+      // Find overlapping floor slots
+      const sharedSlots = [];
+      for (let c=Math.max(siA,siB); c<Math.min(eiA,eiB); c++) {
+        if ((mA.acts[c]==='Coach'||mA.acts[c]==='Support') && (mB.acts[c]==='Coach'||mB.acts[c]==='Support') && mA.acts[c]!==mB.acts[c]) {
+          sharedSlots.push(c);
+        }
+      }
+      if (sharedSlots.length < MIN_SWAP_SLOTS) continue; // swap only meaningful full-role-day swaps
+      const changes = sharedSlots.flatMap(c => [
+        { rowIdx: mA.rowIdx, colIdx: c, from: mA.acts[c], to: mB.acts[c] },
+        { rowIdx: mB.rowIdx, colIdx: c, from: mB.acts[c], to: mA.acts[c] },
+      ]);
+      const delta = scoreDelta(patIdx, changes);
+      if (delta > 0) {
+        suggestions.push({
+          id: `swap-roles-${mA.rowIdx}-${mB.rowIdx}`,
+          level: 'tactical', category: 'swap',
+          title: `Intercambiar roles Coach/Support entre Mgr ${mA.rowIdx+1} y Mgr ${mB.rowIdx+1}`,
+          description: `Intercambiar los roles de Coach y Support entre estos dos Managers en sus slots compartidos mejora el balance de cobertura.`,
+          impact: `📊 Score estimado: +${delta} pts\n✅ ${sharedSlots.length} slots mejorados`,
+          confidence: 'medium',
+          scoreDelta: delta,
+          currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+          projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + delta,
+          affectedSlots: sharedSlots,
+          affectedRows: [mA.rowIdx, mB.rowIdx],
+          changes,
+          conflictsWith: [],
+          dismissed: false,
+        });
+      }
+    }
+  }
+  return suggestions;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LEVEL 2 — STRATEGIC ANALYZERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function analyzeSupplyDemand(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const counts = buildCounts(rows);
+  const BR = BUSINESS_RULES;
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+  const normFloor = BR.coverage.normal.totalFloor;
+  const minFloor  = BR.coverage.lunchTrans.totalFloor;
+
+  const peakSet = new Set();
+  for (const ph of BR.coverage.peakHours) {
+    const s = TIME_SLOTS.indexOf(ph.start), e = TIME_SLOTS.indexOf(ph.end);
+    if (s>=0 && e>=0) for (let i=s;i<=e;i++) peakSet.add(i);
+  }
+
+  // Identify over/under supply clusters
+  let underSlots = [], overSlots = [];
+  for (let c=openStart; c<=openEnd; c++) {
+    if (counts.Floor[c] < minFloor) underSlots.push(c);
+    else if (counts.Floor[c] >= normFloor + 3) overSlots.push(c);
+  }
+
+  if (underSlots.length > 0 && overSlots.length > 0) {
+    suggestions.push({
+      id: `supply-demand-imbalance-${patIdx}`,
+      level: 'strategic', category: 'supply',
+      title: `Desequilibrio oferta/demanda: sub-cobertura en ${underSlots.length} slots y exceso en ${overSlots.length}`,
+      description: `Hay slots con cobertura insuficiente (${underSlots.map(c=>TIME_SLOTS[c]).join(', ')}) y otros con exceso de 3+ personas (${overSlots.map(c=>TIME_SLOTS[c]).join(', ')}). Reasignar personas de los slots con exceso a los deficitarios mejoraría el patrón globalmente.`,
+      impact: `🔴 Sub-cobertura: ${underSlots.length} slots (floor < ${minFloor})\n📈 Exceso: ${overSlots.length} slots (floor ≥ ${normFloor+3})\n✅ Redistribuir puede añadir +${Math.min(underSlots.length*2, 15)} pts`,
+      confidence: 'medium',
+      scoreDelta: Math.min(underSlots.length * 2, 15),
+      currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+      projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + Math.min(underSlots.length*2, 15),
+      affectedSlots: [...underSlots, ...overSlots],
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  // Check lunch clustering (4+ lunches at same time causing dip)
+  const lunchClusters = [];
+  for (let c=openStart; c<=openEnd; c++) {
+    if (counts.Lunch[c] >= 4) lunchClusters.push({ slot: c, count: counts.Lunch[c] });
+  }
+  if (lunchClusters.length > 0) {
+    suggestions.push({
+      id: `lunch-cluster-${patIdx}`,
+      level: 'strategic', category: 'supply',
+      title: `Caída drástica de cobertura por ${lunchClusters.length} cluster(s) de lunches`,
+      description: `${lunchClusters.map(l=>`A las ${TIME_SLOTS[l.slot]}: ${l.count} lunches simultáneos`).join('; ')}. Escalonar los lunches en ±30 minutos reduciría el impacto en la cobertura.`,
+      impact: `⚠️ Clusters de lunch detectados: ${lunchClusters.map(l=>TIME_SLOTS[l.slot]).join(', ')}\n✅ Escalonar lunches puede añadir +${lunchClusters.length*3} pts de score`,
+      confidence: 'medium',
+      scoreDelta: lunchClusters.length * 3,
+      currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+      projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + lunchClusters.length*3,
+      affectedSlots: lunchClusters.map(l=>l.slot),
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  return suggestions;
+}
+
+function analyzePersonEfficiency(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const BR = BUSINESS_RULES;
+  const isSat = patIdx === 3;
+  const expectedFloorH = isSat ? BR.saturday.manager.floorHours : BR.weekday.manager.floorHours;
+  const expectedAorH   = isSat ? BR.saturday.manager.aorHours   : BR.weekday.manager.aorHours;
+
+  rows.forEach((row, rowIdx) => {
+    if (row.role !== 'Manager') return;
+    const [si, ei] = shiftIndices(row.shift);
+    let floorSlots=0, aorSlots=0, emptySlots=0;
+    for (let c=si; c<ei; c++) {
+      const a = row.acts[c];
+      if (a==='Coach'||a==='Support') floorSlots++;
+      else if (a==='AOR'||a==='LDOPS') aorSlots++;
+      else if (a===''||a==='MEETING') {}
+      // DD/Lunch are neither
+    }
+    const floorH = floorSlots * 0.5;
+    const aorH   = aorSlots * 0.5;
+
+    if (floorH < expectedFloorH - 1) {
+      suggestions.push({
+        id: `efficiency-floor-low-${rowIdx}`,
+        level: 'strategic', category: 'efficiency',
+        title: `Manager ${rowIdx+1} con poco tiempo en floor (${floorH}h vs ${expectedFloorH}h esperadas)`,
+        description: `Manager ${rowIdx+1} (${row.shift}) tiene solo ${floorH}h de floor cuando la regla indica ${expectedFloorH}h. Tiene ${aorH}h de AOR — podría convertir ${(expectedFloorH-floorH).toFixed(1)}h de AOR en floor.`,
+        impact: `📊 Floor actual: ${floorH}h — objetivo: ${expectedFloorH}h\n⚠️ AOR actual: ${aorH}h (puede reducirse ${(expectedFloorH-floorH).toFixed(1)}h)`,
+        confidence: 'medium',
+        scoreDelta: Math.round((expectedFloorH - floorH) * 2),
+        currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+        projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + Math.round((expectedFloorH-floorH)*2),
+        affectedSlots: [],
+        affectedRows: [rowIdx],
+        changes: [],
+        conflictsWith: [],
+        dismissed: false,
+      });
+    }
+  });
+
+  return suggestions;
+}
+
+function analyzeRoleDistribution(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const counts = buildCounts(rows);
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+
+  // Check slots where Coach >> Support or vice versa
+  const imbalanced = [];
+  for (let c=openStart; c<=openEnd; c++) {
+    const coach   = counts.Coach[c];
+    const support = counts.Support[c];
+    if ((coach+support) < 2) continue;
+    if (coach > 0 && support === 0 && coach >= 3) imbalanced.push({ slot:c, type:'too-coach', coach, support });
+    if (support > 0 && coach === 0 && support >= 3) imbalanced.push({ slot:c, type:'no-coach', coach, support });
+  }
+
+  if (imbalanced.length > 0) {
+    const noCoach = imbalanced.filter(x=>x.type==='no-coach');
+    if (noCoach.length > 0) {
+      suggestions.push({
+        id: `roles-no-coach-${patIdx}`,
+        level: 'strategic', category: 'roles',
+        title: `Sin Coach en ${noCoach.length} slot(s) — solo Support`,
+        description: `En los slots ${noCoach.map(x=>TIME_SLOTS[x.slot]).join(', ')} hay 0 Coaches en floor y ${noCoach[0].support}+ Support. Se necesitan mínimo 2 Coach en floor siempre. Revisar el rol diario de los Managers en esos horarios.`,
+        impact: `🔴 Coach mínimo (2) incumplido en ${noCoach.length} slots\n✅ Cambiar al menos 2 Support a Coach en esos slots`,
+        confidence: 'high',
+        scoreDelta: noCoach.length * 2,
+        currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+        projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + noCoach.length*2,
+        affectedSlots: noCoach.map(x=>x.slot),
+        affectedRows: [],
+        changes: [],
+        conflictsWith: [],
+        dismissed: false,
+      });
+    }
+  }
+
+  return suggestions;
+}
+
+function analyzeResilience(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const BR = BUSINESS_RULES;
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+  const minFloor  = BR.coverage.lunchTrans.totalFloor;
+
+  let criticalPeople = [];
+  for (let rowIdx=0; rowIdx<rows.length; rowIdx++) {
+    const without = rows.filter((_,i)=>i!==rowIdx);
+    const cWithout = buildCounts(without);
+    let breaksMin = false;
+    for (let c=openStart; c<=openEnd; c++) {
+      if (cWithout.Floor[c] < minFloor) { breaksMin = true; break; }
+    }
+    if (breaksMin) criticalPeople.push(rowIdx);
+  }
+
+  const resilScore = Math.round((1 - criticalPeople.length/rows.length)*100);
+
+  if (criticalPeople.length > rows.length * FRAGILITY_THRESHOLD) {
+    suggestions.push({
+      id: `resilience-fragile-${patIdx}`,
+      level: 'strategic', category: 'resilience',
+      title: `Patrón frágil: ${criticalPeople.length}/${rows.length} personas son críticas`,
+      description: `Si falta cualquiera de las ${criticalPeople.length} personas críticas (posiciones: ${criticalPeople.map(i=>`${rows[i].role} ${i+1}`).join(', ')}), la cobertura mínima no se cumple. El índice de resiliencia es ${resilScore}%.`,
+      impact: `⚠️ Índice de resiliencia: ${resilScore}%\n🔴 ${criticalPeople.length} personas sin sustituto funcional\n✅ Distribuir mejor las horas de floor aumenta la resiliencia`,
+      confidence: 'medium',
+      scoreDelta: 0,
+      currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+      projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+      affectedSlots: [],
+      affectedRows: criticalPeople,
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  return suggestions;
+}
+
+function analyzeCrossPattern() {
+  const suggestions = [];
+  const scores = [0,1,2,3].map(idx => calculateScoreForRows(currentState[idx], idx).score);
+  const avg = scores.reduce((a,b)=>a+b,0)/4;
+
+  // Find worst pattern
+  const worstIdx = scores.indexOf(Math.min(...scores));
+  const bestIdx  = scores.indexOf(Math.max(...scores));
+  if (scores[bestIdx] - scores[worstIdx] > 15) {
+    suggestions.push({
+      id: `cross-pattern-gap`,
+      level: 'strategic', category: 'cross',
+      title: `Gran diferencia entre patrones: ${PATTERN_NAMES[worstIdx]} (${scores[worstIdx]}%) vs ${PATTERN_NAMES[bestIdx]} (${scores[bestIdx]}%)`,
+      description: `El patrón "${PATTERN_NAMES[worstIdx]}" tiene ${scores[worstIdx]}% de score mientras que "${PATTERN_NAMES[bestIdx]}" tiene ${scores[bestIdx]}%. Una diferencia de ${scores[bestIdx]-scores[worstIdx]} puntos sugiere que el patrón peor tiene problemas estructurales que vale la pena revisar.`,
+      impact: `📊 Scores semanales: L/J/V=${scores[0]}%, Mar=${scores[1]}%, Mié=${scores[2]}%, Sáb=${scores[3]}%\n✅ Alinear el peor patrón con las mejores prácticas del mejor`,
+      confidence: 'medium',
+      scoreDelta: 0,
+      currentScore: scores[worstIdx],
+      projectedScore: scores[worstIdx],
+      affectedSlots: [],
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  // Find consistently weak slots across all patterns
+  const n = TIME_SLOTS.length;
+  const openStart = getOpenStart(0);
+  const openEnd   = getOpenEnd();
+  const slotProblems = new Array(n).fill(0);
+  for (let patIdx=0; patIdx<4; patIdx++) {
+    const rows = currentState[patIdx];
+    const counts = buildCounts(rows);
+    const patOpenStart = getOpenStart(patIdx);
+    for (let c=patOpenStart; c<=openEnd; c++) {
+      if (counts.Floor[c] < BUSINESS_RULES.coverage.lunchTrans.totalFloor) slotProblems[c]++;
+    }
+  }
+  const worstSlots = [];
+  for (let c=openStart; c<=openEnd; c++) {
+    if (slotProblems[c] >= 3) worstSlots.push({ slot:c, count:slotProblems[c] });
+  }
+  if (worstSlots.length > 0) {
+    suggestions.push({
+      id: `cross-pattern-slots`,
+      level: 'strategic', category: 'cross',
+      title: `Franjas problemáticas en ${worstSlots.length} slot(s) de forma recurrente`,
+      description: `Los slots ${worstSlots.map(x=>TIME_SLOTS[x.slot]).join(', ')} tienen cobertura insuficiente en ${worstSlots[0].count} de 4 patrones. Este es un problema estructural, no puntual.`,
+      impact: `🔴 Slots con sub-cobertura recurrente (≥3 patrones): ${worstSlots.map(x=>TIME_SLOTS[x.slot]).join(', ')}\n✅ Añadir personal o reorganizar lunches en esas franjas`,
+      confidence: 'high',
+      scoreDelta: 0,
+      currentScore: avg,
+      projectedScore: avg,
+      affectedSlots: worstSlots.map(x=>x.slot),
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  return suggestions;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LEVEL 3 — RULE QUESTIONING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function questionCoverageMins(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const BR = BUSINESS_RULES;
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+  const numOpen   = openEnd - openStart + 1;
+  const counts    = buildCounts(rows);
+
+  // How many slots ACTUALLY meet the 6-floor minimum?
+  const normFloor = BR.coverage.normal.totalFloor;
+  const minFloor  = BR.coverage.lunchTrans.totalFloor;
+  let meetsNorm=0, meetsMins=0, total=0;
+  for (let c=openStart; c<=openEnd; c++) {
+    total++;
+    if (counts.Floor[c] >= normFloor) meetsNorm++;
+    if (counts.Floor[c] >= minFloor)  meetsMins++;
+  }
+  const normPct = Math.round(meetsNorm/total*100);
+  const minPct  = Math.round(meetsMins/total*100);
+
+  if (normPct < 70) {
+    // Calculate theoretical max floor
+    let totalFloorSlots = 0;
+    for (const row of rows) {
+      const [si,ei] = shiftIndices(row.shift);
+      for (let c=si;c<ei;c++) {
+        if (row.acts[c]==='Coach'||row.acts[c]==='Support'||row.acts[c]==='LDSup') totalFloorSlots++;
+      }
+    }
+    const maxTheoreticalAvg = (totalFloorSlots/numOpen).toFixed(1);
+    suggestions.push({
+      id: `question-coverage-mins-${patIdx}`,
+      level: 'rules', category: 'coverage',
+      title: `¿Es realista el mínimo de ${normFloor} personas en floor?`,
+      description: `Tu regla exige ${normFloor} personas en floor, pero solo se cumple en el ${normPct}% de los slots. El máximo teórico promedio con el staff actual es ${maxTheoreticalAvg} personas/slot. Considera si el mínimo de ${normFloor} es alcanzable con el equipo disponible, o si debería bajarse a ${normFloor-1} en franjas tranquilas.`,
+      impact: `📊 Cumplimiento actual del mínimo (${normFloor}): ${normPct}% de slots\n📈 Máximo teórico: ${maxTheoreticalAvg} personas/slot promedio\n💡 Bajar a ${normFloor-1} en franjas tranquilas podría mejorar el score sin impacto real`,
+      confidence: 'low',
+      scoreDelta: 5,
+      currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+      projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + 5,
+      affectedSlots: [],
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  // Coach minimum (2) — check fulfillment rate
+  let coachOk = 0;
+  for (let c=openStart; c<=openEnd; c++) if (counts.Coach[c]>=2) coachOk++;
+  const coachPct = Math.round(coachOk/total*100);
+  if (coachPct < 68) {
+    suggestions.push({
+      id: `question-coach-min-${patIdx}`,
+      level: 'rules', category: 'coverage',
+      title: `Mínimo de 2 Coach cumplido solo en ${coachPct}% de los slots`,
+      description: `La regla exige 2 Coach en floor en todo momento, pero se cumple en solo ${coachPct}% de los slots. O necesitas más Managers en rol Coach, o deberías revisar si 1 Coach + 3 Support es suficiente en franjas de baja actividad.`,
+      impact: `📊 Coach ≥ 2: ${coachPct}% de slots OK\n💡 Considerar 1 Coach suficiente en franjas tranquilas (09:30-11:00, 15:00-16:00)`,
+      confidence: 'low',
+      scoreDelta: 3,
+      currentScore: calculateScoreForRows(currentState[patIdx],patIdx).score,
+      projectedScore: calculateScoreForRows(currentState[patIdx],patIdx).score + 3,
+      affectedSlots: [],
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  return suggestions;
+}
+
+function questionPeakHours() {
+  const suggestions = [];
+  const n = TIME_SLOTS.length;
+  const openStart = getOpenStart(0);
+  const openEnd   = getOpenEnd();
+
+  // Calculate average floor per slot across all patterns
+  const avgFloor = new Array(n).fill(0);
+  let patCount = 0;
+  for (let patIdx=0; patIdx<4; patIdx++) {
+    const counts = buildCounts(currentState[patIdx]);
+    const os = getOpenStart(patIdx);
+    for (let c=os; c<=openEnd; c++) avgFloor[c] += counts.Floor[c];
+    patCount++;
+  }
+  for (let c=0; c<n; c++) avgFloor[c] /= patCount;
+
+  // Get peak slots set from rules
+  const peakSet = new Set();
+  for (const ph of BUSINESS_RULES.coverage.peakHours) {
+    const s = TIME_SLOTS.indexOf(ph.start), e = TIME_SLOTS.indexOf(ph.end);
+    if (s>=0 && e>=0) for (let i=s;i<=e;i++) peakSet.add(i);
+  }
+  const quietSet = new Set();
+  for (const qh of (BUSINESS_RULES.quietHours||[])) {
+    const s = TIME_SLOTS.indexOf(qh.start), e = TIME_SLOTS.indexOf(qh.end);
+    if (s>=0 && e>=0) for (let i=s;i<=e;i++) quietSet.add(i);
+  }
+
+  // Check if any "quiet" slot has more floor than a "peak" slot
+  let quietHigherThanPeak = [];
+  for (const qs of quietSet) {
+    for (const ps of peakSet) {
+      if (avgFloor[qs] > avgFloor[ps] + 1) {
+        quietHigherThanPeak.push({ quiet: qs, peak: ps, qFloor: avgFloor[qs].toFixed(1), pFloor: avgFloor[ps].toFixed(1) });
+      }
+    }
+  }
+  if (quietHigherThanPeak.length > 0) {
+    const ex = quietHigherThanPeak[0];
+    suggestions.push({
+      id: `question-peak-hours`,
+      level: 'rules', category: 'peak',
+      title: `¿Están bien clasificadas las horas pico?`,
+      description: `La franja "${TIME_SLOTS[ex.quiet]}" que marcas como "tranquila" tiene de media ${ex.qFloor} personas en floor, mientras que la franja "${TIME_SLOTS[ex.peak]}" que marcas como "pico" tiene solo ${ex.pFloor}. Los datos reales no coinciden con la clasificación actual. ¿Deberías reclasificar las franjas?`,
+      impact: `📊 Franja tranquila ${TIME_SLOTS[ex.quiet]}: ${ex.qFloor} floor promedio\n📊 Franja pico ${TIME_SLOTS[ex.peak]}: ${ex.pFloor} floor promedio\n💡 Reclasificar franjas alinearía las expectativas con la realidad`,
+      confidence: 'low',
+      scoreDelta: 2,
+      currentScore: 0,
+      projectedScore: 2,
+      affectedSlots: [ex.quiet, ex.peak],
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  return suggestions;
+}
+
+function questionRoleHours() {
+  const suggestions = [];
+  const BR = BUSINESS_RULES;
+
+  // Check if increasing manager floor time would help
+  for (let patIdx=0; patIdx<4; patIdx++) {
+    const rows = currentState[patIdx];
+    const openStart = getOpenStart(patIdx);
+    const openEnd   = getOpenEnd();
+    const counts    = buildCounts(rows);
+    const isSat = patIdx === 3;
+
+    let underFloorSlots = 0;
+    for (let c=openStart; c<=openEnd; c++) {
+      if (counts.Floor[c] < BR.coverage.normal.totalFloor) underFloorSlots++;
+    }
+    if (underFloorSlots < 3) continue;
+
+    const floorH  = isSat ? BR.saturday.manager.floorHours  : BR.weekday.manager.floorHours;
+    const aorH    = isSat ? BR.saturday.manager.aorHours    : BR.weekday.manager.aorHours;
+
+    if (aorH >= 3) {
+      suggestions.push({
+        id: `question-role-hours-${patIdx}`,
+        level: 'rules', category: 'role-hours',
+        title: `¿${floorH}h floor / ${aorH}h AOR es la distribución óptima para ${PATTERN_NAMES[patIdx]}?`,
+        description: `El patrón "${PATTERN_NAMES[patIdx]}" tiene ${underFloorSlots} slots con cobertura insuficiente. Si los Managers hicieran ${floorH+1}h floor / ${aorH-1}h AOR, podrías cubrir mejor esos huecos. El impacto en AOR sería -1h/Manager/día pero la cobertura mejoraría significativamente.`,
+        impact: `📊 Slots con floor bajo: ${underFloorSlots}\n💡 ${floorH+1}h floor / ${aorH-1}h AOR añadiría ~+${Math.round(underFloorSlots*0.8)} pts al score\n⚠️ AOR se reduciría en ${(rows.filter(r=>r.role==='Manager').length)}h totales/día`,
+        confidence: 'low',
+        scoreDelta: Math.round(underFloorSlots * 0.8),
+        currentScore: calculateScoreForRows(rows, patIdx).score,
+        projectedScore: calculateScoreForRows(rows, patIdx).score + Math.round(underFloorSlots * 0.8),
+        affectedSlots: [],
+        affectedRows: [],
+        changes: [],
+        conflictsWith: [],
+        dismissed: false,
+      });
+      break; // one suggestion total to avoid spam
+    }
+  }
+
+  return suggestions;
+}
+
+function questionStaffing(patIdx) {
+  const rows = currentState[patIdx];
+  const suggestions = [];
+  const BR = BUSINESS_RULES;
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+  const numOpen   = openEnd - openStart + 1;
+  const normFloor = BR.coverage.normal.totalFloor;
+
+  // Max theoretical floor per slot
+  let totalFloorSlots = 0;
+  for (const row of rows) {
+    const [si,ei] = shiftIndices(row.shift);
+    for (let c=si;c<ei;c++) {
+      if (row.acts[c]==='Coach'||row.acts[c]==='Support'||row.acts[c]==='LDSup') totalFloorSlots++;
+    }
+  }
+  const maxAvg = totalFloorSlots / numOpen;
+
+  if (maxAvg < normFloor) {
+    const needed = Math.ceil(normFloor * numOpen / (HOURS_PER_SHIFT * SLOTS_PER_HOUR)); // rough estimate: (minFloor × openSlots) / (shift_hours × slots_per_hour)
+    suggestions.push({
+      id: `question-staffing-${patIdx}`,
+      level: 'rules', category: 'staffing',
+      title: `Staff insuficiente para cumplir todas las reglas en ${PATTERN_NAMES[patIdx]}`,
+      description: `Para mantener ${normFloor} personas en floor durante todas las ${numOpen} franjas de apertura, el máximo teórico con el staff actual es solo ${maxAvg.toFixed(1)} personas/slot. Esto significa que el objetivo de ${normFloor} es físicamente imposible de cumplir al 100% con el equipo actual.`,
+      impact: `📊 Mínimo requerido: ${normFloor} personas/slot × ${numOpen} slots\n📉 Máximo teórico: ${maxAvg.toFixed(1)} personas/slot\n💡 Añadir ~${Math.max(1, needed - rows.length)} persona(s) al patrón o relajar el mínimo`,
+      confidence: 'medium',
+      scoreDelta: 0,
+      currentScore: calculateScoreForRows(rows, patIdx).score,
+      projectedScore: calculateScoreForRows(rows, patIdx).score,
+      affectedSlots: [],
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  return suggestions;
+}
+
+function questionMeetings(patIdx) {
+  const suggestions = [];
+  const BR = BUSINESS_RULES;
+  if (patIdx !== 1 && patIdx !== 2) return suggestions; // meetings only on Tue/Wed
+
+  const rows  = currentState[patIdx];
+  const mtg   = patIdx===1 ? BR.meetings.martes : BR.meetings.miercoles;
+  const mStart = TIME_SLOTS.indexOf(mtg.start);
+  const mEnd   = TIME_SLOTS.indexOf(mtg.end);
+  if (mStart<0||mEnd<0) return suggestions;
+
+  // How many people are in MEETING during meeting slots?
+  const meetingAttendees = rows.filter(r => r.acts[mStart] === 'MEETING' || r.acts[mStart] === 'AOR').length;
+  const floorDuringMeeting = [];
+  for (let c=mStart; c<mEnd; c++) {
+    const cnt = rows.filter(r => r.acts[c]==='Coach'||r.acts[c]==='Support'||r.acts[c]==='LDSup').length;
+    floorDuringMeeting.push({ slot:c, count:cnt });
+  }
+  const minFloorMeeting = Math.min(...floorDuringMeeting.map(x=>x.count));
+
+  if (minFloorMeeting === 0) {
+    suggestions.push({
+      id: `question-meeting-zero-floor-${patIdx}`,
+      level: 'rules', category: 'meetings',
+      title: `Reunión de ${mtg.name}: 0 personas en floor durante ${mtg.start}-${mtg.end}`,
+      description: `Durante la reunión de ${mtg.name} (${mtg.start}-${mtg.end}), hay slots con CERO personas en floor. La regla dice que debe haber ${patIdx===1?mtg.exceptions.mgrSupport+' Mgr Support + '+mtg.exceptions.leadFloor+' Lead':'al menos '+mtg.exceptions.mgrFloor+' Manager'} en floor. Verificar que las excepciones están correctamente aplicadas.`,
+      impact: `🔴 Floor durante reunión: 0 personas en algunos slots\n✅ Asegurar que las excepciones de la reunión están en floor`,
+      confidence: 'high',
+      scoreDelta: 8,
+      currentScore: calculateScoreForRows(rows, patIdx).score,
+      projectedScore: calculateScoreForRows(rows, patIdx).score + 8,
+      affectedSlots: floorDuringMeeting.filter(x=>x.count===0).map(x=>x.slot),
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  } else if (minFloorMeeting < BUSINESS_RULES.coverage.lunchTrans.totalFloor) {
+    suggestions.push({
+      id: `question-meeting-low-floor-${patIdx}`,
+      level: 'rules', category: 'meetings',
+      title: `Reunión ${mtg.name}: floor bajo (${minFloorMeeting}) durante la reunión`,
+      description: `Durante ${mtg.name} (${mtg.start}-${mtg.end}) el floor baja a ${minFloorMeeting} personas, por debajo del mínimo de transición (${BUSINESS_RULES.coverage.lunchTrans.totalFloor}). ¿Se podría dividir la reunión en dos bloques de 1h con rotación de asistentes para mantener mejor cobertura?`,
+      impact: `⚠️ Floor mínimo durante reunión: ${minFloorMeeting} personas\n💡 Dividir en 2 grupos rotativos mantendría siempre ${Math.ceil(rows.length/2)} personas en floor`,
+      confidence: 'low',
+      scoreDelta: 3,
+      currentScore: calculateScoreForRows(rows, patIdx).score,
+      projectedScore: calculateScoreForRows(rows, patIdx).score + 3,
+      affectedSlots: floorDuringMeeting.map(x=>x.slot),
+      affectedRows: [],
+      changes: [],
+      conflictsWith: [],
+      dismissed: false,
+    });
+  }
+
+  return suggestions;
+}
 </script>
 <div class="footer">Patrones de Schedule Dashboard · v3.0</div>
 <div id="undo-toast" class="undo-toast"></div>
+
+<!-- AI Advisor Panel -->
+<div id="ai-panel-overlay" class="ai-panel-overlay" onclick="closeAIPanel()"></div>
+<div id="ai-panel" class="ai-panel" role="dialog" aria-label="IA Advisor">
+  <div class="ai-panel-header">
+    <span class="ai-panel-title">🤖 IA Advisor</span>
+    <span id="ai-panel-badge" class="ai-badge" style="display:none"></span>
+    <button class="ai-panel-close" onclick="closeAIPanel()" title="Cerrar">✕</button>
+  </div>
+  <div class="ai-tabs" id="ai-tabs">
+    <button class="ai-tab active" data-level="tactical"  onclick="switchAITab('tactical')">🔧 Táctico<span class="ai-tab-count" id="tab-count-tactical">0</span></button>
+    <button class="ai-tab"        data-level="strategic" onclick="switchAITab('strategic')">🧠 Estratégico<span class="ai-tab-count" id="tab-count-strategic">0</span></button>
+    <button class="ai-tab"        data-level="rules"     onclick="switchAITab('rules')">💡 Reglas<span class="ai-tab-count" id="tab-count-rules">0</span></button>
+  </div>
+  <div class="ai-panel-body" id="ai-panel-body">
+    <div class="ai-loading">⏳ Analizando patrón…</div>
+  </div>
+  <div class="ai-panel-actions">
+    <button class="ai-apply-all-btn" id="ai-apply-all-btn" onclick="applyAllSafe()" disabled>⚡ Aplicar todas las seguras</button>
+    <button class="ai-rerun-btn" onclick="triggerAIAnalysis()">🔄 Re-analizar</button>
+  </div>
+</div>
+
+<!-- AI Preview Banner -->
+<div id="ai-preview-banner">
+  <span id="ai-preview-msg">Previsualizando sugerencia</span>
+  <button onclick="confirmAIPreview()">✅ Aplicar</button>
+  <button onclick="cancelAIPreview()">❌ Cancelar</button>
+</div>
 </body>
 </html>
