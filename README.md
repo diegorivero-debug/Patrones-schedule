@@ -1,5 +1,32 @@
 # Patrones de Schedule - Cobertura de Tienda
 
+## 🗂️ Páginas del Proyecto
+
+| Página | Descripción |
+|---|---|
+| **`dashboard.html`** | Vista de patrones, planificador semanal, IA Advisor y gestión de equipo |
+| **`auditor.html`** | 🔍 **Nuevo** — Importa archivos .xlsx/.csv de horarios, los audita automáticamente contra las reglas de negocio y propone mejoras concretas |
+| **`equipo.html`** | Gestión del equipo: roster, vacaciones, peticiones, horarios y calendario |
+
+### Auditor de Horarios (`auditor.html`)
+
+El Auditor permite:
+1. **Importar** archivos de horario en formato `.xlsx`, `.xls`, `.csv` o `.numbers` (exportado como xlsx)
+2. **Visualizar** el horario importado con color-coding por tipo de turno (Early, Mid, Late, Close, Off, BH, TG, Holidays…)
+3. **Auditar automáticamente** contra todas las reglas de negocio:
+   - Cobertura mínima en floor por día (6 personas: 4 Support + 2 Coach)
+   - Mínimo de Managers en floor (2 simultáneos)
+   - Cobertura de apertura y cierre (mínimo 2 Leads + 1 Manager en cierre)
+   - Reuniones especiales (Martes: Reunión Comercial · Miércoles: Leadership Meeting)
+   - Horas contratadas vs programadas
+   - Días de descanso (nadie puede trabajar 7 días seguidos)
+   - Balance de turnos de mañana/tarde por Manager
+4. **Proponer fixes concretos** para cada incidencia (Crítica 🔴 / Importante 🟠 / Sugerencia 🟡)
+5. **Aceptar/Rechazar** fixes individualmente o aplicar todos los seguros de golpe
+6. **Exportar** el horario auditado como CSV e informe de texto
+
+---
+
 ## 🔴 REGLA DE ORO
 
 **La cobertura mínima de floor NO es negociable.** Si no puede cuadrar los mínimos con el personal asignado, añadir más personas al turno (especialmente tarde). Nunca reducir la cobertura.
