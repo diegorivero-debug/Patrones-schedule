@@ -54,8 +54,8 @@
       <button class="btn btn-primary" id="btn-generate">⚙️ Generar horario</button>
     </div>
     <div style="margin-top:10px;font-size:.78rem;color:var(--text-muted)">
-      💡 Las vacaciones se leen automáticamente de <strong>localStorage (vacaciones_2026)</strong>.
-      Si no hay datos, visita el módulo <a href="vacaciones.html">🌴 Vacaciones</a> primero.
+      💡 Las vacaciones se leen automáticamente de <strong>localStorage (<span id="vac-ls-key-hint">vacaciones_2026</span>)</strong>,
+      según el año del inicio del trimestre. Si no hay datos, visita el módulo <a href="vacaciones.html">🌴 Vacaciones</a> primero.
     </div>
   </div>
 
@@ -73,7 +73,7 @@
   <!-- ── 3. SCHEDULE TABLE ── -->
   <div class="section-title" style="margin-top:20px">
     📋 Horario trimestral
-    <span class="badge">13 semanas · 24 personas</span>
+    <span class="badge" id="person-count-badge">13 semanas</span>
   </div>
 
   <!-- Legend -->

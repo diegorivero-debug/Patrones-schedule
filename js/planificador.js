@@ -30,13 +30,13 @@ const TEAM_DATA = [
   { id:'cris_c',   name:'Cris Carcel',     role:'SM',           area:'Ops',           dept:'Ops',
     c:{ morningOnlyWeekdays:true, neverOffDays:[MON,TUE,WED] }},
   // Managers
-  { id:'jesus',    name:'Jesús Pazos',     role:'MGR',          area:'Shopping+Biz',  dept:'Shopping',
+  { id:'jesus',    name:'Jesús Pazos',     role:'MGR',          area:'Shopping+Biz',  dept:'Shopping+Biz',
     c:{ avoidOffDays:[TUE,WED] }},
-  { id:'pedro',    name:'Pedro Borlido',   role:'MGR',          area:'Shopping+Biz',  dept:'Shopping',
+  { id:'pedro',    name:'Pedro Borlido',   role:'MGR',          area:'Shopping+Biz',  dept:'Shopping+Biz',
     c:{ avoidOffDays:[TUE,WED] }},
-  { id:'julie',    name:'Julie Robin',     role:'MGR',          area:'Shopping+Biz',  dept:'Shopping',
+  { id:'julie',    name:'Julie Robin',     role:'MGR',          area:'Shopping+Biz',  dept:'Shopping+Biz',
     c:{ avoidOffDays:[TUE,WED] }},
-  { id:'javi_s',   name:'Javi Sánchez',    role:'MGR',          area:'Shopping+Biz',  dept:'Business',
+  { id:'javi_s',   name:'Javi Sánchez',    role:'MGR',          area:'Shopping+Biz',  dept:'Shopping+Biz',
     c:{ aorFixedDays:[MON,FRI], avoidOffDays:[TUE,WED] }},
   { id:'meri',     name:'Meri Alvarez',    role:'MGR',          area:'People',        dept:'People',
     c:{ meriFixed:true }},
@@ -54,7 +54,7 @@ const TEAM_DATA = [
     c:{ avoidOffDays:[TUE,WED] }},
   { id:'javi_can', name:'Javi Canfranc',   role:'MGR',          area:'Ops',           dept:'Ops',
     c:{ avoidOffDays:[TUE,WED] }},
-  { id:'david',    name:'David Carrillo',  role:'MGR',          area:'Ops',           dept:'T@A',
+  { id:'david',    name:'David Carrillo',  role:'MGR',          area:'Ops',           dept:'Ops',
     c:{ avoidOffDays:[TUE,WED] }},
   // Ops Leads
   { id:'aurora',   name:'Aurora Comesaña', role:'OPS_LEAD',     area:'Ops Lead',      dept:'Ops Lead',
@@ -77,30 +77,44 @@ const TEAM_DATA = [
 // SHIFT DEFINITIONS
 // ─────────────────────────────────────────────────────────────────────────────
 const SHIFT_DEFS = {
-  'Open':     { block:'morning',   bg:'#dbeafe', text:'#1e40af', label:'Open 7-16'    },
-  'Early':    { block:'morning',   bg:'#e0f2fe', text:'#0c4a6e', label:'Early 8-17'   },
-  'Early S':  { block:'morning',   bg:'#bfdbfe', text:'#1d4ed8', label:'Early S 8-17' },
-  'Early C1': { block:'morning',   bg:'#c7d2fe', text:'#3730a3', label:'Early C1'     },
-  'Early C2': { block:'morning',   bg:'#a5b4fc', text:'#3730a3', label:'Early C2'     },
-  'Mid':      { block:'afternoon', bg:'#fef9c3', text:'#713f12', label:'Mid 11-20'    },
-  'Mid S':    { block:'afternoon', bg:'#fef3c7', text:'#92400e', label:'Mid S 11-20'  },
-  'Late':     { block:'afternoon', bg:'#ffedd5', text:'#9a3412', label:'Late 12-21'   },
-  'Close':    { block:'afternoon', bg:'#fee2e2', text:'#991b1b', label:'Close 13-22'  },
-  'Close C1': { block:'afternoon', bg:'#fecaca', text:'#991b1b', label:'Close C1'     },
-  'Close C2': { block:'afternoon', bg:'#fca5a5', text:'#7f1d1d', label:'Close C2'     },
-  'OFF':      { block:'off',       bg:'#f3f4f6', text:'#6b7280', label:'Libre'        },
-  'V':        { block:'vacation',  bg:'#bbf7d0', text:'#166534', label:'Vacaciones'   },
-  'V25':      { block:'vacation',  bg:'#fbcfe8', text:'#9d174d', label:'Vac. ant.'    },
-  'TGD':      { block:'vacation',  bg:'#a7f3d0', text:'#065f46', label:'TGD'          },
-  'F':        { block:'vacation',  bg:'#fecaca', text:'#991b1b', label:'Festivo'      },
-  'Parental': { block:'vacation',  bg:'#fed7aa', text:'#9a3412', label:'Parental'     },
-  'Paternidad':{ block:'vacation', bg:'#fde68a', text:'#78350f', label:'Paternidad'   },
-  'Lactancia':{ block:'vacation',  bg:'#fcd34d', text:'#78350f', label:'Lactancia'    },
-  'UNPAID':   { block:'vacation',  bg:'#d1d5db', text:'#374151', label:'Sin sueldo'   },
+  'Open':     { block:'morning',   bg:'#dbeafe', text:'#1e40af', label:'Open 7-16'           },
+  'Early':    { block:'morning',   bg:'#e0f2fe', text:'#0c4a6e', label:'Early 8-17'          },
+  'Early S':  { block:'morning',   bg:'#bfdbfe', text:'#1d4ed8', label:'Early S 8-17'        },
+  'Early C1': { block:'morning',   bg:'#c7d2fe', text:'#3730a3', label:'Early C1 8-17'       },
+  'Early C2': { block:'morning',   bg:'#a5b4fc', text:'#3730a3', label:'Early C2 8-17'       },
+  'Mid':      { block:'afternoon', bg:'#fef9c3', text:'#713f12', label:'Mid 11-20'           },
+  'Mid S':    { block:'afternoon', bg:'#fef3c7', text:'#92400e', label:'Mid S 11-20'         },
+  'Late':     { block:'afternoon', bg:'#ffedd5', text:'#9a3412', label:'Late 12-21'          },
+  // Close labels are season-dependent; these are the summer defaults (13-22 / 12:30-21:30 winter)
+  'Close':    { block:'afternoon', bg:'#fee2e2', text:'#991b1b', labelSummer:'Close 13-22',    labelWinter:'Close 12:30-21:30' },
+  'Close C1': { block:'afternoon', bg:'#fecaca', text:'#991b1b', labelSummer:'Close C1 13-22', labelWinter:'Close C1 12:30-21:30' },
+  'Close C2': { block:'afternoon', bg:'#fca5a5', text:'#7f1d1d', labelSummer:'Close C2 13-22', labelWinter:'Close C2 12:30-21:30' },
+  'OFF':      { block:'off',       bg:'#f3f4f6', text:'#6b7280', label:'Libre'               },
+  'V':        { block:'vacation',  bg:'#bbf7d0', text:'#166534', label:'Vacaciones'          },
+  'V25':      { block:'vacation',  bg:'#fbcfe8', text:'#9d174d', label:'Vac. ant.'           },
+  'TGD':      { block:'vacation',  bg:'#a7f3d0', text:'#065f46', label:'TGD'                 },
+  'F':        { block:'vacation',  bg:'#fecaca', text:'#991b1b', label:'Festivo'             },
+  'Parental': { block:'vacation',  bg:'#fed7aa', text:'#9a3412', label:'Parental'            },
+  'Paternidad':{ block:'vacation', bg:'#fde68a', text:'#78350f', label:'Paternidad'          },
+  'Lactancia':{ block:'vacation',  bg:'#fcd34d', text:'#78350f', label:'Lactancia'           },
+  'UNPAID':   { block:'vacation',  bg:'#d1d5db', text:'#374151', label:'Sin sueldo'          },
 };
 
+// Returns the season-adjusted display label for a shift
+function getShiftLabel(shift, season) {
+  const def = SHIFT_DEFS[shift];
+  if (!def) return shift;
+  if (season === 'invierno') {
+    if (def.labelWinter) return def.labelWinter;
+  } else {
+    if (def.labelSummer) return def.labelSummer;
+  }
+  return def.label || shift;
+}
+
 const ALL_SHIFT_OPTIONS = ['Open','Early','Early S','Early C1','Early C2','Mid','Mid S','Late',
-                           'Close','Close C1','Close C2','OFF','V','V25','TGD','F','Parental'];
+                           'Close','Close C1','Close C2','OFF','V','V25','TGD','F','Parental',
+                           'Paternidad','Lactancia','UNPAID'];
 
 function shiftBlock(s)   { return (s && SHIFT_DEFS[s]) ? SHIFT_DEFS[s].block : 'off'; }
 function isMorning(s)    { return shiftBlock(s) === 'morning'; }
@@ -256,13 +270,10 @@ class ScheduleGenerator {
     const smIds = ['jorge','sheila','itziar','cris_c'];
     const rotatable = ['jorge','sheila','itziar']; // cris_c always morning Mon-Fri
 
-    // Rotation cycles for Wed/Thu/Fri: who is morning alongside Cris
-    // Cycle through pairs: [jorge,sheila], [jorge,itziar], [sheila,itziar]
-    const thuFriCycles = [
-      ['jorge','sheila'],
-      ['sheila','itziar'],
-      ['jorge','itziar'],
-    ];
+    // Rotation cycles for Thu/Fri: exactly 1 person from {jorge,sheila,itziar} joins
+    // cris_c in the morning, so we get 2 morning + 2 afternoon (spec: 2 SM mañana + 2 SM tarde).
+    // Each of the 3 rotatable SMs gets a morning turn on a 3-week cycle.
+    const thuFriMorningRotation = ['jorge', 'sheila', 'itziar'];
     // Sat rotation cycles (all 4 participate): pairs that do morning
     const satCycles = [
       ['jorge','sheila'],
@@ -298,16 +309,14 @@ class ScheduleGenerator {
       if (!onVac('sheila'))   this.set('sheila',  w, WED, this._smAfternoonShift('sheila'));
       if (!onVac('itziar'))   this.set('itziar',  w, WED, this._smAfternoonShift('itziar'));
 
-      // Thu + Fri: Cris always morning + rotate one of {jorge,sheila,itziar} morning
-      // Uses a 3-cycle rotation among {jorge,sheila,itziar} because cris_c is always
-      // morning Mon-Fri (constraint), so only 3 people can freely rotate on Thu/Fri.
-      // This ensures each of the 3 gets morning alongside Cris on a fair rotating basis.
-      const cycleIdx = (w + this._smRotSeed) % thuFriCycles.length;
-      const morningPair = new Set(thuFriCycles[cycleIdx]);
-      morningPair.add('cris_c'); // cris_c always morning weekdays
+      // Thu + Fri: Cris always morning (1 SM) + exactly 1 of {jorge,sheila,itziar} morning
+      // → 2 SM morning + 2 SM afternoon, matching the spec (2 mañana + 2 tarde Mié-Sáb).
+      // Jorge's Mon+Wed fixed-morning constraint does NOT apply to Thu/Fri, so jorge rotates freely.
+      const thuFriIdx = (w + this._smRotSeed) % thuFriMorningRotation.length;
+      const thuFriMorning = new Set(['cris_c', thuFriMorningRotation[thuFriIdx]]);
       for (const id of smIds) {
         if (onVac(id)) continue;
-        const shift = morningPair.has(id)
+        const shift = thuFriMorning.has(id)
           ? this._smMorningShift(id)
           : this._smAfternoonShift(id);
         this.set(id, w, THU, shift);
@@ -1122,6 +1131,7 @@ function generateVariants() {
     }
     state.generating = false;
     renderAll();
+    renderGenerateBtn(); // restore button state after renderAll (which may not rebuild the button)
   }, 50);
 }
 
@@ -1169,7 +1179,7 @@ function cellClick(e, personId, weekIdx, dayIdx) {
     dot.className = 'shift-dropdown-dot';
     dot.style.background = def?.bg || '#ccc';
     item.appendChild(dot);
-    item.appendChild(document.createTextNode(opt + (def ? ` — ${def.label}` : '')));
+    item.appendChild(document.createTextNode(opt + (def ? ` — ${getShiftLabel(opt, state.season)}` : '')));
     item.addEventListener('mousedown', (ev) => {
       ev.preventDefault();
       applyEdit(personId, weekIdx, dayIdx, opt);
@@ -1210,9 +1220,9 @@ function updateCell(cellEl, personId, weekIdx, dayIdx) {
   cellEl.textContent = shift || '—';
   cellEl.style.background  = def?.bg   || '#fff';
   cellEl.style.color       = def?.text || '#999';
-  const isVio = state.violations.some(v =>
-    v.personId === personId && v.weekIdx === weekIdx && v.dayIdx === dayIdx);
-  cellEl.classList.toggle('violation', isVio);
+  // Violations are surfaced at panel/list level via renderValidation();
+  // individual cells do not have per-cell violation coordinates.
+  cellEl.classList.remove('violation');
   // QBR day highlight
   cellEl.classList.toggle('qbr-day', isQBRDay(state.qStartDate, weekIdx, dayIdx));
 }
@@ -1333,8 +1343,22 @@ function renderConfigInfo() {
   const weekDates = computeWeekDates(state.qStartDate);
   const lastWeek  = weekDates[WEEKS - 1];
   const endDate   = addDays(lastWeek, 5);
-  const season    = state.season === 'verano' ? 'Verano ☀️' : 'Invierno ❄️';
-  el.textContent = `${WEEKS} semanas · ${formatDate(parseDate(state.qStartDate))} – ${formatDate(endDate)} · ${season}`;
+  const seasonLabel = state.season === 'verano' ? 'Verano ☀️ (Close 13-22)' : 'Invierno ❄️ (Close 12:30-21:30)';
+  el.textContent = `${WEEKS} semanas · ${formatDate(parseDate(state.qStartDate))} – ${formatDate(endDate)} · ${seasonLabel}`;
+
+  // Update the dynamic localStorage key hint
+  const lsKeyHint = document.getElementById('vac-ls-key-hint');
+  if (lsKeyHint) {
+    const year = parseDate(state.qStartDate).getFullYear();
+    lsKeyHint.textContent = `vacaciones_${year}`;
+  }
+
+  // Update the dynamic person count badge
+  const personBadge = document.getElementById('person-count-badge');
+  if (personBadge) {
+    const nonSL = TEAM_DATA.filter(p => p.role !== 'SL').length;
+    personBadge.textContent = `13 semanas · ${nonSL} personas`;
+  }
 }
 
 function renderVariantsPanel() {
@@ -1649,6 +1673,7 @@ function onQStartChange(val) {
   state.variants   = [];
   state.activeSchedule = null;
   state.selectedVariant = -1;
+  saveState();
   renderAll();
 }
 
@@ -1657,6 +1682,7 @@ function onSeasonChange(val) {
   state.variants = [];
   state.activeSchedule = null;
   state.selectedVariant = -1;
+  saveState();
   renderAll();
 }
 
