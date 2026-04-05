@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌴 Vacaciones · Patrones de Schedule</title>
+<link rel="stylesheet" href="css/vacaciones.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+  <div>
+    <h1>🌴 Gestión de Vacaciones y Ausencias</h1>
+    <span class="subtitle">Calendario anual de ausencias del equipo</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-header" id="theme-toggle">🌙 Oscuro</button>
+  </div>
+</header>
+
+<!-- ===== NAV ===== -->
+<nav class="site-nav">
+  <a class="nav-btn" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
+  <a class="nav-btn" href="equipo.html">👥 Equipo</a>
+  <a class="nav-btn active" href="vacaciones.html">🌴 Vacaciones</a>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <label for="year-select">Año:</label>
+    <select id="year-select"></select>
+    <button class="btn btn-primary" id="btn-create-year">➕ Crear año</button>
+    <span class="toolbar-sep"></span>
+    <button class="btn btn-success" id="btn-add-period">🏷️ Añadir período</button>
+    <label class="file-input-label">
+      📂 Importar Excel/CSV
+      <input type="file" id="file-import" accept=".xlsx,.xls,.csv">
+    </label>
+    <button class="btn btn-export" id="btn-export">⬇️ Exportar CSV</button>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend" id="legend">
+    <strong style="color:var(--text-muted);font-size:.8rem;">Tipos de ausencia:</strong>
+    <span class="legend-item" title="Vacaciones"><span class="legend-dot" style="background:#90EE90;"></span>V — Vacaciones</span>
+    <span class="legend-item" title="Vacaciones año anterior"><span class="legend-dot" style="background:#FF69B4;"></span>V25 — Vac. año anterior</span>
+    <span class="legend-item" title="Festivo personal"><span class="legend-dot" style="background:#FF9999;"></span>F — Festivo personal</span>
+    <span class="legend-item" title="Training Group Day"><span class="legend-dot" style="background:#5F9EA0;"></span>TGD — Training Group Day</span>
+    <span class="legend-item" title="Parental"><span class="legend-dot" style="background:#FFA07A;"></span>Parental</span>
+    <span class="legend-item" title="Paternidad"><span class="legend-dot" style="background:#FFB347;"></span>Paternidad</span>
+    <span class="legend-item" title="Lactancia"><span class="legend-dot" style="background:#FFDAB9;"></span>Lactancia</span>
+    <span class="legend-item" title="Sin sueldo"><span class="legend-dot" style="background:#B0B0B0;"></span>UNPAID — Sin sueldo</span>
+    <span class="legend-item" title="Trabajando (vacío)"><span class="legend-dot" style="background:#fff;border:1px solid #ccc;"></span>Trabajando</span>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alerts-panel" id="alerts-container"></div>
+
+  <!-- Calendar table -->
+  <div class="table-wrapper">
+    <div id="vac-table-container"></div>
+  </div>
+
+</main>
+
+<!-- ===== PERIOD EDIT MODAL ===== -->
+<div class="modal-overlay hidden" id="period-modal">
+  <div class="modal">
+    <h2>✏️ Editar Período</h2>
+    <div class="modal-field">
+      <label for="modal-period-label">Nombre del período</label>
+      <input type="text" id="modal-period-label" placeholder="Ej: PEAK, Semana Santa...">
+    </div>
+    <div class="modal-field">
+      <label for="modal-period-color">Color</label>
+      <input type="color" id="modal-period-color" value="#ffd700">
+    </div>
+    <div class="modal-field">
+      <label for="modal-period-weeks">Semanas — lista o rangos (ej: 1-3, 10, 12-16)</label>
+      <input type="text" id="modal-period-weeks" placeholder="1-3, 10, 12-16">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="btn-period-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="btn-period-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- SheetJS via CDN (for xlsx import) -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="js/vacaciones.js"></script>
+</body>
+</html>
