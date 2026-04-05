@@ -316,6 +316,35 @@
   .chart-meeting-label { position: absolute; top: -16px; left: 0; font-size: 8px; white-space: nowrap; color: var(--text-muted); font-weight: 700; z-index: 5; pointer-events: none; }
   body.dark .chart-bar.outside-hours { background: var(--surface-alt); }
 
+  /* ── Team Name Cell ─────────────────────────────────── */
+  .name-cell-wrap { cursor: pointer; padding: 4px 6px !important; }
+  .name-cell-wrap:hover .name-short { text-decoration: underline; }
+  .name-short { font-weight: 700; font-size: 11px; display: block; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72px; }
+  .name-role-label { font-size: 9px; display: block; line-height: 1.2; }
+  .name-role-label.role-lead { color: var(--lead-text); }
+  .name-role-label.role-mgr  { color: var(--mgr-text); }
+
+  /* ── Team Modal ─────────────────────────────────────── */
+  .btn-team { color: #2c7a7b !important; border-color: #81e6d9 !important; }
+  .team-modal { width: 540px; }
+  .team-section-title { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .team-member-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .team-member-row input[type=text] { flex: 2; min-width: 0; }
+  .team-member-row select { flex: 1.5; min-width: 0; }
+  .team-member-row .del-team-btn { background: none; border: 1px solid #feb2b2; color: #e53e3e; border-radius: 4px; cursor: pointer; padding: 4px 7px; font-size: 12px; flex-shrink: 0; transition: .15s; }
+  .team-member-row .del-team-btn:hover { background: #fff5f5; }
+  .btn-add-member { margin-top: 4px; background: none; border: 1px dashed var(--border); border-radius: 6px; color: var(--accent); font-size: .82rem; font-weight: 600; cursor: pointer; padding: 5px 10px; width: 100%; transition: .15s; font-family: inherit; }
+  .btn-add-member:hover { background: var(--surface-alt); }
+  body.dark .team-member-row .del-team-btn { border-color: #6b1c1c; }
+  body.dark .team-member-row .del-team-btn:hover { background: #3d1214; }
+
+  /* ── Assign Dropdown ─────────────────────────────────── */
+  .assign-dropdown { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg); z-index: 500; min-width: 160px; padding: 4px 0; max-height: 240px; overflow-y: auto; }
+  .assign-dropdown-item { padding: 6px 12px; font-size: .82rem; cursor: pointer; color: var(--text); transition: background .1s; white-space: nowrap; }
+  .assign-dropdown-item:hover { background: var(--surface-alt); }
+  .assign-dropdown-item.active-assign { font-weight: 700; color: var(--accent); }
+  .assign-dropdown-item.unassign { color: var(--text-muted); font-style: italic; }
+
   /* ── Print ──────────────────────────────────────────── */
   @media print {
     header { position: static; box-shadow: none; }
@@ -433,6 +462,7 @@
     <button class="tab-btn"        data-pat="week">📅 Semana</button>
   </div>
   <div class="action-btns">
+    <button class="btn-team"   onclick="openTeamModal()">👥 Equipo</button>
     <button class="btn-alerts" id="alerts-btn" onclick="toggleAlertDrawer()">🔔 Alertas<span id="alerts-badge" class="alert-badge ok">0</span></button>
     <button class="btn-add"    onclick="openAddFigure()">➕ Añadir Figura</button>
     <button class="btn-gen"    onclick="openGenerate()">⚙️ Generar Patrón</button>
@@ -522,6 +552,18 @@
 
 <!-- Coverage chart tooltip (global, reused across renders) -->
 <div class="chart-tooltip-box" id="chart-tooltip-box"></div>
+
+<!-- Team Management Modal -->
+<div class="modal-overlay" id="modal-team" onclick="if(event.target===this)closeTeamModal()">
+  <div class="modal team-modal">
+    <h2>👥 Equipo de Liderazgo</h2>
+    <div id="team-modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeTeamModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveTeamModal()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -763,9 +805,14 @@ const LS_KEY_PATTERNS  = 'schedule_patterns_v2';
 const LS_KEY_RULES     = 'schedule_rules';
 const LS_KEY_SEASON    = 'schedule_season';
 const LS_KEY_THEME     = 'schedule_theme';
+const LS_KEY_TEAM      = 'schedule_team';
 
 function deepClone(patterns) {
-  return patterns.map(pat => pat.map(row => ({role:row.role, shift:row.shift, acts:[...row.acts]})));
+  return patterns.map(pat => pat.map(row => {
+    const r = {role:row.role, shift:row.shift, acts:[...row.acts]};
+    if (row.assignedId !== undefined) r.assignedId = row.assignedId;
+    return r;
+  }));
 }
 
 function loadAllState() {
@@ -832,6 +879,26 @@ let rules = loadRules();
 let activePattern = 0;
 let openDropdownEl = null;
 
+// ── Team data ────────────────────────────────────────────────────────────────
+function loadTeam() {
+  try {
+    const saved = localStorage.getItem(LS_KEY_TEAM);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && Array.isArray(parsed.leads) && Array.isArray(parsed.managers)) return parsed;
+    }
+  } catch(e) {}
+  return { leads: [], managers: [] };
+}
+
+function saveTeam() {
+  try { localStorage.setItem(LS_KEY_TEAM, JSON.stringify(teamData)); } catch(e) {}
+}
+
+let teamData = loadTeam();
+let teamDraft = null;
+let activeAssignDropdown = null;
+
 function getOpenEnd() { return activeSeason === 'invierno' ? OPEN_END_INVIERNO : OPEN_END_VERANO; }
 function getOpenStart(patIdx) { return (patIdx === 3) ? TIME_SLOTS.indexOf('08:00') : OPEN_START; }
 function getSeasonLabel() { return activeSeason === 'invierno' ? '❄️ Invierno' : '☀️ Verano'; }
@@ -881,6 +948,191 @@ function shiftShort(shift) {
   const parts = shift.split('-');
   if (parts.length < 2) return shift;
   return parts[0].slice(0, 2) + '-' + parts[1].slice(0, 2);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TEAM MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════════
+function makeShortName(name) {
+  if (!name || !name.trim()) return '';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return parts[0] + ' ' + parts[parts.length - 1].charAt(0) + '.';
+}
+
+function openTeamModal() {
+  teamDraft = {
+    leads:    teamData.leads.map(m => ({...m})),
+    managers: teamData.managers.map(m => ({...m}))
+  };
+  renderTeamModal();
+  document.getElementById('modal-team').classList.add('open');
+}
+
+function closeTeamModal() {
+  teamDraft = null;
+  document.getElementById('modal-team').classList.remove('open');
+}
+
+function renderTeamModal() {
+  const body = document.getElementById('team-modal-body');
+  if (!body || !teamDraft) return;
+  const shiftOpts = activeSeason === 'invierno' ? SHIFT_OPTIONS_INVIERNO : SHIFT_OPTIONS_VERANO;
+
+  let h = '<div class="team-section-title">👤 Leads</div>';
+  teamDraft.leads.forEach((m, i) => {
+    h += `<div class="team-member-row">
+      <input type="text" placeholder="Nombre del Lead" value="${escAttr(m.name || '')}"
+        oninput="teamDraft.leads[${i}].name=this.value;teamDraft.leads[${i}].shortName=makeShortName(this.value)">
+      <select onchange="teamDraft.leads[${i}].defaultShift=this.value">
+        ${shiftOpts.map(s => `<option value="${escAttr(s)}"${s===m.defaultShift?' selected':''}>${esc(s)}</option>`).join('')}
+      </select>
+      <button class="del-team-btn" onclick="removeTeamMember('leads',${i})">🗑️</button>
+    </div>`;
+  });
+  h += `<button class="btn-add-member" onclick="addTeamMember('leads')">+ Añadir Lead</button>`;
+
+  h += '<div class="team-section-title">👔 Managers</div>';
+  teamDraft.managers.forEach((m, i) => {
+    h += `<div class="team-member-row">
+      <input type="text" placeholder="Nombre del Manager" value="${escAttr(m.name || '')}"
+        oninput="teamDraft.managers[${i}].name=this.value;teamDraft.managers[${i}].shortName=makeShortName(this.value)">
+      <select onchange="teamDraft.managers[${i}].defaultShift=this.value">
+        ${shiftOpts.map(s => `<option value="${escAttr(s)}"${s===m.defaultShift?' selected':''}>${esc(s)}</option>`).join('')}
+      </select>
+      <select onchange="teamDraft.managers[${i}].defaultRole=this.value">
+        <option value="Coach"${m.defaultRole==='Coach'?' selected':''}>Coach</option>
+        <option value="Support"${m.defaultRole==='Support'?' selected':''}>Support</option>
+        <option value="Ambos"${m.defaultRole==='Ambos'?' selected':''}>Ambos</option>
+      </select>
+      <button class="del-team-btn" onclick="removeTeamMember('managers',${i})">🗑️</button>
+    </div>`;
+  });
+  h += `<button class="btn-add-member" onclick="addTeamMember('managers')">+ Añadir Manager</button>`;
+
+  body.innerHTML = h;
+}
+
+function addTeamMember(role) {
+  const id = (role === 'leads' ? 'L' : 'M') + Date.now();
+  const defaultShift = activeSeason === 'invierno' ? SHIFT_OPTIONS_INVIERNO[0] : SHIFT_OPTIONS_VERANO[0];
+  if (role === 'leads') {
+    teamDraft.leads.push({ id, name: '', shortName: '', defaultShift });
+  } else {
+    teamDraft.managers.push({ id, name: '', shortName: '', defaultShift, defaultRole: 'Coach' });
+  }
+  renderTeamModal();
+}
+
+function removeTeamMember(role, idx) {
+  teamDraft[role].splice(idx, 1);
+  renderTeamModal();
+}
+
+function saveTeamModal() {
+  // Filter out blank entries, ensure shortName is generated
+  teamDraft.leads    = teamDraft.leads.filter(m => m.name && m.name.trim());
+  teamDraft.managers = teamDraft.managers.filter(m => m.name && m.name.trim());
+  teamDraft.leads.forEach(m    => { if (!m.shortName) m.shortName = makeShortName(m.name); });
+  teamDraft.managers.forEach(m => { if (!m.shortName) m.shortName = makeShortName(m.name); });
+  teamData = teamDraft;
+  saveTeam();
+  closeTeamModal();
+  // Auto-assign on all patterns with the updated team data
+  for (let i = 0; i < 4; i++) autoAssignNames(i);
+  saveState();
+  const activeTab = document.querySelector('.tab-btn.active');
+  if (activeTab && activeTab.dataset.pat === 'week') renderWeeklyView();
+  else render(activePattern);
+}
+
+// ── Name auto-assignment ─────────────────────────────────────────────────────
+function autoAssignNames(patIdx) {
+  const rows = currentState[patIdx];
+  // Build sets of already-used IDs (to avoid double-assigning same person)
+  const usedLeadIds = new Set(rows.filter(r => r.role === 'Lead'    && r.assignedId).map(r => r.assignedId));
+  const usedMgrIds  = new Set(rows.filter(r => r.role === 'Manager' && r.assignedId).map(r => r.assignedId));
+  for (const row of rows) {
+    if (row.assignedId) continue; // respect existing manual assignments
+    const isLead  = row.role === 'Lead';
+    const members = isLead ? teamData.leads : teamData.managers;
+    const usedIds = isLead ? usedLeadIds : usedMgrIds;
+    const match = members.find(m => m.defaultShift === row.shift && !usedIds.has(m.id));
+    if (match) { row.assignedId = match.id; usedIds.add(match.id); }
+  }
+}
+
+// ── Name cell rendering ──────────────────────────────────────────────────────
+function escAttr(str) {
+  return esc(str).replace(/"/g, '&quot;');
+}
+
+// Returns the display name for a team member (shortName if set, otherwise full name).
+function memberShortDisplay(member) {
+  return member.shortName || member.name || '';
+}
+
+function renderNameCell(row) {
+  if (!row.assignedId) return esc(row.role);
+  const isLead = row.role === 'Lead';
+  const member = isLead
+    ? teamData.leads.find(m => m.id === row.assignedId)
+    : teamData.managers.find(m => m.id === row.assignedId);
+  if (!member) return esc(row.role);
+  const roleCls = isLead ? 'role-lead' : 'role-mgr';
+  return `<span class="name-short" title="${escAttr(member.name)}">${esc(memberShortDisplay(member))}</span>`
+       + `<span class="name-role-label ${roleCls}">${esc(row.role)}</span>`;
+}
+
+// ── Manual assignment dropdown ────────────────────────────────────────────────
+function openAssignDropdown(e, patIdx, rowIdx) {
+  e.stopPropagation();
+  closeAssignDropdown();
+  const row     = currentState[patIdx][rowIdx];
+  const isLead  = row.role === 'Lead';
+  const members = isLead ? teamData.leads : teamData.managers;
+  if (members.length === 0) return; // no team configured — nothing to show
+
+  const drop = document.createElement('div');
+  drop.className = 'assign-dropdown';
+
+  let inner = `<div class="assign-dropdown-item unassign" onclick="assignPerson(${patIdx},${rowIdx},null)">— Sin asignar —</div>`;
+  for (const m of members) {
+    const active = row.assignedId === m.id ? ' active-assign' : '';
+    // Use data attribute for id to avoid any escaping issues in inline handler
+    inner += `<div class="assign-dropdown-item${active}" data-mid="${escAttr(m.id)}"
+      onclick="assignPerson(${patIdx},${rowIdx},this.dataset.mid)">${esc(memberShortDisplay(m))}</div>`;
+  }
+  drop.innerHTML = inner;
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  drop.style.top  = (rect.bottom + window.scrollY + 2) + 'px';
+  drop.style.left = (rect.left   + window.scrollX) + 'px';
+  document.body.appendChild(drop);
+  activeAssignDropdown = drop;
+  setTimeout(() => document.addEventListener('click', _closeAssignOnOutside, {once: true}), 50);
+}
+
+function _closeAssignOnOutside(e) {
+  if (activeAssignDropdown && !activeAssignDropdown.contains(e.target)) closeAssignDropdown();
+}
+
+function closeAssignDropdown() {
+  if (activeAssignDropdown) { activeAssignDropdown.remove(); activeAssignDropdown = null; }
+}
+
+function assignPerson(patIdx, rowIdx, memberId) {
+  closeAssignDropdown();
+  const row = currentState[patIdx][rowIdx];
+  if (!memberId) {
+    delete row.assignedId;
+  } else {
+    row.assignedId = memberId;
+  }
+  saveState();
+  // Update only the affected col-role cell without full re-render
+  const roleCell = document.querySelector(`tr[data-pat="${patIdx}"][data-row="${rowIdx}"] td.col-role`);
+  if (roleCell) roleCell.innerHTML = renderNameCell(row);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1215,7 +1467,7 @@ function buildHoursCell(row) {
 function buildPersonRow(patIdx, rowIdx, row, cls) {
   let h = `<tr class="${cls}" data-pat="${patIdx}" data-row="${rowIdx}" draggable="true" ondragstart="onDragStart(event,${patIdx},${rowIdx})" ondragover="onDragOver(event)" ondrop="onDrop(event,${patIdx},${rowIdx})" ondragleave="onDragLeave(event)">`;
   h += `<td class="col-drag"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>`;
-  h += `<td class="col-role">${esc(row.role)}</td>`;
+  h += `<td class="col-role name-cell-wrap" onclick="openAssignDropdown(event,${patIdx},${rowIdx})" title="Clic para asignar nombre">${renderNameCell(row)}</td>`;
   h += `<td class="col-shift" onclick="openShiftEdit(event,${patIdx},${rowIdx})" title="Clic para editar turno"><span class="shift-text">${esc(row.shift)}</span><span class="shift-edit-icon">✏️</span></td>`;
   for (let c=0;c<TIME_SLOTS.length;c++) {
     const a=row.acts[c], bg=getColor(a), fg=textColor(bg);
@@ -1715,7 +1967,14 @@ function buildWeeklyView() {
   h += `<tr class="wk-group-label"><td colspan="${colSpan}">👤 Leads (${maxLeads})</td></tr>`;
   for (let i = 0; i < maxLeads; i++) {
     h += '<tr class="wk-lead-row">';
-    h += `<td class="wk-person">Lead ${i + 1}</td>`;
+    // Use name from the first day this position exists
+    const firstLeadRow = dayLeads.map(dl => dl[i]).find(r => r);
+    let leadLabel = `Lead ${i + 1}`;
+    if (firstLeadRow && firstLeadRow.assignedId) {
+      const m = teamData.leads.find(tm => tm.id === firstLeadRow.assignedId);
+      if (m) leadLabel = memberShortDisplay(m);
+    }
+    h += `<td class="wk-person" title="Lead ${i + 1}">${esc(leadLabel)}</td>`;
     h += `<td class="wk-role-col">Lead</td>`;
     for (let d = 0; d < totalDays; d++) {
       const row = dayLeads[d][i];
@@ -1736,11 +1995,18 @@ function buildWeeklyView() {
 
   // ── Managers ──
   h += `<tr class="wk-group-label"><td colspan="${colSpan}">👔 Managers (${maxMgrs})</td></tr>`;
-  const mgrEquity = []; // [{coach, support}] per manager position
+  const mgrEquity = []; // [{coach, support, label}] per manager position
   for (let i = 0; i < maxMgrs; i++) {
     let coachDays = 0, supportDays = 0;
     h += '<tr class="wk-mgr-row">';
-    h += `<td class="wk-person">Mgr ${i + 1}</td>`;
+    // Use name from the first day this position exists
+    const firstMgrRow = dayMgrs.map(dm => dm[i]).find(r => r);
+    let mgrLabel = `Mgr ${i + 1}`;
+    if (firstMgrRow && firstMgrRow.assignedId) {
+      const m = teamData.managers.find(tm => tm.id === firstMgrRow.assignedId);
+      if (m) mgrLabel = memberShortDisplay(m);
+    }
+    h += `<td class="wk-person" title="Mgr ${i + 1}">${esc(mgrLabel)}</td>`;
     h += `<td class="wk-role-col">Manager</td>`;
     for (let d = 0; d < totalDays; d++) {
       const row = dayMgrs[d][i];
@@ -1763,7 +2029,7 @@ function buildWeeklyView() {
       }
     }
     h += '</tr>';
-    mgrEquity.push({coach: coachDays, support: supportDays});
+    mgrEquity.push({coach: coachDays, support: supportDays, label: mgrLabel});
   }
 
   // ── Totals ──
@@ -1819,8 +2085,8 @@ function buildWeeklyView() {
     // Managers with no floor-role assignments (total=0) are considered balanced.
     const imbalance = total > 0 && Math.abs(coach - support) > 1;
     const emoji     = imbalance ? '⚠️' : '✅';
-    const ariaLabel = imbalance ? ` aria-label="Mgr ${i + 1}: desequilibrio de roles (${coach}C/${support}S)"` : '';
-    h += `<div class="equity-item${imbalance ? ' eq-warning' : ''}"${ariaLabel}>Mgr ${i + 1}: ${coach}C/${support}S ${emoji}</div>`;
+    const ariaLabel = imbalance ? ` aria-label="${escAttr(`${mgrEquity[i].label || `Mgr ${i + 1}`}: desequilibrio de roles (${coach}C/${support}S)`)}"` : '';
+    h += `<div class="equity-item${imbalance ? ' eq-warning' : ''}"${ariaLabel}>${esc(mgrEquity[i].label || `Mgr ${i + 1}`)}: ${coach}C/${support}S ${emoji}</div>`;
   }
   h += '</div></div>';
 
@@ -2130,6 +2396,11 @@ function generatePattern() {
 
   saveState();
   closeModal('modal-gen');
+  // Re-assign names after generation (clear existing assignments first, then auto-assign)
+  const rows2 = currentState[activePattern];
+  rows2.forEach(r => { delete r.assignedId; });
+  autoAssignNames(activePattern);
+  saveState();
   render(activePattern);
 }
 
@@ -2162,7 +2433,17 @@ function deleteRule(idx) {
 function exportCSV() {
   const rows = currentState[activePattern];
   const header = ['Role','Shift',...TIME_SLOTS].join(';');
-  const lines = rows.map(r => [r.role,r.shift,...r.acts].join(';'));
+  const lines = rows.map(r => {
+    let roleName = r.role;
+    if (r.assignedId) {
+      const isLead = r.role === 'Lead';
+      const member = isLead
+        ? teamData.leads.find(m => m.id === r.assignedId)
+        : teamData.managers.find(m => m.id === r.assignedId);
+      if (member) roleName = member.name;
+    }
+    return [roleName, r.shift, ...r.acts].join(';');
+  });
   const csv = [header,...lines].join('\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
@@ -2293,6 +2574,10 @@ function confirmShiftEdit(patIdx, rowIdx) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Restore season button state
 document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.season === activeSeason));
+// Auto-assign names on startup (only for rows without an existing assignment)
+if (teamData.leads.length > 0 || teamData.managers.length > 0) {
+  for (let i = 0; i < 4; i++) autoAssignNames(i);
+}
 render(0);
 </script>
 <div class="footer">Patrones de Schedule Dashboard · v3.0</div>
