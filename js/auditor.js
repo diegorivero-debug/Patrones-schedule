@@ -239,12 +239,14 @@ function parseScheduleSheet(rows) {
     }
   }
 
-  // Fallback: try to find row with day-like columns
+  // Fallback: try to find row with day-like columns (reuse DAY_PATTERNS defined below)
+  // Note: DAY_PATTERNS is defined later in the function body; this closure reference is intentional.
+  const DAY_RE_FALLBACK = /^(mon|tue|wed|thu|fri|sat|sun|lun|mar|mi[eé]|jue|vie|s[aá]b|dom)/i;
   if (headerRowIdx === -1) {
     for (let i = 0; i < Math.min(8, rows.length); i++) {
       const r = rows[i].map(v => String(v).trim().toLowerCase());
-      const dayMatch = r.filter(c => /^(mon|tue|wed|thu|fri|sat|sun|lun|mar|mi[eé]|jue|vie|s[aá]b|dom)/i.test(c));
-      if (dayMatch.length >= 4) {
+      const dayMatches = r.filter(c => DAY_RE_FALLBACK.test(c));
+      if (dayMatches.length >= 4) {
         headerRowIdx = i;
         headerRow = rows[i].map(v => String(v).trim());
         break;
@@ -258,7 +260,16 @@ function parseScheduleSheet(rows) {
     headerRow = rows[0].map(v => String(v).trim());
   }
 
-  // Map column indices
+  // Map column indices — day detection uses a pattern table to avoid repetition
+  const DAY_PATTERNS = [
+    { key: 'Mon', re: /^(mon|lun|monday|lunes)/i },
+    { key: 'Tue', re: /^(tue|mar|tuesday|martes)/i },
+    { key: 'Wed', re: /^(wed|mi[eé]|wednesday|mi[eé]rcoles)/i },
+    { key: 'Thu', re: /^(thu|jue|thursday|jueves)/i },
+    { key: 'Fri', re: /^(fri|vie|friday|viernes)/i },
+    { key: 'Sat', re: /^(sat|s[aá]b|saturday|s[aá]bado)/i },
+    { key: 'Sun', re: /^(sun|dom|sunday|domingo)/i },
+  ];
   const colMap = {};
   const dayColIndices = [];
   const dayLabels = [];
@@ -272,13 +283,10 @@ function parseScheduleSheet(rows) {
     else if (h === 'fwa') colMap.fwa = c;
     else if (h === 'plan') colMap.plan = c;
     else if (h === 'sch.' || h === 'sch' || h === 'scheduled' || h === 'prog.') colMap.sch = c;
-    else if (/^(mon|lun|monday|lunes)/i.test(h)) { dayColIndices.push(c); dayLabels.push({key:'Mon', label: headerRow[c]}); }
-    else if (/^(tue|mar|tuesday|martes)/i.test(h)) { dayColIndices.push(c); dayLabels.push({key:'Tue', label: headerRow[c]}); }
-    else if (/^(wed|mi[eé]|wednesday|mi[eé]rcoles)/i.test(h)) { dayColIndices.push(c); dayLabels.push({key:'Wed', label: headerRow[c]}); }
-    else if (/^(thu|jue|thursday|jueves)/i.test(h)) { dayColIndices.push(c); dayLabels.push({key:'Thu', label: headerRow[c]}); }
-    else if (/^(fri|vie|friday|viernes)/i.test(h)) { dayColIndices.push(c); dayLabels.push({key:'Fri', label: headerRow[c]}); }
-    else if (/^(sat|s[aá]b|saturday|s[aá]bado)/i.test(h)) { dayColIndices.push(c); dayLabels.push({key:'Sat', label: headerRow[c]}); }
-    else if (/^(sun|dom|sunday|domingo)/i.test(h)) { dayColIndices.push(c); dayLabels.push({key:'Sun', label: headerRow[c]}); }
+    else {
+      const dayMatch = DAY_PATTERNS.find(d => d.re.test(h));
+      if (dayMatch) { dayColIndices.push(c); dayLabels.push({key: dayMatch.key, label: headerRow[c]}); }
+    }
   }
 
   // If no day columns found by name, look for date patterns in header row
@@ -374,6 +382,14 @@ function normalizeShift(raw) {
 // ═══════════════════════════════════════════════════════════════════════════
 // AUDIT ENGINE
 // ═══════════════════════════════════════════════════════════════════════════
+
+// Build a human-readable closing fix description from shortage counts
+function buildClosingFix(dayLabel, leadShortage, mgrShortage) {
+  const parts = [];
+  if (leadShortage > 0) parts.push(`${leadShortage} Lead(s) más`);
+  if (mgrShortage > 0)  parts.push(`${mgrShortage} Manager(s) más`);
+  return `Ajustar turno de cierre en ${dayLabel}: asignar ${parts.join(' y ')} al turno de tarde/cierre.`;
+}
 function runAudit() {
   state.auditIssues = [];
   state.acceptedFixes = new Set();
@@ -471,8 +487,7 @@ function runAudit() {
           title: `Cierre sin cobertura suficiente — ${dayLabel}`,
           meta: `Cierre: ${msg.join(', ')} — mínimos no alcanzados`,
           rule: `Cierre: mínimo ${BR.closing.minLeads} Leads + ${BR.closing.minManagers} Manager haciendo AOR/LDOPS`,
-          fix: `Ajustar turno de cierre en ${dayLabel}: asignar ${BR.closing.minLeads - lateLeads.length > 0 ? (BR.closing.minLeads - lateLeads.length)+' Lead(s) más' : ''} ` +
-               `${BR.closing.minManagers - lateMgrs.length > 0 ? (BR.closing.minManagers - lateMgrs.length)+' Manager(s) más' : ''} al turno de tarde/cierre.`.trim().replace(/\s+/g,' '),
+          fix: buildClosingFix(dayLabel, BR.closing.minLeads - lateLeads.length, BR.closing.minManagers - lateMgrs.length),
           day: dayKey,
           personName: null,
         });
@@ -605,17 +620,7 @@ function runAudit() {
       }
     }
 
-    // 11. Lead should not do Coach or Support (only LDSup/LDOPS) — flagged if they have unusual shift
-    if (isLead(person)) {
-      const unusualDays = dayKeys2.filter(dk => {
-        const s = person.days[dk];
-        // Leads should have early/mid/late/close/open/off/holidays shifts — all are fine; this check is informational
-        // Flag if a Lead has 0 working days at all (likely a data issue)
-        return false; // placeholder — leads don't have Coach/Support in Numbers format
-      });
-    }
-
-    // 12. Scheduled hours vs plan
+    // 11. Scheduled hours vs plan
     if (person.sch > 0 && person.plan > 0 && Math.abs(person.sch - person.plan) > 4) {
       addIssue({
         severity: 'important',
@@ -681,6 +686,8 @@ function calculateScore() {
   const activeImp   = activeIssues.filter(i => i.severity === 'important').length;
   const activeSug   = activeIssues.filter(i => i.severity === 'suggestion').length;
 
+  // Scoring formula: start at 100, deduct points per active issue.
+  // Weights: critical=15 (coverage violations are severe), important=5, suggestion=2.
   let score = 100 - (activeCrit * 15) - (activeImp * 5) - (activeSug * 2);
   return Math.max(0, Math.min(100, Math.round(score)));
 }
