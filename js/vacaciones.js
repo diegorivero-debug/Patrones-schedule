@@ -14,18 +14,6 @@ const ABSENCE_LABELS = {
   'Lactancia': 'Lactancia',
   'UNPAID':    'Sin sueldo',
 };
-const ABSENCE_COLORS = {
-  '':          '#ffffff',
-  'V':         '#90EE90',
-  'V25':       '#FF69B4',
-  'F':         '#FF9999',
-  'TGD':       '#5F9EA0',
-  'Parental':  '#FFA07A',
-  'Paternidad':'#FFB347',
-  'Lactancia': '#FFDAB9',
-  'UNPAID':    '#B0B0B0',
-};
-
 // Default period bands keyed by year
 const DEFAULT_PERIODS = [
   { label: 'PEAK',          weeks: [],  color: '#ffd700', textColor: '#5c4200' },
@@ -73,6 +61,12 @@ let currentYear = new Date().getFullYear();
 let data = {};   // { personId: { week: absenceType } }
 let periods = JSON.parse(JSON.stringify(DEFAULT_PERIODS));
 let alertsDismissed = new Set();
+
+// ── Helpers ──────────────────────────────────────────
+function getPersonName(id) {
+  const p = TEAM.find(m => !m.section && m.id === id);
+  return p ? p.name : id;
+}
 
 // ── LocalStorage helpers ─────────────────────────────
 function lsKey(year) { return `vacaciones_${year}`; }
@@ -124,15 +118,6 @@ function getWeeks(year) {
 function formatDate(d) {
   const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   return `${d.getDate()} ${months[d.getMonth()]}`;
-}
-
-// Get ISO week number for a date
-function getISOWeek(d) {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const day = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
 }
 
 // ── Render ───────────────────────────────────────────
@@ -319,7 +304,6 @@ function renderTable() {
 
   // ── TBODY ────────────────────────────────────────
   const tbody = document.createElement('tbody');
-  let sectionIdx = 0;
 
   TEAM.forEach(p => {
     if (p.section) {
@@ -351,9 +335,18 @@ function renderTable() {
       td.dataset.type = type;
       td.dataset.personId = p.id;
       td.dataset.week = week;
+      td.tabIndex = 0;
+      td.setAttribute('role', 'button');
       applyCell(td, type);
+      td.setAttribute('aria-label', `${p.name}, semana ${week}, ${ABSENCE_LABELS[type] || ABSENCE_LABELS['']}`);
       if (type !== '') total++;
       td.addEventListener('click', onCellClick);
+      td.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          td.click();
+        }
+      });
       tr.appendChild(td);
     });
 
@@ -424,6 +417,7 @@ function onCellClick(e) {
   }
 
   applyCell(td, nextType);
+  td.setAttribute('aria-label', `${getPersonName(personId)}, semana ${week}, ${ABSENCE_LABELS[nextType] || ABSENCE_LABELS['']}`);
   updateRowTotal(personId);
   updateWeekCount(week);
   saveData();
@@ -494,7 +488,7 @@ function openPeriodModal(per) {
   editingPeriod = per;
   document.getElementById('modal-period-label').value = per.label;
   document.getElementById('modal-period-color').value = per.color;
-  document.getElementById('modal-period-weeks').value = per.weeks.join(', ');
+  document.getElementById('modal-period-weeks').value = weeksToRangeString(per.weeks);
   document.getElementById('period-modal').classList.remove('hidden');
 }
 
@@ -503,15 +497,69 @@ function closePeriodModal() {
   editingPeriod = null;
 }
 
+// Parse a weeks input string supporting ranges (e.g. "1-3, 10, 12-16")
+// Returns a sorted, deduplicated array of valid week numbers (1-52)
+function parseWeeksInput(raw) {
+  const nums = new Set();
+  raw.split(/[,\s]+/).forEach(token => {
+    token = token.trim();
+    if (!token) return;
+    const rangeMatch = token.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (rangeMatch) {
+      const from = parseInt(rangeMatch[1], 10);
+      const to   = parseInt(rangeMatch[2], 10);
+      const start = Math.min(from, to);
+      const end   = Math.max(from, to);
+      for (let w = start; w <= end; w++) {
+        if (w >= 1 && w <= 52) nums.add(w);
+      }
+    } else {
+      const n = parseInt(token, 10);
+      if (n >= 1 && n <= 52) nums.add(n);
+    }
+  });
+  return [...nums].sort((a, b) => a - b);
+}
+
+// Convert a sorted array of week numbers to a compact range string (e.g. [1,2,3,5,6] → "1-3, 5-6")
+function weeksToRangeString(weeks) {
+  if (!weeks || weeks.length === 0) return '';
+  const sorted = [...weeks].sort((a, b) => a - b);
+  const parts = [];
+  let start = sorted[0];
+  let end = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i];
+    } else {
+      parts.push(start === end ? `${start}` : `${start}-${end}`);
+      start = end = sorted[i];
+    }
+  }
+  parts.push(start === end ? `${start}` : `${start}-${end}`);
+  return parts.join(', ');
+}
+
+// Compute a readable text color (black or white) based on background luminance
+function contrastTextColor(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // Perceived luminance (WCAG formula)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.55 ? '#333333' : '#ffffff';
+}
+
 function savePeriodModal() {
   if (!editingPeriod) return;
   const label = document.getElementById('modal-period-label').value.trim();
   const color = document.getElementById('modal-period-color').value;
   const weeksRaw = document.getElementById('modal-period-weeks').value;
-  const weeks = weeksRaw.split(/[\s,]+/).map(Number).filter(n => n >= 1 && n <= 52);
+  const weeks = parseWeeksInput(weeksRaw);
 
   editingPeriod.label = label || editingPeriod.label;
   editingPeriod.color = color;
+  editingPeriod.textColor = contrastTextColor(color);
   editingPeriod.weeks = weeks;
 
   closePeriodModal();
@@ -553,24 +601,31 @@ function importRows(rows) {
   // Expected format: first column = name, columns 2..53 = week absence types (week 1..52)
   let imported = 0;
 
-  // Build a normalized name map for matching: lowercase trimmed name -> person
+  // Build a normalized name map for matching: normalized name -> person
+  // Normalizing strips diacritics so "Ibanez" matches "Ibañez", etc.
+  function normalizeName(s) {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
   const nameMap = {};
   TEAM.forEach(p => {
     if (p.section) return;
-    nameMap[p.name.toLowerCase().trim()] = p;
+    nameMap[normalizeName(p.name)] = p;
   });
 
   function findPerson(rawName) {
-    const normalized = rawName.toLowerCase().trim();
-    // Exact match first
+    const normalized = normalizeName(rawName);
+    // 1. Exact match (after normalization)
     if (nameMap[normalized]) return nameMap[normalized];
-    // Partial match: all words of rawName appear in team member name
+    // 2. All-words fuzzy: every word in rawName appears in team member name
+    //    Require unique match to avoid ambiguity (e.g. "Eva" could match 2 people)
     const words = normalized.split(/\s+/).filter(Boolean);
-    return TEAM.find(p => {
+    if (words.length === 0) return null;
+    const matches = TEAM.filter(p => {
       if (p.section) return false;
-      const tname = p.name.toLowerCase();
-      return words.length > 0 && words.every(w => tname.includes(w));
-    }) || null;
+      const tname = normalizeName(p.name);
+      return words.every(w => tname.includes(w));
+    });
+    return matches.length === 1 ? matches[0] : null;
   }
 
   for (let r = 1; r < rows.length; r++) {
