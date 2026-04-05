@@ -657,6 +657,97 @@
     font-weight: 700; font-size: .8rem;
   }
   #ai-preview-banner button:hover { background: rgba(255,255,255,.4); }
+
+  /* ── Planner ─────────────────────────────────────────── */
+  .planner-view { margin-top: 0; }
+  .planner-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+  .planner-week-nav { display:flex; align-items:center; gap:10px; }
+  .planner-week-btn { padding:5px 12px; border-radius:6px; border:1px solid var(--border); background:var(--surface); cursor:pointer; font-size:.85rem; color:var(--text); }
+  .planner-week-btn:hover { background:#edf2f7; }
+  .planner-week-label { font-size:1.05rem; font-weight:700; min-width:180px; text-align:center; }
+  .planner-meta { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .planner-status { display:inline-block; padding:3px 10px; border-radius:12px; font-size:.78rem; font-weight:700; }
+  .planner-status-draft     { background:#fefcbf; color:#975a16; }
+  .planner-status-review    { background:#bee3f8; color:#2b6cb0; }
+  .planner-status-published { background:#c6f6d5; color:#276749; }
+  .planner-score { font-size:.85rem; font-weight:700; }
+  .planner-conflicts { font-size:.82rem; color:var(--red); font-weight:600; cursor:pointer; }
+  .planner-actions { display:flex; gap:6px; flex-wrap:wrap; }
+  .planner-actions button { padding:6px 13px; border-radius:6px; border:1px solid var(--border); background:var(--surface); cursor:pointer; font-size:.82rem; font-weight:600; color:#4a5568; transition:.15s; }
+  .planner-actions button:hover { background:#edf2f7; }
+  .planner-table-wrap { overflow-x:auto; border-radius:var(--radius); box-shadow:var(--shadow); background:var(--surface); margin-bottom:16px; }
+  .planner-table { border-collapse:collapse; width:100%; min-width:700px; }
+  .planner-table th { background:var(--text); color:#fff; padding:8px 10px; font-size:.82rem; text-align:left; white-space:nowrap; border:1px solid #4a5568; }
+  .planner-table th.day-header { text-align:center; cursor:pointer; }
+  .planner-table th.day-header:hover { background:#4a5568; }
+  .planner-table td { padding:4px 6px; border:1px solid var(--border); vertical-align:top; }
+  .planner-table td.pl-person { font-weight:600; font-size:.84rem; white-space:nowrap; min-width:90px; }
+  .planner-table td.pl-role   { font-size:.78rem; color:var(--text-muted); min-width:60px; }
+  .planner-cell { min-height:36px; border-radius:5px; padding:4px 6px; cursor:pointer; transition:.12s; font-size:.8rem; }
+  .planner-cell:hover { box-shadow:inset 0 0 0 2px var(--accent); }
+  .planner-cell-ok       { background:#f0fff4; }
+  .planner-cell-warn     { background:#fffff0; }
+  .planner-cell-conflict { background:#fff5f5; }
+  .planner-cell-off      { background:var(--surface-alt); color:var(--text-muted); text-align:center; }
+  .planner-cell-unassigned { background:#fffff0; border:1px dashed var(--yellow); }
+  .pl-shift { font-weight:700; color:var(--text); }
+  .pl-role-pill { display:inline-block; padding:1px 6px; border-radius:10px; font-size:.72rem; font-weight:700; margin-left:4px; }
+  .pl-pill-coach   { background:#c6f6d5; color:#276749; }
+  .pl-pill-support { background:#fefcbf; color:#975a16; }
+  .pl-pill-ldsup   { background:#bee3f8; color:#2b6cb0; }
+  .pl-pill-aor     { background:#e9d8fd; color:#553c9a; }
+  .planner-edit-btn { font-size:.72rem; color:var(--accent); cursor:pointer; margin-left:4px; opacity:.7; }
+  .planner-edit-btn:hover { opacity:1; }
+  .planner-totals td { background:var(--surface-alt); font-size:.8rem; font-weight:600; text-align:center; padding:4px 6px; }
+  .planner-score-row td { font-size:.8rem; font-weight:800; text-align:center; padding:4px 6px; }
+  .pl-conflict-badge { display:inline-block; background:var(--red); color:#fff; border-radius:10px; font-size:.68rem; font-weight:700; padding:1px 5px; margin-left:2px; }
+  .pl-conflict-badge-orange { background:#dd6b20; }
+  /* Equity panel */
+  .planner-equity { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:16px; }
+  .planner-equity h3 { font-size:.95rem; font-weight:700; margin-bottom:12px; }
+  .equity-table { width:100%; font-size:.82rem; border-collapse:collapse; }
+  .equity-table th { text-align:left; padding:5px 8px; background:var(--surface-alt); border-bottom:2px solid var(--border); }
+  .equity-table td { padding:4px 8px; border-bottom:1px solid var(--border); }
+  .equity-warning { background:#fffff0; }
+  /* Conflicts panel */
+  .planner-conflicts-panel { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; margin-bottom:16px; }
+  .planner-conflicts-panel h3 { font-size:.92rem; font-weight:700; margin-bottom:10px; }
+  .pl-conflict-item { padding:5px 10px; border-radius:5px; font-size:.8rem; margin-bottom:5px; display:flex; align-items:center; gap:8px; }
+  .pl-conflict-red    { background:#fff5f5; color:#c53030; border-left:3px solid var(--red); }
+  .pl-conflict-orange { background:#fffaf0; color:#c05621; border-left:3px solid var(--orange); }
+  /* Cell edit popover */
+  .pl-cell-popover { position:absolute; z-index:300; background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow-lg); padding:12px; min-width:200px; font-size:.82rem; }
+  .pl-cell-popover h4 { font-size:.85rem; font-weight:700; margin-bottom:8px; }
+  .pl-cell-popover label { display:block; font-size:.78rem; color:var(--text-muted); margin-bottom:3px; }
+  .pl-cell-popover select, .pl-cell-popover input[type=text] { width:100%; padding:4px 6px; border:1px solid var(--border); border-radius:5px; font-size:.8rem; margin-bottom:8px; background:var(--surface); color:var(--text); }
+  .pl-cell-popover .pl-pop-actions { display:flex; gap:6px; margin-top:6px; }
+  .pl-cell-popover .pl-pop-actions button { flex:1; padding:5px; border-radius:5px; border:1px solid var(--border); cursor:pointer; font-size:.78rem; font-weight:600; }
+  .pl-pop-apply { background:var(--accent); color:#fff !important; border-color:var(--accent) !important; }
+  /* Availability modal */
+  .modal-avail .modal-body-inner { padding:16px; }
+  .avail-person-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); }
+  .avail-person-name { min-width:130px; font-weight:600; font-size:.84rem; }
+  .avail-day-checks { display:flex; gap:4px; }
+  .avail-day-check { display:flex; flex-direction:column; align-items:center; gap:2px; font-size:.72rem; color:var(--text-muted); }
+  .avail-day-check input[type=checkbox] { cursor:pointer; }
+  .avail-person-status { font-size:.78rem; color:var(--text-muted); }
+  /* Status transition */
+  .planner-status-btn { padding:5px 12px; border-radius:6px; border:1px solid var(--border); background:var(--surface); cursor:pointer; font-size:.8rem; font-weight:600; }
+  /* Team modal extended */
+  .team-extra-fields { margin-top:8px; padding:8px; background:var(--surface-alt); border-radius:6px; font-size:.8rem; }
+  .team-extra-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+  .team-extra-row label { min-width:100px; color:var(--text-muted); }
+  .team-daysoff-checks { display:flex; gap:6px; flex-wrap:wrap; }
+  .team-daysoff-check { display:flex; align-items:center; gap:2px; font-size:.76rem; }
+  /* Dark mode overrides */
+  body.dark .planner-cell-ok       { background:#1a3a2a; }
+  body.dark .planner-cell-warn     { background:#3a3310; }
+  body.dark .planner-cell-conflict { background:#3a1010; }
+  body.dark .planner-cell-off      { background:var(--surface-alt); }
+  body.dark .pl-cell-popover       { background:var(--surface); }
+  body.dark .planner-status-draft     { background:#5a4000; color:#fefcbf; }
+  body.dark .planner-status-review    { background:#0a2a50; color:#bee3f8; }
+  body.dark .planner-status-published { background:#0a2a1a; color:#c6f6d5; }
 </style>
 </head>
 <body>
@@ -683,6 +774,7 @@
     <button class="tab-btn"        data-pat="2">Miércoles</button>
     <button class="tab-btn"        data-pat="3">Sábado</button>
     <button class="tab-btn"        data-pat="week">📅 Semana</button>
+    <button class="tab-btn"        data-pat="planner">📋 Planificar</button>
   </div>
   <div class="action-btns">
     <button class="btn-team"   onclick="openTeamModal()">👥 Equipo</button>
@@ -1305,6 +1397,15 @@ function renderTeamModal() {
       </select>
       <button class="del-team-btn" onclick="removeTeamMember('leads',${i})">🗑️</button>
     </div>`;
+    h += `<div class="team-extra-fields">
+      <div class="team-extra-row"><label>Días libres:</label><div class="team-daysoff-checks">
+        ${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d,idx)=>`<label class="team-daysoff-check"><input type="checkbox" ${(Array.isArray(m.daysOff)&&m.daysOff.includes(idx))?'checked':''} onchange="toggleDayOff('leads',${i},${idx})"> ${d}</label>`).join('')}
+      </div></div>
+      <div class="team-extra-row"><label>Máx cierres/sem:</label><input type="number" min="0" max="6" value="${typeof m.maxClosings==='number'?m.maxClosings:2}" style="width:50px" onchange="teamDraft.leads[${i}].maxClosings=parseInt(this.value)||0"></div>
+      <div class="team-extra-row"><label>Máx aperturas/sem:</label><input type="number" min="0" max="6" value="${typeof m.maxOpenings==='number'?m.maxOpenings:2}" style="width:50px" onchange="teamDraft.leads[${i}].maxOpenings=parseInt(this.value)||0"></div>
+      <div class="team-extra-row"><label>Prefiere mañana:</label><input type="checkbox" ${m.preferMorning?' checked':''} onchange="teamDraft.leads[${i}].preferMorning=this.checked"> <span style="font-size:.76rem;color:var(--text-muted)">Activo = turno mañana</span></div>
+      <div class="team-extra-row"><label>Notas:</label><input type="text" value="${escAttr(m.notes||'')}" placeholder="Notas libres" style="flex:1" onchange="teamDraft.leads[${i}].notes=this.value"></div>
+    </div>`;
   });
   h += `<button class="btn-add-member" onclick="addTeamMember('leads')">+ Añadir Lead</button>`;
 
@@ -1322,6 +1423,15 @@ function renderTeamModal() {
         <option value="Ambos"${m.defaultRole==='Ambos'?' selected':''}>Ambos</option>
       </select>
       <button class="del-team-btn" onclick="removeTeamMember('managers',${i})">🗑️</button>
+    </div>`;
+    h += `<div class="team-extra-fields">
+      <div class="team-extra-row"><label>Días libres:</label><div class="team-daysoff-checks">
+        ${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d,idx)=>`<label class="team-daysoff-check"><input type="checkbox" ${(Array.isArray(m.daysOff)&&m.daysOff.includes(idx))?'checked':''} onchange="toggleDayOff('managers',${i},${idx})"> ${d}</label>`).join('')}
+      </div></div>
+      <div class="team-extra-row"><label>Máx cierres/sem:</label><input type="number" min="0" max="6" value="${typeof m.maxClosings==='number'?m.maxClosings:2}" style="width:50px" onchange="teamDraft.managers[${i}].maxClosings=parseInt(this.value)||0"></div>
+      <div class="team-extra-row"><label>Máx aperturas/sem:</label><input type="number" min="0" max="6" value="${typeof m.maxOpenings==='number'?m.maxOpenings:2}" style="width:50px" onchange="teamDraft.managers[${i}].maxOpenings=parseInt(this.value)||0"></div>
+      <div class="team-extra-row"><label>Prefiere mañana:</label><input type="checkbox" ${m.preferMorning?' checked':''} onchange="teamDraft.managers[${i}].preferMorning=this.checked"> <span style="font-size:.76rem;color:var(--text-muted)">Activo = turno mañana</span></div>
+      <div class="team-extra-row"><label>Notas:</label><input type="text" value="${escAttr(m.notes||'')}" placeholder="Notas libres" style="flex:1" onchange="teamDraft.managers[${i}].notes=this.value"></div>
     </div>`;
   });
   h += `<button class="btn-add-member" onclick="addTeamMember('managers')">+ Añadir Manager</button>`;
@@ -2492,6 +2602,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     }
     if (btn.dataset.pat === 'week') {
       renderWeeklyView();
+    } else if (btn.dataset.pat === 'planner') {
+      renderPlannerView();
     } else {
       activePattern = parseInt(btn.dataset.pat);
       render(activePattern);
@@ -4442,6 +4554,825 @@ function questionMeetings(patIdx) {
 
   return suggestions;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEEKLY PLANNER (Fase 3)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const LS_KEY_WEEK_PLANS = 'schedule_week_plans';
+const WEEK_DAY_KEYS = ['mon','tue','wed','thu','fri','sat'];
+const WEEK_DAY_LABELS_SHORT = ['L','M','X','J','V','S'];
+
+let weekPlans = {}; // { 'YYYY-Wnn': { plan, status, createdAt, notes } }
+let plannerCurrentWeek = null; // weekId string e.g. '2025-W15'
+let plannerEditPopover = null;
+
+// ── Persistence ───────────────────────────────────────────────────────────────
+function loadWeekPlans() {
+  try {
+    const s = localStorage.getItem(LS_KEY_WEEK_PLANS);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return {};
+}
+function saveWeekPlans() {
+  try { localStorage.setItem(LS_KEY_WEEK_PLANS, JSON.stringify(weekPlans)); } catch(e) {}
+}
+
+weekPlans = loadWeekPlans();
+
+// ── Week helpers ──────────────────────────────────────────────────────────────
+function getISOWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function getWeekId(date) {
+  const w = getISOWeek(date);
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const year = d.getUTCFullYear();
+  return `${year}-W${String(w).padStart(2,'0')}`;
+}
+
+function getMondayOfWeek(weekId) {
+  const [yearStr, wStr] = weekId.split('-W');
+  const year = parseInt(yearStr), week = parseInt(wStr);
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayOfWeek = jan4.getUTCDay() || 7;
+  const week1Mon = new Date(jan4);
+  week1Mon.setUTCDate(jan4.getUTCDate() - (dayOfWeek - 1));
+  const monday = new Date(week1Mon);
+  monday.setUTCDate(week1Mon.getUTCDate() + (week - 1) * 7);
+  return monday;
+}
+
+function getWeekDateRange(weekId) {
+  const monday = getMondayOfWeek(weekId);
+  const saturday = new Date(monday);
+  saturday.setUTCDate(monday.getUTCDate() + 5);
+  return { monday, saturday };
+}
+
+function formatWeekLabel(weekId) {
+  const { monday, saturday } = getWeekDateRange(weekId);
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const monDay = monday.getUTCDate(), monMon = months[monday.getUTCMonth()];
+  const satDay = saturday.getUTCDate(), satMon = months[saturday.getUTCMonth()];
+  // Use the ISO year from the weekId (which is based on Thursday's year, always correct)
+  const year = parseInt(weekId.split('-W')[0]);
+  if (monMon === satMon) return `${monDay} \u2013 ${satDay} ${satMon} ${year}`;
+  return `${monDay} ${monMon} \u2013 ${satDay} ${satMon} ${year}`;
+}
+
+function navigateWeek(delta) {
+  const monday = getMondayOfWeek(plannerCurrentWeek);
+  monday.setUTCDate(monday.getUTCDate() + delta * 7);
+  plannerCurrentWeek = getWeekId(monday);
+  renderPlannerView();
+}
+
+function getCurrentWeekId() {
+  return getWeekId(new Date());
+}
+
+// ── Team member helpers ───────────────────────────────────────────────────────
+function getAllMembers() {
+  return [...(teamData.leads || []), ...(teamData.managers || [])];
+}
+
+function findMemberById(id) {
+  return getAllMembers().find(m => m.id === id) || null;
+}
+
+function memberDaysOff(member) {
+  return Array.isArray(member.daysOff) ? member.daysOff : [];
+}
+
+function memberMaxClosings(member) {
+  return typeof member.maxClosings === 'number' ? member.maxClosings : 2;
+}
+
+function memberMaxOpenings(member) {
+  return typeof member.maxOpenings === 'number' ? member.maxOpenings : 2;
+}
+
+// ── Plan generation ───────────────────────────────────────────────────────────
+function generateWeekPlan(weekId) {
+  const plan = {};
+  const personStats = {};
+
+  const shiftIsClosing = (shift) => {
+    if (!shift) return false;
+    return shift.includes('-22:00') || shift.includes('-21:30');
+  };
+  const shiftIsOpening = (shift) => {
+    if (!shift) return false;
+    return shift.startsWith('07:');
+  };
+
+  const getAvailability = (member, dayIdx) => {
+    if (!plannerCurrentWeek) return true;
+    const weekOverride = (member.weeklyAvailability || {})[plannerCurrentWeek];
+    if (!weekOverride) return true;
+    const dayKey = WEEK_DAY_KEYS[dayIdx];
+    const dayVal = weekOverride[dayKey];
+    if (dayVal === false) return false;
+    return true;
+  };
+
+  for (let dayIdx = 0; dayIdx < 6; dayIdx++) {
+    const patIdx = DAY_PATTERN_IDX[dayIdx];
+    const pattern = currentState[patIdx];
+
+    for (const row of pattern) {
+      const isLead = row.role === 'Lead';
+      const candidates = isLead ? (teamData.leads || []) : (teamData.managers || []);
+
+      const scoredCandidates = candidates.map(member => {
+        const daysOff = memberDaysOff(member);
+        const calDayIdx = dayIdx + 1;
+        if (daysOff.includes(calDayIdx)) return null;
+        if (!getAvailability(member, dayIdx)) return null;
+
+        const stats = personStats[member.id] || { closings:0, openings:0, assignedDays:0 };
+
+        const alreadyThisDay = plan[member.id] && plan[member.id][dayIdx];
+        if (alreadyThisDay) return null;
+
+        let score = 0;
+        if (member.defaultShift === row.shift) score += 10;
+        if (!isLead && member.defaultRole === (getFloorRoleForRow(row) || 'Coach')) score += 5;
+
+        const isMorning = row.shift && (row.shift.startsWith('07:') || row.shift.startsWith('08:') || row.shift.startsWith('09:') || row.shift.startsWith('10:'));
+        if (member.preferMorning && isMorning) score += 3;
+        if (!member.preferMorning && !isMorning) score += 3;
+
+        if (shiftIsClosing(row.shift) && stats.closings >= memberMaxClosings(member)) score -= 10;
+        if (shiftIsOpening(row.shift) && stats.openings >= memberMaxOpenings(member)) score -= 10;
+        if (shiftIsClosing(row.shift)) score += 8 - Math.min(8, stats.closings * 3);
+        if (stats.assignedDays >= 5) score -= 5;
+
+        return { member, score };
+      }).filter(Boolean);
+
+      if (scoredCandidates.length === 0) continue;
+
+      scoredCandidates.sort((a, b) => b.score - a.score);
+      const best = scoredCandidates[0].member;
+
+      if (!plan[best.id]) plan[best.id] = {};
+      const role = row.role === 'Lead' ? 'LDSup' : (getFloorRoleForRow(row) || 'Coach');
+      plan[best.id][dayIdx] = { shift: row.shift, role };
+
+      if (!personStats[best.id]) personStats[best.id] = { closings:0, openings:0, assignedDays:0 };
+      if (shiftIsClosing(row.shift)) personStats[best.id].closings++;
+      if (shiftIsOpening(row.shift)) personStats[best.id].openings++;
+      personStats[best.id].assignedDays++;
+    }
+  }
+
+  return plan;
+}
+
+// ── Conflict detection ────────────────────────────────────────────────────────
+function detectConflicts(weekPlan) {
+  const conflicts = [];
+
+  for (const [personId, days] of Object.entries(weekPlan)) {
+    const member = findMemberById(personId);
+    if (!member) continue;
+
+    const daysOff = memberDaysOff(member);
+
+    for (const [dayIdx, assignment] of Object.entries(days)) {
+      if (!assignment) continue;
+      const calDay = parseInt(dayIdx) + 1;
+      if (daysOff.includes(calDay)) {
+        conflicts.push({ type:'dayoff', severity:'red', person:member.name, day:WEEK_DAYS[parseInt(dayIdx)],
+          msg:`${member.shortName||member.name} tiene ${WEEK_DAYS[parseInt(dayIdx)]} como día libre` });
+      }
+    }
+
+    const closings = Object.values(days).filter(d => d && d.shift && (d.shift.endsWith('-22:00') || d.shift.endsWith('-21:30'))).length;
+    if (closings > memberMaxClosings(member)) {
+      conflicts.push({ type:'maxClosing', severity:'orange', person:member.name,
+        msg:`${member.shortName||member.name}: ${closings} cierres (máx ${memberMaxClosings(member)})` });
+    }
+
+    const openings = Object.values(days).filter(d => d && d.shift && d.shift.startsWith('07:')).length;
+    if (openings > memberMaxOpenings(member)) {
+      conflicts.push({ type:'maxOpening', severity:'orange', person:member.name,
+        msg:`${member.shortName||member.name}: ${openings} aperturas (máx ${memberMaxOpenings(member)})` });
+    }
+
+    const workedDays = Object.values(days).filter(d => d).length;
+    if (workedDays >= 6) {
+      conflicts.push({ type:'noRestDay', severity:'orange', person:member.name,
+        msg:`${member.shortName||member.name} trabaja los 6 días sin descanso` });
+    }
+  }
+
+  for (let dayIdx = 0; dayIdx < 6; dayIdx++) {
+    const patIdx = DAY_PATTERN_IDX[dayIdx];
+    const needed = currentState[patIdx].length;
+    const assigned = Object.values(weekPlan).filter(d => d[dayIdx]).length;
+    if (assigned < needed) {
+      conflicts.push({ type:'understaffed', severity:'red', day:WEEK_DAYS[dayIdx],
+        msg:`${WEEK_DAYS[dayIdx]}: ${assigned}/${needed} personas asignadas` });
+    }
+  }
+
+  return conflicts;
+}
+
+// ── Score for week plan ───────────────────────────────────────────────────────
+function calcPlannerWeekScore(weekPlan) {
+  const scores = DAY_PATTERN_IDX.map(idx => calculateScore(idx).score);
+  return scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+}
+
+// ── Status helpers ─────────────────────────────────────────────────────────────
+const STATUS_LABELS = { draft:'🟡 Borrador', review:'🔵 Revisión', published:'🟢 Publicado' };
+const STATUS_CSS    = { draft:'planner-status-draft', review:'planner-status-review', published:'planner-status-published' };
+
+function getPlanForWeek(weekId) {
+  return weekPlans[weekId] || null;
+}
+
+function savePlanForWeek(weekId, plan, status, notes) {
+  weekPlans[weekId] = {
+    plan: plan || {},
+    status: status || 'draft',
+    createdAt: (weekPlans[weekId] && weekPlans[weekId].createdAt) || Date.now(),
+    updatedAt: Date.now(),
+    notes: notes || ''
+  };
+  saveWeekPlans();
+}
+
+function advancePlanStatus(weekId) {
+  const entry = weekPlans[weekId];
+  if (!entry) return;
+  const order = ['draft','review','published'];
+  const idx = order.indexOf(entry.status);
+  if (idx < order.length - 1) {
+    entry.status = order[idx + 1];
+    saveWeekPlans();
+  }
+}
+
+// ── Render planner view ───────────────────────────────────────────────────────
+function renderPlannerView() {
+  closeDropdown();
+  closePlannerPopover();
+
+  if (!plannerCurrentWeek) plannerCurrentWeek = getCurrentWeekId();
+
+  const weekLabel = formatWeekLabel(plannerCurrentWeek);
+  const entry = getPlanForWeek(plannerCurrentWeek);
+  const plan = entry ? entry.plan : {};
+  const status = entry ? (entry.status || 'draft') : 'draft';
+
+  const conflicts = detectConflicts(plan);
+  const weekScore = calcPlannerWeekScore(plan);
+  const totalConflicts = conflicts.length;
+
+  const subtitle = document.getElementById('subtitle');
+  if (subtitle) subtitle.textContent = `Planificador Semanal \u00b7 ${weekLabel}`;
+
+  const qs = document.getElementById('quick-stats');
+  if (qs) {
+    const sColor = scoreColor(weekScore);
+    qs.innerHTML = `<div class="stat-card"><div class="stat-value" style="color:${sColor}">${weekScore}%</div><div class="stat-label">Score Plan Semanal</div><div class="score-progress-bar"><div class="score-progress-fill" style="width:${weekScore}%;background:${sColor}"></div></div></div>`;
+  }
+
+  const badge = document.getElementById('alerts-badge');
+  if (badge) { badge.textContent = ''; badge.className = 'alert-badge ok'; }
+  const drawerSum = document.getElementById('alert-drawer-summary');
+  if (drawerSum) { drawerSum.innerHTML = 'ℹ️ <strong>Planificador Semanal</strong> — gestiona el horario semanal con personas reales'; drawerSum.style.color='var(--text-muted)'; }
+
+  const allMembers = getAllMembers();
+
+  let h = '<div class="planner-view">';
+
+  h += '<div class="planner-header">';
+  h += '<div class="planner-week-nav">';
+  h += `<button class="planner-week-btn" onclick="navigateWeek(-1)">&#9664; Anterior</button>`;
+  h += `<span class="planner-week-label">${esc(weekLabel)}</span>`;
+  h += `<button class="planner-week-btn" onclick="navigateWeek(1)">Siguiente &#9654;</button>`;
+  h += '</div>';
+
+  h += '<div class="planner-meta">';
+  h += `<span class="planner-status ${STATUS_CSS[status]}">${STATUS_LABELS[status]}</span>`;
+  h += `<span class="planner-score" style="color:${scoreColor(weekScore)}">📊 ${weekScore}%</span>`;
+  if (totalConflicts > 0) {
+    h += `<span class="planner-conflicts" onclick="document.getElementById('planner-conflicts-section').scrollIntoView({behavior:'smooth'})">⚠️ ${totalConflicts} conflicto${totalConflicts!==1?'s':''}</span>`;
+  } else {
+    h += `<span style="color:var(--green);font-size:.82rem;font-weight:600;">✅ Sin conflictos</span>`;
+  }
+  if (status !== 'published') {
+    const nextStatus = status === 'draft' ? 'Enviar a Revisión 🔵' : 'Publicar 🟢';
+    h += `<button class="planner-status-btn" onclick="plannerAdvanceStatus()">${nextStatus}</button>`;
+  }
+  h += '</div>';
+
+  h += '<div class="planner-actions">';
+  h += `<button onclick="openAvailabilityModal()">👥 Disponibilidad</button>`;
+  h += `<button onclick="plannerGenerate()">📥 Generar desde patrones</button>`;
+  h += `<button onclick="plannerSave()">💾 Guardar</button>`;
+  h += `<button onclick="plannerExportCSV()">📤 Exportar CSV</button>`;
+  h += '</div>';
+  h += '</div>'; // planner-header
+
+  h += '<div class="planner-table-wrap"><table class="planner-table">';
+  h += '<thead><tr>';
+  h += '<th>Persona</th><th>Rol</th>';
+  for (let d = 0; d < 6; d++) {
+    h += `<th class="day-header" onclick="plannerDayClick(${d})" title="Ver patrón del día">${WEEK_DAYS[d]}</th>`;
+  }
+  h += '</tr></thead><tbody>';
+
+  if (allMembers.length === 0) {
+    h += `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-muted)">No hay miembros del equipo. Configura el equipo primero con el botón 👥 Equipo.</td></tr>`;
+  } else {
+    const leads = teamData.leads || [];
+    if (leads.length > 0) {
+      h += `<tr><td colspan="8" style="background:var(--lead-bg);color:var(--lead-text);font-weight:700;font-size:.8rem;padding:5px 10px;">👤 Leads</td></tr>`;
+      for (const member of leads) {
+        h += plannerPersonRow(member, plan, conflicts);
+      }
+    }
+    const mgrs = teamData.managers || [];
+    if (mgrs.length > 0) {
+      h += `<tr><td colspan="8" style="background:var(--mgr-bg);color:var(--mgr-text);font-weight:700;font-size:.8rem;padding:5px 10px;">👔 Managers</td></tr>`;
+      for (const member of mgrs) {
+        h += plannerPersonRow(member, plan, conflicts);
+      }
+    }
+  }
+
+  h += '<tr class="planner-totals"><td colspan="2">Total asignados</td>';
+  for (let d = 0; d < 6; d++) {
+    const count = Object.values(plan).filter(days => days[d]).length;
+    const needed = currentState[DAY_PATTERN_IDX[d]].length;
+    const ok = count >= needed;
+    h += `<td style="color:${ok?'var(--green)':'var(--red)'}">${count}/${needed}</td>`;
+  }
+  h += '</tr>';
+
+  h += '<tr class="planner-score-row"><td colspan="2">📊 Score patrón</td>';
+  for (let d = 0; d < 6; d++) {
+    const s = calculateScore(DAY_PATTERN_IDX[d]).score;
+    h += `<td style="color:${scoreColor(s)}">${s}%</td>`;
+  }
+  h += '</tr>';
+
+  h += '</tbody></table></div>';
+
+  h += `<div id="planner-conflicts-section">`;
+  if (conflicts.length > 0) {
+    h += '<div class="planner-conflicts-panel">';
+    h += `<h3>⚠️ Conflictos (${conflicts.length})</h3>`;
+    for (const c of conflicts) {
+      const cls = c.severity === 'red' ? 'pl-conflict-red' : 'pl-conflict-orange';
+      const icon = c.severity === 'red' ? '🔴' : '🟠';
+      h += `<div class="pl-conflict-item ${cls}">${icon} ${esc(c.msg)}</div>`;
+    }
+    h += '</div>';
+  }
+  h += '</div>';
+
+  h += buildPlannerEquityPanel(plan);
+  h += '</div>'; // planner-view
+
+  const main = document.getElementById('schedule-container');
+  if (main) main.innerHTML = h;
+}
+
+function plannerPersonRow(member, plan, conflicts) {
+  const personPlan = plan[member.id] || {};
+  const isLead = teamData.leads && teamData.leads.some(m => m.id === member.id);
+  const roleLabel = isLead ? 'Lead' : 'Mgr';
+  const memberConflicts = conflicts.filter(c => c.person === member.name);
+
+  let h = `<tr>`;
+  h += `<td class="pl-person">${esc(member.shortName || member.name)}`;
+  if (memberConflicts.length > 0) {
+    const redCount = memberConflicts.filter(c=>c.severity==='red').length;
+    if (redCount > 0) h += `<span class="pl-conflict-badge">${redCount}</span>`;
+    else h += `<span class="pl-conflict-badge pl-conflict-badge-orange">${memberConflicts.length}</span>`;
+  }
+  h += `</td>`;
+  h += `<td class="pl-role" style="color:${isLead?'var(--lead-text)':'var(--mgr-text)'}">${roleLabel}</td>`;
+
+  for (let d = 0; d < 6; d++) {
+    const assignment = personPlan[d];
+    const daysOff = memberDaysOff(member);
+    const calDay = d + 1;
+    const isOff = daysOff.includes(calDay);
+    const hasConflictHere = conflicts.some(c => c.person === member.name && c.day === WEEK_DAYS[d]);
+
+    let cellCls = 'planner-cell ';
+    let cellContent = '';
+
+    if (isOff && !assignment) {
+      cellCls += 'planner-cell-off';
+      cellContent = '<span style="font-size:.75rem">Libre</span>';
+    } else if (!assignment) {
+      cellCls += 'planner-cell-unassigned';
+      cellContent = '<span style="font-size:.72rem;color:var(--text-muted)">\u2014 Sin asignar</span>';
+    } else {
+      cellCls += hasConflictHere ? 'planner-cell-conflict' : 'planner-cell-ok';
+      const shiftStr = shiftShort(assignment.shift);
+      const roleStr = assignment.role || '';
+      const pillCls = roleStr === 'Coach' ? 'pl-pill-coach'
+                    : roleStr === 'Support' ? 'pl-pill-support'
+                    : roleStr === 'LDSup' ? 'pl-pill-ldsup'
+                    : roleStr === 'AOR' ? 'pl-pill-aor' : '';
+      cellContent = `<span class="pl-shift">${esc(shiftStr)}</span>`;
+      if (roleStr) cellContent += `<span class="pl-role-pill ${pillCls}">${esc(roleStr)}</span>`;
+    }
+
+    cellContent += `<span class="planner-edit-btn" onclick="event.stopPropagation();openPlannerCellEdit(event,'${escAttr(member.id)}',${d})">✏️</span>`;
+    h += `<td><div class="${cellCls}" onclick="openPlannerCellEdit(event,'${escAttr(member.id)}',${d})" data-person="${escAttr(member.id)}" data-day="${d}">${cellContent}</div></td>`;
+  }
+  h += '</tr>';
+  return h;
+}
+
+function buildPlannerEquityPanel(plan) {
+  const allM = getAllMembers();
+  if (allM.length === 0) return '';
+
+  let h = '<div class="planner-equity">';
+  h += '<h3>⚖️ Equidad Semanal</h3>';
+  h += '<div style="overflow-x:auto"><table class="equity-table">';
+  h += '<thead><tr><th>Persona</th><th>Días</th><th>Aperturas</th><th>Cierres</th><th>Coach</th><th>Support</th><th></th></tr></thead>';
+  h += '<tbody>';
+
+  const stats = allM.map(m => {
+    const days = plan[m.id] || {};
+    const worked = Object.values(days).filter(d=>d).length;
+    const openings = Object.values(days).filter(d=>d&&d.shift&&d.shift.startsWith('07:')).length;
+    const closings = Object.values(days).filter(d=>d&&d.shift&&(d.shift.endsWith('-22:00')||d.shift.endsWith('-21:30'))).length;
+    const coach = Object.values(days).filter(d=>d&&d.role==='Coach').length;
+    const support = Object.values(days).filter(d=>d&&d.role==='Support').length;
+    return { m, worked, openings, closings, coach, support };
+  });
+
+  const avgClose = stats.reduce((s,x)=>s+x.closings,0)/Math.max(1,stats.length);
+
+  for (const s of stats) {
+    const imbal = Math.abs(s.closings - avgClose) > 1.5;
+    h += `<tr class="${imbal?'equity-warning':''}">`;
+    h += `<td>${esc(s.m.shortName||s.m.name)}</td>`;
+    h += `<td>${s.worked}/6</td>`;
+    h += `<td>${s.openings}</td>`;
+    h += `<td>${s.closings}</td>`;
+    h += `<td>${s.coach}</td>`;
+    h += `<td>${s.support}</td>`;
+    h += `<td>${imbal?'⚠️':'✅'}</td>`;
+    h += '</tr>';
+  }
+
+  const totalEntries = stats.length || 1;
+  h += '<tr style="font-weight:700;background:var(--surface-alt)">';
+  h += '<td>PROMEDIO</td>';
+  h += `<td>${(stats.reduce((s,x)=>s+x.worked,0)/totalEntries).toFixed(1)}</td>`;
+  h += `<td>${(stats.reduce((s,x)=>s+x.openings,0)/totalEntries).toFixed(1)}</td>`;
+  h += `<td>${(stats.reduce((s,x)=>s+x.closings,0)/totalEntries).toFixed(1)}</td>`;
+  h += `<td>${(stats.reduce((s,x)=>s+x.coach,0)/totalEntries).toFixed(1)}</td>`;
+  h += `<td>${(stats.reduce((s,x)=>s+x.support,0)/totalEntries).toFixed(1)}</td>`;
+  h += '<td></td></tr>';
+
+  h += '</tbody></table></div></div>';
+  return h;
+}
+
+// ── Cell edit popover ─────────────────────────────────────────────────────────
+function closePlannerPopover() {
+  if (plannerEditPopover) {
+    plannerEditPopover.remove();
+    plannerEditPopover = null;
+  }
+}
+
+function openPlannerCellEdit(event, personId, dayIdx) {
+  event.stopPropagation();
+  closePlannerPopover();
+
+  const weekId = plannerCurrentWeek;
+  const entry = getPlanForWeek(weekId);
+  const plan = entry ? entry.plan : {};
+  const assignment = (plan[personId] || {})[dayIdx] || null;
+  const member = findMemberById(personId);
+  if (!member) return;
+
+  const shiftOpts = activeSeason === 'invierno' ? SHIFT_OPTIONS_INVIERNO : SHIFT_OPTIONS_VERANO;
+  const isLead = teamData.leads && teamData.leads.some(m => m.id === personId);
+  const currentShift = assignment ? assignment.shift : (member.defaultShift || shiftOpts[1]);
+  const currentRole  = assignment ? assignment.role  : (isLead ? 'LDSup' : 'Coach');
+
+  let html = `<div class="pl-cell-popover" id="planner-cell-popover">`;
+  html += `<h4>${esc(member.shortName||member.name)} \u2014 ${WEEK_DAYS[dayIdx]}</h4>`;
+  html += `<hr style="margin-bottom:8px;border:none;border-top:1px solid var(--border)">`;
+
+  html += `<label>Turno</label>`;
+  html += `<select id="pl-pop-shift">`;
+  for (const s of shiftOpts) {
+    html += `<option value="${escAttr(s)}"${s===currentShift?' selected':''}>${esc(s)}</option>`;
+  }
+  html += `</select>`;
+
+  if (!isLead) {
+    html += `<label>Rol</label>`;
+    html += `<select id="pl-pop-role">`;
+    for (const r of ['Coach','Support','AOR']) {
+      html += `<option value="${escAttr(r)}"${r===currentRole?' selected':''}>${esc(r)}</option>`;
+    }
+    html += `</select>`;
+  }
+
+  html += `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pl-pop-dayoff"${!assignment?' checked':''}> Día libre</label>`;
+  html += `<div class="pl-pop-actions" style="margin-top:10px">`;
+  html += `<button class="pl-pop-apply" onclick="applyPlannerCellEdit('${escAttr(personId)}',${dayIdx})">Aplicar</button>`;
+  html += `<button onclick="closePlannerPopover()">Cancelar</button>`;
+  html += `</div></div>`;
+
+  const pop = document.createElement('div');
+  pop.innerHTML = html;
+  plannerEditPopover = pop.firstChild;
+
+  document.body.appendChild(plannerEditPopover);
+  const rect = event.target.getBoundingClientRect();
+  let top = rect.bottom + window.scrollY + 4;
+  let left = rect.left + window.scrollX;
+  const pw = 220;
+  if (left + pw > window.innerWidth - 10) left = window.innerWidth - pw - 10;
+  plannerEditPopover.style.top = top + 'px';
+  plannerEditPopover.style.left = left + 'px';
+  plannerEditPopover.style.position = 'absolute';
+}
+
+function applyPlannerCellEdit(personId, dayIdx) {
+  const shiftEl = document.getElementById('pl-pop-shift');
+  const roleEl  = document.getElementById('pl-pop-role');
+  const dayOffEl = document.getElementById('pl-pop-dayoff');
+  if (!shiftEl) return;
+
+  const weekId = plannerCurrentWeek;
+  const entry = getPlanForWeek(weekId);
+  const plan = entry ? JSON.parse(JSON.stringify(entry.plan)) : {};
+
+  if (!plan[personId]) plan[personId] = {};
+
+  if (dayOffEl && dayOffEl.checked) {
+    delete plan[personId][dayIdx];
+  } else {
+    const isLead = teamData.leads && teamData.leads.some(m => m.id === personId);
+    const role = isLead ? 'LDSup' : (roleEl ? roleEl.value : 'Coach');
+    plan[personId][dayIdx] = { shift: shiftEl.value, role };
+  }
+
+  savePlanForWeek(weekId, plan, entry ? entry.status : 'draft', entry ? entry.notes : '');
+  closePlannerPopover();
+  renderPlannerView();
+}
+
+// ── Day header click — mini pattern view ────────────────────────────────────
+function plannerDayClick(dayIdx) {
+  const patIdx = DAY_PATTERN_IDX[dayIdx];
+  const patName = PATTERN_NAMES[patIdx];
+  const rows = currentState[patIdx];
+
+  let h = `<div style="padding:12px"><h4 style="margin-bottom:10px">${WEEK_DAYS[dayIdx]} \u2014 Patrón: ${esc(patName)}</h4>`;
+  h += '<table style="width:100%;font-size:.82rem;border-collapse:collapse">';
+  h += '<thead><tr><th style="text-align:left;padding:4px 8px;background:var(--surface-alt)">Rol</th><th style="text-align:left;padding:4px 8px;background:var(--surface-alt)">Turno</th><th style="text-align:left;padding:4px 8px;background:var(--surface-alt)">Persona</th></tr></thead><tbody>';
+  for (const row of rows) {
+    const member = row.assignedId ? findMemberById(row.assignedId) : null;
+    const name = member ? (member.shortName||member.name) : '(sin asignar)';
+    h += `<tr><td style="padding:3px 8px;border-bottom:1px solid var(--border)">${esc(row.role)}</td><td style="padding:3px 8px;border-bottom:1px solid var(--border)">${esc(row.shift)}</td><td style="padding:3px 8px;border-bottom:1px solid var(--border)">${esc(name)}</td></tr>`;
+  }
+  h += '</tbody></table>';
+  h += `<div style="margin-top:10px;font-size:.78rem"><a href="#" onclick="switchToPattern(${patIdx});return false">Ver patrón completo →</a></div>`;
+  h += '</div>';
+
+  showPlannerDayModal(h);
+}
+
+function switchToPattern(patIdx) {
+  closePlannerDayModal();
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active');
+    if (b.dataset.pat == patIdx) b.classList.add('active');
+  });
+  activePattern = patIdx;
+  render(activePattern);
+  updateUndoRedoButtons();
+}
+
+let plannerDayModalEl = null;
+function showPlannerDayModal(content) {
+  closePlannerDayModal();
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
+  overlay.addEventListener('click', e => { if(e.target===overlay) closePlannerDayModal(); });
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--surface);border-radius:10px;box-shadow:var(--shadow-lg);max-width:480px;width:90%;max-height:80vh;overflow-y:auto';
+  box.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)"><strong>Vista de patrón del día</strong><button onclick="closePlannerDayModal()" style="border:none;background:none;font-size:1.2rem;cursor:pointer">✕</button></div>` + content;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  plannerDayModalEl = overlay;
+}
+
+function closePlannerDayModal() {
+  if (plannerDayModalEl) { plannerDayModalEl.remove(); plannerDayModalEl = null; }
+}
+
+// ── Generate and Save actions ─────────────────────────────────────────────────
+function plannerGenerate() {
+  const plan = generateWeekPlan(plannerCurrentWeek);
+  const entry = getPlanForWeek(plannerCurrentWeek);
+  savePlanForWeek(plannerCurrentWeek, plan, entry ? entry.status : 'draft', entry ? entry.notes : '');
+  renderPlannerView();
+  showUndoToast('📥 Plan generado desde patrones');
+}
+
+function plannerSave() {
+  const entry = getPlanForWeek(plannerCurrentWeek);
+  if (!entry) {
+    savePlanForWeek(plannerCurrentWeek, {}, 'draft', '');
+  } else {
+    saveWeekPlans();
+  }
+  showUndoToast('💾 Plan guardado');
+}
+
+function plannerAdvanceStatus() {
+  advancePlanStatus(plannerCurrentWeek);
+  renderPlannerView();
+}
+
+// ── CSV export for week plan ──────────────────────────────────────────────────
+function plannerExportCSV() {
+  const weekLabel = formatWeekLabel(plannerCurrentWeek);
+  const entry = getPlanForWeek(plannerCurrentWeek);
+  const plan = entry ? entry.plan : {};
+  const allMembers = getAllMembers();
+
+  let csv = `Semana,"${weekLabel}"\n`;
+  csv += 'Persona,Rol,' + WEEK_DAYS.join(',') + '\n';
+
+  for (const member of allMembers) {
+    const isLead = teamData.leads && teamData.leads.some(m => m.id === member.id);
+    const roleLabel = isLead ? 'Lead' : 'Manager';
+    const days = plan[member.id] || {};
+    const cols = WEEK_DAYS.map((_, d) => {
+      const a = days[d];
+      if (!a) return 'LIBRE';
+      return `"${shiftShort(a.shift)} ${a.role}"`;
+    });
+    csv += `"${member.name}","${roleLabel}",${cols.join(',')}\n`;
+  }
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `plan_semana_${plannerCurrentWeek}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Availability modal ────────────────────────────────────────────────────────
+let availabilityDraft = {};
+
+function openAvailabilityModal() {
+  const weekId = plannerCurrentWeek;
+  const allMembers = getAllMembers();
+
+  availabilityDraft = {};
+  for (const m of allMembers) {
+    availabilityDraft[m.id] = {};
+    const weekOverride = (m.weeklyAvailability || {})[weekId] || {};
+    for (let d = 0; d < 6; d++) {
+      const key = WEEK_DAY_KEYS[d];
+      availabilityDraft[m.id][d] = weekOverride[key] !== false;
+    }
+  }
+
+  const weekLabel = formatWeekLabel(weekId);
+  let h = `<div class="modal-body-inner">`;
+  h += `<h4 style="margin-bottom:12px">📋 Disponibilidad \u2014 ${esc(weekLabel)}</h4>`;
+  h += '<div style="margin-bottom:8px;display:flex;gap:12px;font-size:.78rem;color:var(--text-muted)">';
+  h += '<span>☑ disponible &nbsp; ☐ no disponible</span></div>';
+
+  for (const m of allMembers) {
+    const availDays = Object.values(availabilityDraft[m.id]).filter(Boolean).length;
+    h += `<div class="avail-person-row">`;
+    h += `<span class="avail-person-name">${esc(m.shortName||m.name)}</span>`;
+    h += `<div class="avail-day-checks">`;
+    for (let d = 0; d < 6; d++) {
+      const checked = availabilityDraft[m.id][d] !== false;
+      h += `<div class="avail-day-check">`;
+      h += `<span>${WEEK_DAY_LABELS_SHORT[d]}</span>`;
+      h += `<input type="checkbox" ${checked?'checked':''} onchange="availabilityDraft['${escAttr(m.id)}'][${d}]=this.checked;updateAvailStatus('${escAttr(m.id)}')">`;
+      h += `</div>`;
+    }
+    h += `</div>`;
+    h += `<span class="avail-person-status" id="avail-status-${escAttr(m.id)}">${availDays}/6 días</span>`;
+    h += `</div>`;
+  }
+
+  const totalAvail = allMembers.filter(m => Object.values(availabilityDraft[m.id]).some(Boolean)).length;
+  const minNeeded = Math.max(...DAY_PATTERN_IDX.map(idx => currentState[idx].length));
+
+  h += `<div style="margin-top:12px;padding:10px;background:var(--surface-alt);border-radius:6px;font-size:.82rem">`;
+  h += `Disponibles: <strong id="avail-total">${totalAvail}/${allMembers.length}</strong>`;
+  if (totalAvail < minNeeded) {
+    h += ` &nbsp; <span style="color:var(--red)">⚠️ Mín necesario: ${minNeeded}</span>`;
+  } else {
+    h += ` &nbsp; <span style="color:var(--green)">✅ Personal suficiente</span>`;
+  }
+  h += `</div>`;
+
+  h += `<div style="display:flex;gap:8px;margin-top:14px">`;
+  h += `<button class="btn-save-modal" onclick="saveAvailabilityModal()">Guardar y Generar Plan</button>`;
+  h += `<button class="btn-cancel-modal" onclick="closeAvailabilityModal()">Cancelar</button>`;
+  h += `</div>`;
+  h += `</div>`;
+
+  const modal = document.getElementById('modal-team');
+  if (modal) {
+    const modalTitle = modal.querySelector('.modal-title');
+    const modalBody = document.getElementById('team-modal-body');
+    if (modalTitle) modalTitle.textContent = '📋 Disponibilidad Semanal';
+    if (modalBody) modalBody.innerHTML = h;
+    modal.dataset.mode = 'availability';
+    modal.classList.add('open');
+  }
+}
+
+function updateAvailStatus(personId) {
+  const counts = Object.values(availabilityDraft[personId] || {}).filter(Boolean).length;
+  const el = document.getElementById(`avail-status-${personId}`);
+  if (el) el.textContent = `${counts}/6 días`;
+}
+
+function closeAvailabilityModal() {
+  const modal = document.getElementById('modal-team');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.dataset.mode = '';
+    renderTeamModal();
+    const modalTitle = modal.querySelector('.modal-title');
+    if (modalTitle) modalTitle.textContent = '👥 Configurar Equipo';
+  }
+}
+
+function saveAvailabilityModal() {
+  const allMembers = getAllMembers();
+  for (const m of allMembers) {
+    if (!m.weeklyAvailability) m.weeklyAvailability = {};
+    const override = {};
+    for (let d = 0; d < 6; d++) {
+      const key = WEEK_DAY_KEYS[d];
+      if (availabilityDraft[m.id] && availabilityDraft[m.id][d] === false) {
+        override[key] = false;
+      }
+    }
+    if (Object.keys(override).length > 0) {
+      m.weeklyAvailability[plannerCurrentWeek] = override;
+    } else {
+      delete (m.weeklyAvailability || {})[plannerCurrentWeek];
+    }
+  }
+  saveTeam();
+  closeAvailabilityModal();
+  plannerGenerate();
+}
+
+// ── toggleDayOff helper for team modal ───────────────────────────────────────
+function toggleDayOff(role, idx, dayNum) {
+  const m = teamDraft[role][idx];
+  if (!Array.isArray(m.daysOff)) m.daysOff = [];
+  const pos = m.daysOff.indexOf(dayNum);
+  if (pos >= 0) m.daysOff.splice(pos, 1);
+  else m.daysOff.push(dayNum);
+}
+
+// ── Close planner popover on outside click ────────────────────────────────────
+document.addEventListener('click', e => {
+  if (plannerEditPopover && !plannerEditPopover.contains(e.target)) {
+    closePlannerPopover();
+  }
+});
 </script>
 <div class="footer">Patrones de Schedule Dashboard · v3.0</div>
 <div id="undo-toast" class="undo-toast"></div>
