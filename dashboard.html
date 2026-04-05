@@ -459,6 +459,20 @@
   td.act-cell.drag-target-invalid { box-shadow: inset 0 0 0 3px var(--red); }
   @keyframes cellDragFlash { from { filter: brightness(1.6); } to { filter: brightness(1); } }
   td.act-cell.drag-flash { animation: cellDragFlash 0.3s ease; }
+
+  /* ── Undo / Redo ──────────────────────────────────────── */
+  .btn-undo, .btn-redo { color: #718096 !important; border-color: #e2e8f0 !important; }
+  .btn-undo:disabled, .btn-redo:disabled { opacity: 0.4 !important; cursor: not-allowed !important; pointer-events: none; }
+  .undo-toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg);
+    padding: 10px 16px; font-size: .84rem; font-weight: 600; color: var(--text);
+    z-index: 300; opacity: 0; transform: translateY(10px);
+    transition: opacity .2s, transform .2s; pointer-events: none;
+  }
+  .undo-toast.visible { opacity: 1; transform: translateY(0); }
+  @keyframes tableUndoFlash { 0%,100% { box-shadow: var(--shadow); } 50% { box-shadow: 0 0 0 3px var(--accent); } }
+  .table-wrapper.undo-flash { animation: tableUndoFlash 0.3s ease; }
 </style>
 </head>
 <body>
@@ -495,6 +509,8 @@
     <button class="btn-rules"  onclick="openRules()">📋 Reglas</button>
     <button class="btn-export" onclick="exportCSV()">⬇️ Exportar CSV</button>
     <button class="btn-export" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer (Ctrl+Z)">↩️ Deshacer</button>
+    <button class="btn-redo" id="btn-redo" onclick="redo()" disabled title="Rehacer (Ctrl+Y)">↪️ Rehacer</button>
     <button class="btn-reset"  onclick="resetPattern()">🔄 Reset</button>
   </div>
 </div>
@@ -916,6 +932,65 @@ let whatifAbsent = []; // rowIdx values of absent persons in activePattern (not 
 
 // ── Cell Drag & Drop state ───────────────────────────────────────────────────
 let cellDragData = null; // {patIdx, rowIdx, colIdx, activity}
+
+// ── Undo / Redo state ────────────────────────────────────────────────────────
+const MAX_UNDO = 50;
+const undoHistory = { 0: [], 1: [], 2: [], 3: [] };
+const redoHistory = { 0: [], 1: [], 2: [], 3: [] };
+
+function pushUndo(patIdx) {
+  if (whatifMode) return; // no snapshots during simulation
+  const snapshot = currentState[patIdx].map(row => ({ role: row.role, shift: row.shift, acts: [...row.acts], assignedId: row.assignedId }));
+  undoHistory[patIdx].push(snapshot);
+  if (undoHistory[patIdx].length > MAX_UNDO) undoHistory[patIdx].shift();
+  redoHistory[patIdx] = []; // new change invalidates redo stack
+  updateUndoRedoButtons();
+}
+
+function undo() {
+  const stack = undoHistory[activePattern];
+  if (!stack.length) return;
+  const snapshot = currentState[activePattern].map(row => ({ role: row.role, shift: row.shift, acts: [...row.acts], assignedId: row.assignedId }));
+  redoHistory[activePattern].push(snapshot);
+  currentState[activePattern] = stack.pop();
+  saveState();
+  render(activePattern);
+  showUndoToast(`↩️ Cambio deshecho (quedan ${stack.length})`);
+  updateUndoRedoButtons();
+}
+
+function redo() {
+  const stack = redoHistory[activePattern];
+  if (!stack.length) return;
+  const snapshot = currentState[activePattern].map(row => ({ role: row.role, shift: row.shift, acts: [...row.acts], assignedId: row.assignedId }));
+  undoHistory[activePattern].push(snapshot);
+  if (undoHistory[activePattern].length > MAX_UNDO) undoHistory[activePattern].shift();
+  currentState[activePattern] = stack.pop();
+  saveState();
+  render(activePattern);
+  showUndoToast(`↪️ Cambio rehecho (quedan ${stack.length})`);
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+  const btnUndo = document.getElementById('btn-undo');
+  const btnRedo = document.getElementById('btn-redo');
+  if (btnUndo) btnUndo.disabled = undoHistory[activePattern].length === 0;
+  if (btnRedo) btnRedo.disabled = redoHistory[activePattern].length === 0;
+}
+
+let _undoToastTimer = null;
+function showUndoToast(msg) {
+  const toast = document.getElementById('undo-toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('visible');
+  // Flash the schedule table
+  const tw = document.querySelector('.table-wrapper');
+  if (tw) { tw.classList.remove('undo-flash'); void tw.offsetWidth; tw.classList.add('undo-flash'); setTimeout(() => tw.classList.remove('undo-flash'), 350); }
+  if (_undoToastTimer) clearTimeout(_undoToastTimer);
+  _undoToastTimer = setTimeout(() => toast.classList.remove('visible'), 2000);
+}
 
 // ── Team data ────────────────────────────────────────────────────────────────
 function loadTeam() {
@@ -2216,6 +2291,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     } else {
       activePattern = parseInt(btn.dataset.pat);
       render(activePattern);
+      updateUndoRedoButtons();
     }
   });
 });
@@ -2259,6 +2335,7 @@ function cellClick(evt, patIdx, rowIdx, colIdx) {
   }
   sel.addEventListener('change', e => {
     const nw=e.target.value;
+    pushUndo(patIdx);
     currentState[patIdx][rowIdx].acts[colIdx]=nw;
     const bg=getColor(nw), fg=textColor(bg);
     cell.style.background=bg; cell.style.color=fg; cell.textContent=nw;
@@ -2304,6 +2381,9 @@ function switchSeason(season) {
   try { localStorage.setItem(LS_KEY_SEASON, season); } catch(e) {}
   // Update button UI
   document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.season === season));
+  // Clear undo/redo history when switching season
+  for (let i = 0; i < 4; i++) { undoHistory[i] = []; redoHistory[i] = []; }
+  updateUndoRedoButtons();
   // Re-render active tab (weekly or pattern)
   const activeTab = document.querySelector('.tab-btn.active');
   if (activeTab && activeTab.dataset.pat === 'week') {
@@ -2338,6 +2418,7 @@ function deletePerson(patIdx, rowIdx) {
   const row = currentState[patIdx][rowIdx];
   if (!row) return;
   if (!confirm(`¿Eliminar ${row.role} (${row.shift}) de este patrón?`)) return;
+  pushUndo(patIdx);
   currentState[patIdx].splice(rowIdx, 1);
   saveState();
   render(activePattern);
@@ -2369,6 +2450,7 @@ function addFigure() {
     if (TIME_SLOTS[i]==='09:15') acts[i]='DD';
     else acts[i] = role==='Lead'?'LDSup':'AOR';
   }
+  pushUndo(activePattern);
   currentState[activePattern].push({role, shift, acts});
   saveState();
   closeModal('modal-add');
@@ -2379,6 +2461,7 @@ function addFigure() {
 // GENERATE PATTERN
 // ═══════════════════════════════════════════════════════════════════════════════
 function generatePattern() {
+  pushUndo(activePattern);
   const rows = currentState[activePattern];
   const n = TIME_SLOTS.length;
   const BR = BUSINESS_RULES;
@@ -2544,6 +2627,7 @@ function exportCSV() {
 function resetPattern() {
   const label = PATTERN_NAMES[activePattern] + (activeSeason==='invierno'?' (Invierno)':' (Verano)');
   if (!confirm(`¿Restaurar el patrón "${label}" a los datos originales?`)) return;
+  pushUndo(activePattern);
   const originals = activeSeason === 'invierno' ? ORIGINAL_WINTER_PATTERNS : ORIGINAL_PATTERNS;
   currentState[activePattern] = originals[activePattern].map(row => ({role:row.role, shift:row.shift, acts:[...row.acts]}));
   saveState();
@@ -2586,6 +2670,7 @@ function onDrop(e, pat, targetRow) {
   const arr = currentState[pat];
   // Only allow reorder within same role group
   if (arr[dragSrcRow] && arr[targetRow] && arr[dragSrcRow].role !== arr[targetRow].role) { dragSrcPat = -1; dragSrcRow = -1; return; }
+  pushUndo(pat);
   const moved = arr.splice(dragSrcRow, 1)[0];
   const dest  = dragSrcRow < targetRow ? targetRow - 1 : targetRow;
   arr.splice(dest, 0, moved);
@@ -2646,6 +2731,7 @@ function confirmShiftEdit(patIdx, rowIdx) {
   const row = currentState[patIdx][rowIdx];
   closeShiftPopover();
   if (newShift === row.shift) return;
+  pushUndo(patIdx);
   const [si, ei] = shiftIndices(newShift);
   // Clear activities outside new shift
   for (let c = 0; c < TIME_SLOTS.length; c++) {
@@ -2885,6 +2971,7 @@ function renderWhatifImpact() {
     if (col < si || col >= ei) { cellDragData = null; return; }
 
     // Swap activities between source and destination cells
+    pushUndo(activePattern);
     const srcRowData = currentState[cellDragData.patIdx][cellDragData.rowIdx];
     const srcAct = srcRowData.acts[cellDragData.colIdx];
     const dstAct = destRowData.acts[col];
@@ -2926,7 +3013,21 @@ if (teamData.leads.length > 0 || teamData.managers.length > 0) {
   for (let i = 0; i < 4; i++) autoAssignNames(i);
 }
 render(0);
+updateUndoRedoButtons();
+
+// ── Undo/Redo keyboard shortcuts ─────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  // Skip if a modal is open or an input/textarea/select has focus
+  if (document.querySelector('.modal-overlay.open')) return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); }
+  else if (ctrl && !e.shiftKey && e.key === 'y') { e.preventDefault(); redo(); }
+  else if (ctrl && e.shiftKey && e.key === 'Z') { e.preventDefault(); redo(); }
+});
 </script>
 <div class="footer">Patrones de Schedule Dashboard · v3.0</div>
+<div id="undo-toast" class="undo-toast"></div>
 </body>
 </html>
