@@ -1131,7 +1131,9 @@ function generateVariants() {
     }
     state.generating = false;
     renderAll();
-    renderGenerateBtn(); // restore button state after renderAll (which may not rebuild the button)
+    // renderAll() rebuilds the schedule section but does NOT recreate the #btn-generate button
+    // (it's in the config card which is outside renderAll's scope), so we must call this separately.
+    renderGenerateBtn();
   }, 50);
 }
 
@@ -1357,7 +1359,7 @@ function renderConfigInfo() {
   const personBadge = document.getElementById('person-count-badge');
   if (personBadge) {
     const nonSL = TEAM_DATA.filter(p => p.role !== 'SL').length;
-    personBadge.textContent = `13 semanas · ${nonSL} personas`;
+    personBadge.textContent = `${WEEKS} semanas · ${nonSL} personas`;
   }
 }
 
