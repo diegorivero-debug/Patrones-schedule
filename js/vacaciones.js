@@ -145,11 +145,19 @@ function renderAlerts() {
   const container = document.getElementById('alerts-container');
   const alerts = generateAlerts();
   container.innerHTML = '';
-  alerts.forEach((a, i) => {
+  alerts.forEach((a) => {
     if (alertsDismissed.has(a.key)) return;
     const div = document.createElement('div');
     div.className = `alert alert-${a.level}`;
-    div.innerHTML = `<span>${a.icon} ${a.msg}</span><button class="dismiss" title="Cerrar" onclick="dismissAlert('${a.key}')">✕</button>`;
+    const span = document.createElement('span');
+    span.textContent = `${a.icon} ${a.msg}`;
+    const btn = document.createElement('button');
+    btn.className = 'dismiss';
+    btn.title = 'Cerrar';
+    btn.textContent = '✕';
+    btn.addEventListener('click', () => dismissAlert(a.key));
+    div.appendChild(span);
+    div.appendChild(btn);
     container.appendChild(div);
   });
 }
@@ -250,7 +258,12 @@ function renderTable() {
       span.style.color = per.textColor;
       span.textContent = per.label;
       span.title = 'Clic para editar período';
+      span.setAttribute('tabindex', '0');
+      span.setAttribute('role', 'button');
       span.onclick = () => openPeriodModal(per);
+      span.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPeriodModal(per); }
+      });
       th.appendChild(span);
       periodsRow.appendChild(th);
       wi += run;
@@ -538,13 +551,33 @@ function importRows(rows) {
     return;
   }
   // Expected format: first column = name, columns 2..53 = week absence types (week 1..52)
-  const header = rows[0];
   let imported = 0;
+
+  // Build a normalized name map for matching: lowercase trimmed name -> person
+  const nameMap = {};
+  TEAM.forEach(p => {
+    if (p.section) return;
+    nameMap[p.name.toLowerCase().trim()] = p;
+  });
+
+  function findPerson(rawName) {
+    const normalized = rawName.toLowerCase().trim();
+    // Exact match first
+    if (nameMap[normalized]) return nameMap[normalized];
+    // Partial match: all words of rawName appear in team member name
+    const words = normalized.split(/\s+/).filter(Boolean);
+    return TEAM.find(p => {
+      if (p.section) return false;
+      const tname = p.name.toLowerCase();
+      return words.length > 0 && words.every(w => tname.includes(w));
+    }) || null;
+  }
+
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
     if (!row || !row[0]) continue;
-    const name = String(row[0]).trim().toLowerCase();
-    const person = TEAM.find(p => !p.section && p.name.toLowerCase().includes(name.split(' ')[0]));
+    const name = String(row[0]).trim();
+    const person = findPerson(name);
     if (!person) continue;
     if (!data[person.id]) data[person.id] = {};
     for (let c = 1; c <= 52; c++) {

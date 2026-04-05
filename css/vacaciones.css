@@ -218,15 +218,12 @@ a { color: var(--accent); text-decoration: none; }
   display: flex;
   align-items: center;
   gap: 5px;
-  cursor: pointer;
   padding: 3px 8px;
   border-radius: 4px;
   border: 1px solid var(--border);
   background: var(--surface);
   font-weight: 600;
-  transition: .15s;
 }
-.legend-item:hover { box-shadow: var(--shadow); }
 .legend-dot {
   width: 14px;
   height: 14px;
