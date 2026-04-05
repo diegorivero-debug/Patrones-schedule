@@ -509,8 +509,8 @@
     <button class="btn-rules"  onclick="openRules()">📋 Reglas</button>
     <button class="btn-export" onclick="exportCSV()">⬇️ Exportar CSV</button>
     <button class="btn-export" onclick="window.print()">🖨️ Imprimir</button>
-    <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer (Ctrl+Z)">↩️ Deshacer</button>
-    <button class="btn-redo" id="btn-redo" onclick="redo()" disabled title="Rehacer (Ctrl+Y)">↪️ Rehacer</button>
+    <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer (Ctrl+Z)" aria-label="Deshacer cambio (Ctrl+Z)">↩️ Deshacer</button>
+    <button class="btn-redo" id="btn-redo" onclick="redo()" disabled title="Rehacer (Ctrl+Y)" aria-label="Rehacer cambio (Ctrl+Y)">↪️ Rehacer</button>
     <button class="btn-reset"  onclick="resetPattern()">🔄 Reset</button>
   </div>
 </div>
@@ -979,17 +979,22 @@ function updateUndoRedoButtons() {
   if (btnRedo) btnRedo.disabled = redoHistory[activePattern].length === 0;
 }
 
-let _undoToastTimer = null;
+let undoToastTimer = null;
 function showUndoToast(msg) {
   const toast = document.getElementById('undo-toast');
   if (!toast) return;
   toast.textContent = msg;
   toast.classList.add('visible');
-  // Flash the schedule table
+  // Flash the schedule table (void tw.offsetWidth forces a reflow to restart the animation)
   const tw = document.querySelector('.table-wrapper');
-  if (tw) { tw.classList.remove('undo-flash'); void tw.offsetWidth; tw.classList.add('undo-flash'); setTimeout(() => tw.classList.remove('undo-flash'), 350); }
-  if (_undoToastTimer) clearTimeout(_undoToastTimer);
-  _undoToastTimer = setTimeout(() => toast.classList.remove('visible'), 2000);
+  if (tw) {
+    tw.classList.remove('undo-flash');
+    void tw.offsetWidth;
+    tw.classList.add('undo-flash');
+    setTimeout(() => tw.classList.remove('undo-flash'), 350);
+  }
+  if (undoToastTimer) clearTimeout(undoToastTimer);
+  undoToastTimer = setTimeout(() => toast.classList.remove('visible'), 2000);
 }
 
 // ── Team data ────────────────────────────────────────────────────────────────
@@ -3022,9 +3027,10 @@ document.addEventListener('keydown', function(e) {
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
   const ctrl = e.ctrlKey || e.metaKey;
-  if (ctrl && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); }
-  else if (ctrl && !e.shiftKey && e.key === 'y') { e.preventDefault(); redo(); }
-  else if (ctrl && e.shiftKey && e.key === 'Z') { e.preventDefault(); redo(); }
+  const key = e.key.toLowerCase();
+  if (ctrl && !e.shiftKey && key === 'z') { e.preventDefault(); undo(); }
+  else if (ctrl && !e.shiftKey && key === 'y') { e.preventDefault(); redo(); }
+  else if (ctrl && e.shiftKey && key === 'z') { e.preventDefault(); redo(); }
 });
 </script>
 <div class="footer">Patrones de Schedule Dashboard · v3.0</div>
