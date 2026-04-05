@@ -326,6 +326,8 @@
 
   /* ── Team Modal ─────────────────────────────────────── */
   .btn-team { color: #2c7a7b !important; border-color: #81e6d9 !important; }
+  .btn-team-link { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 6px; border: 1px solid #81e6d9; background: var(--surface); text-decoration: none; font-size: .8rem; font-weight: 600; color: #2c7a7b; transition: .15s; white-space: nowrap; }
+  .btn-team-link:hover { background: #e6fffa; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
   .team-modal { width: 540px; }
   .team-section-title { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
   .team-member-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
@@ -778,6 +780,7 @@
   </div>
   <div class="action-btns">
     <button class="btn-team"   onclick="openTeamModal()">👥 Equipo</button>
+    <a class="btn-team-link" href="equipo.html" title="Abrir gestión del equipo">👥 Gestionar Equipo ↗</a>
     <button class="btn-alerts" id="alerts-btn" onclick="toggleAlertDrawer()">🔔 Alertas<span id="alerts-badge" class="alert-badge ok">0</span></button>
     <button class="btn-add"    onclick="openAddFigure()">➕ Añadir Figura</button>
     <button class="btn-gen"    onclick="openGenerate()">⚙️ Generar Patrón</button>
