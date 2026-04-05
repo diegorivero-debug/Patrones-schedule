@@ -176,6 +176,19 @@
   .stat-value.danger { color: var(--red); }
   .stat-label { font-size: .68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
 
+  /* ── Score Card ──────────────────────────────────────── */
+  .score-card { position: relative; cursor: pointer; user-select: none; }
+  .score-card:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .score-progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 7px; overflow: hidden; }
+  .score-progress-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+  .score-tooltip { display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg); padding: 10px 14px; font-size: .76rem; min-width: 230px; max-width: 300px; z-index: 200; text-align: left; white-space: nowrap; }
+  .score-tooltip.visible { display: block; }
+  .score-tooltip-header { font-weight: 700; font-size: .88rem; color: var(--text); margin-bottom: 5px; }
+  .score-tooltip-divider { height: 1px; background: var(--border); margin: 4px 0 7px; }
+  .score-detail-ok   { color: var(--green); margin-bottom: 3px; line-height: 1.4; }
+  .score-detail-warn { color: var(--orange); margin-bottom: 3px; line-height: 1.4; }
+  .score-detail-bad  { color: var(--red); margin-bottom: 3px; line-height: 1.4; }
+
   /* ── Delete row button ──────────────────────────────── */
   .col-actions { position: sticky; right: 0; z-index: 3; min-width: 28px; max-width: 28px; width: 28px; background: var(--surface); border: 1px solid var(--border); padding: 0; }
   .del-btn { background: none; border: none; cursor: pointer; color: #e53e3e; font-size: 12px; opacity: .3; transition: .15s; line-height: 1; padding: 2px; }
@@ -1267,6 +1280,169 @@ function buildRulesSection() {
   return h+'</div>';
 }
 
+// ── Score de Cobertura ────────────────────────────────────────────────────────
+function calculateScore(patIdx) {
+  const rows = currentState[patIdx];
+  const n = TIME_SLOTS.length;
+  const openStart = getOpenStart(patIdx);
+  const openEnd   = getOpenEnd();
+  const BR = BUSINESS_RULES;
+
+  // Build counts per slot
+  const counts = {
+    Coach:      new Array(n).fill(0),
+    Support:    new Array(n).fill(0),
+    LDSup:      new Array(n).fill(0),
+    Lunch:      new Array(n).fill(0),
+    Floor:      new Array(n).fill(0),
+    MgrsOnFloor: new Array(n).fill(0),
+  };
+  for (const row of rows) {
+    const isMgr = row.role === 'Manager';
+    for (let c = 0; c < n; c++) {
+      const a = row.acts[c];
+      if (a === 'Coach')   { counts.Coach[c]++; counts.Floor[c]++; if (isMgr) counts.MgrsOnFloor[c]++; }
+      if (a === 'Support') { counts.Support[c]++; counts.Floor[c]++; if (isMgr) counts.MgrsOnFloor[c]++; }
+      if (a === 'LDSup')   { counts.LDSup[c]++; counts.Floor[c]++; }
+      if (a === 'Lunch')   counts.Lunch[c]++;
+    }
+  }
+
+  // Peak hour indices
+  const peakIndices = new Set();
+  for (const ph of BR.coverage.peakHours) {
+    const s = TIME_SLOTS.indexOf(ph.start);
+    const e = TIME_SLOTS.indexOf(ph.end);
+    if (s >= 0 && e >= 0) for (let i = s; i <= e; i++) peakIndices.add(i);
+  }
+
+  const numOpenSlots = openEnd - openStart + 1;
+  const maxSlotPoints = 6 * numOpenSlots;
+  if (numOpenSlots === 0) return { score: 0, obtained: 0, max: 0, details: [] };
+
+  // Per-slot scoring
+  let slotPointsObtained = 0;
+  let coverageOk = 0, coachOk = 0, mgrsFloorOk = 0, lunchesOk = 0;
+  let zeroFloorSlots = 0, peakLowSlots = 0;
+
+  for (let c = openStart; c <= openEnd; c++) {
+    const floor  = counts.Floor[c];
+    const coach  = counts.Coach[c];
+    const mgrs   = counts.MgrsOnFloor[c];
+    const lunches = counts.Lunch[c];
+
+    // Floor coverage: +2 if >= 6, +1 if 4-5, 0 if < 4
+    if (floor >= BR.coverage.normal.totalFloor)       { slotPointsObtained += 2; coverageOk++; }
+    else if (floor >= BR.coverage.lunchTrans.totalFloor) slotPointsObtained += 1;
+
+    // Coach: +2 if >= 2, +1 if == 1, 0 if 0
+    if (coach >= 2)      { slotPointsObtained += 2; coachOk++; }
+    else if (coach === 1)  slotPointsObtained += 1;
+
+    // Managers on floor: +1 if >= 2
+    if (mgrs >= BR.coverage.minMgrsOnFloor) { slotPointsObtained += 1; mgrsFloorOk++; }
+
+    // Lunches: +1 if <= max simultaneous
+    if (lunches <= BR.lunch.maxSimultaneous) { slotPointsObtained += 1; lunchesOk++; }
+
+    if (floor === 0)                                                      zeroFloorSlots++;
+    if (peakIndices.has(c) && floor < BR.coverage.normal.totalFloor)     peakLowSlots++;
+  }
+
+  // Bonuses
+  let bonusPoints = 0;
+  const openingCheckSlot = patIdx === 3 ? TIME_SLOTS.indexOf('08:00') : TIME_SLOTS.indexOf('07:00');
+  const peopleAtOpening  = rows.filter(r => r.acts[openingCheckSlot] !== '').length;
+  const openingOk = peopleAtOpening >= BR.opening.minPeople;
+  if (openingOk) bonusPoints += 5;
+
+  const leadsAtClose = rows.filter(r => r.role === 'Lead'    && r.acts[openEnd] !== '').length;
+  const mgrsAtClose  = rows.filter(r => r.role === 'Manager' && r.acts[openEnd] !== '').length;
+  const closingOk = leadsAtClose >= BR.closing.minLeads && mgrsAtClose >= BR.closing.minManagers;
+  if (closingOk) bonusPoints += 5;
+
+  let mixingManagers = 0, consistentManagers = 0;
+  for (const row of rows) {
+    if (row.role !== 'Manager') continue;
+    const [si, ei] = shiftIndices(row.shift);
+    let hasCoach = false, hasSupport = false;
+    for (let c = si; c < ei; c++) {
+      if (row.acts[c] === 'Coach')   hasCoach   = true;
+      if (row.acts[c] === 'Support') hasSupport = true;
+    }
+    if (hasCoach && hasSupport) { mixingManagers++; }
+    else { consistentManagers++; bonusPoints += 3; }
+  }
+
+  const lunchWinStart = TIME_SLOTS.indexOf(BR.lunch.windowStart);
+  const lunchWinEnd   = TIME_SLOTS.indexOf(BR.lunch.windowEnd);
+  let lunchesInWindow = true;
+  for (const row of rows) {
+    const [si, ei] = shiftIndices(row.shift);
+    const lunchSlots = [];
+    for (let c = si; c < ei; c++) { if (row.acts[c] === 'Lunch') lunchSlots.push(c); }
+    if (lunchSlots.length > 0) {
+      const firstLunch = Math.min(...lunchSlots);
+      if (firstLunch < lunchWinStart || firstLunch > lunchWinEnd) { lunchesInWindow = false; break; }
+    }
+  }
+  if (lunchesInWindow) bonusPoints += 2;
+
+  // Penalties
+  let penaltyPoints = 0;
+  penaltyPoints += zeroFloorSlots * 10;
+  if (mixingManagers > 0) penaltyPoints += 5;
+  penaltyPoints += peakLowSlots * 3;
+
+  const obtained = slotPointsObtained + bonusPoints - penaltyPoints;
+  const score    = Math.min(100, Math.max(0, Math.round(obtained / maxSlotPoints * 100)));
+
+  // Build details array for tooltip
+  const details = [];
+  const coveragePct = numOpenSlots > 0 ? Math.round(coverageOk / numOpenSlots * 100) : 0;
+  const mgrsFloorBad = numOpenSlots - mgrsFloorOk;
+
+  details.push({ ok: coverageOk === numOpenSlots, warn: coverageOk < numOpenSlots,
+    text: `Cobertura slots: ${coverageOk}/${numOpenSlots} (${coveragePct}%)` });
+  details.push({ ok: coachOk === numOpenSlots, warn: coachOk < numOpenSlots,
+    text: `Coach mínimo: ${coachOk}/${numOpenSlots} slots OK` });
+  details.push({ ok: mgrsFloorBad === 0, warn: mgrsFloorBad > 0,
+    text: `Managers en floor: ${mgrsFloorOk}/${numOpenSlots}${mgrsFloorBad > 0 ? ` (${mgrsFloorBad} bajo)` : ''}` });
+  details.push({ ok: openingOk, warn: false,
+    text: `Apertura ${openingOk ? 'correcta' : `insuficiente (${peopleAtOpening}/${BR.opening.minPeople})`}` });
+  details.push({ ok: closingOk, warn: false,
+    text: `Cierre ${closingOk ? 'correcto' : `insuficiente (${leadsAtClose}L/${mgrsAtClose}M)`}` });
+  if (mixingManagers > 0) {
+    details.push({ ok: false, warn: false, text: `${mixingManagers} Mgr mezcla roles (-5)` });
+  } else {
+    details.push({ ok: true, warn: false, text: 'Managers consistentes en roles' });
+  }
+  details.push({ ok: lunchesInWindow, warn: false,
+    text: `Lunches ${lunchesInWindow ? 'en ventana horaria' : 'fuera de ventana'}` });
+  if (zeroFloorSlots > 0)
+    details.push({ ok: false, warn: false,
+      text: `${zeroFloorSlots} slot${zeroFloorSlots > 1 ? 's' : ''} sin cobertura (-${zeroFloorSlots * 10})` });
+  if (peakLowSlots > 0)
+    details.push({ ok: false, warn: false,
+      text: `${peakLowSlots} slot${peakLowSlots > 1 ? 's' : ''} hora pico bajo mínimo (-${peakLowSlots * 3})` });
+
+  return { score, obtained, max: maxSlotPoints, details };
+}
+
+function scoreColor(score) {
+  if (score >= 90) return 'var(--green)';
+  if (score >= 70) return 'var(--orange)';
+  return 'var(--red)';
+}
+
+function toggleScoreTooltip(id) {
+  const tt = document.getElementById(id);
+  if (!tt) return;
+  const wasVisible = tt.classList.contains('visible');
+  document.querySelectorAll('.score-tooltip.visible').forEach(t => t.classList.remove('visible'));
+  if (!wasVisible) tt.classList.add('visible');
+}
+
 // ── Quick Stats ──────────────────────────────────────────────────────────────
 function buildQuickStats(patIdx) {
   const rows = currentState[patIdx];
@@ -1292,6 +1468,26 @@ function buildQuickStats(patIdx) {
     if (smry.Coach[i]  > maxCoach)   maxCoach   = smry.Coach[i];
     if (smry.MgrSup[i] > maxSupport) maxSupport = smry.MgrSup[i];
   }
+  // Score card
+  const { score, obtained, max: scoreMax, details } = calculateScore(patIdx);
+  const sColor = scoreColor(score);
+  const tooltipId = `score-tooltip-${patIdx}`;
+  const detailsHtml = details.map(d => {
+    const cls = d.ok ? 'score-detail-ok' : (d.warn ? 'score-detail-warn' : 'score-detail-bad');
+    const icon = d.ok ? '✅' : (d.warn ? '⚠️' : '🔴');
+    return `<div class="${cls}">${icon} ${esc(d.text)}</div>`;
+  }).join('');
+  const scoreCardHtml = `
+    <div class="stat-card score-card" tabindex="0" role="button" aria-label="Score de Cobertura: ${score}%" onclick="toggleScoreTooltip('${tooltipId}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleScoreTooltip('${tooltipId}')}">
+      <div class="stat-value" style="color:${sColor}">${score}%</div>
+      <div class="stat-label">Score Cobertura</div>
+      <div class="score-progress-bar"><div class="score-progress-fill" style="width:${score}%;background:${sColor}"></div></div>
+      <div class="score-tooltip" id="${tooltipId}">
+        <div class="score-tooltip-header">Score: ${obtained}/${scoreMax}</div>
+        <div class="score-tooltip-divider"></div>
+        ${detailsHtml}
+      </div>
+    </div>`;
   return `
     <div class="stat-card"><div class="stat-value">${leads}</div><div class="stat-label">Leads</div></div>
     <div class="stat-card"><div class="stat-value">${mgrs}</div><div class="stat-label">Managers</div></div>
@@ -1302,6 +1498,7 @@ function buildQuickStats(patIdx) {
     <div class="stat-card"><div class="stat-value" style="color:var(--orange)">${maxSupport}</div><div class="stat-label">Pico Support</div></div>
     <div class="stat-card"><div class="stat-value${criticalCount > 0 ? ' danger' : ''}">${alertCount}</div><div class="stat-label">${criticalCount > 0 ? '⚠️' : '✅'} Alertas</div></div>
     <div class="stat-card"><div class="stat-value" style="font-size:1rem">${getSeasonLabel()}</div><div class="stat-label">Cierre ${getCloseTime()}</div></div>
+    ${scoreCardHtml}
   `;
 }
 
@@ -1420,6 +1617,18 @@ function buildWeeklyView() {
   }
   h += '</tr>';
 
+  // Score per day
+  h += '<tr class="wk-totals">';
+  h += `<td class="wk-person">📊 Score</td><td class="wk-role-col"></td>`;
+  const uniquePatIdxs = [...new Set(DAY_PATTERN_IDX)];
+  const patScores = {};
+  for (const idx of uniquePatIdxs) patScores[idx] = calculateScore(idx).score;
+  for (let d = 0; d < totalDays; d++) {
+    const s = patScores[DAY_PATTERN_IDX[d]];
+    h += `<td style="color:${scoreColor(s)};font-weight:800">${s}%</td>`;
+  }
+  h += '</tr>';
+
   h += '</tbody></table></div>';
 
   // ── Equity card ──
@@ -1449,7 +1658,25 @@ function renderWeeklyView() {
   const summary = document.getElementById('alert-drawer-summary');
   if (badge)   { badge.textContent = ''; badge.className = 'alert-badge ok'; }
   if (summary) { summary.innerHTML = 'ℹ️ <strong>Vista Semanal</strong> — selecciona un patrón individual para ver sus alertas'; summary.style.color = 'var(--text-muted)'; }
-  document.getElementById('quick-stats').innerHTML = '';
+  // Weekly average score in quick-stats
+  const scores = DAY_PATTERN_IDX.map(idx => calculateScore(idx).score);
+  const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+  const sColor = scoreColor(avgScore);
+  document.getElementById('quick-stats').innerHTML = `
+    <div class="stat-card score-card" tabindex="0" role="button" aria-label="Score promedio semanal: ${avgScore}%" onclick="toggleScoreTooltip('score-tooltip-week')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleScoreTooltip('score-tooltip-week')}">
+      <div class="stat-value" style="color:${sColor}">${avgScore}%</div>
+      <div class="stat-label">Score Semanal (prom.)</div>
+      <div class="score-progress-bar"><div class="score-progress-fill" style="width:${avgScore}%;background:${sColor}"></div></div>
+      <div class="score-tooltip" id="score-tooltip-week">
+        <div class="score-tooltip-header">Score promedio: ${avgScore}%</div>
+        <div class="score-tooltip-divider"></div>
+        ${DAY_PATTERN_IDX.map((idx, d) => {
+          const s = calculateScore(idx).score;
+          const icon = s >= 90 ? '✅' : s >= 70 ? '⚠️' : '🔴';
+          return `<div class="${s >= 90 ? 'score-detail-ok' : s >= 70 ? 'score-detail-warn' : 'score-detail-bad'}">${icon} ${esc(WEEK_DAYS[d])}: ${s}%</div>`;
+        }).join('')}
+      </div>
+    </div>`;
   document.getElementById('schedule-container').innerHTML = buildWeeklyView();
 }
 
@@ -1467,6 +1694,13 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       render(activePattern);
     }
   });
+});
+
+// Close score tooltip when clicking outside a score card
+document.addEventListener('click', e => {
+  if (!e.target.closest('.score-card')) {
+    document.querySelectorAll('.score-tooltip.visible').forEach(t => t.classList.remove('visible'));
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
