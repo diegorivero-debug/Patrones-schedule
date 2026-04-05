@@ -299,6 +299,9 @@ class ScheduleGenerator {
       if (!onVac('itziar'))   this.set('itziar',  w, WED, this._smAfternoonShift('itziar'));
 
       // Thu + Fri: Cris always morning + rotate one of {jorge,sheila,itziar} morning
+      // Uses a 3-cycle rotation among {jorge,sheila,itziar} because cris_c is always
+      // morning Mon-Fri (constraint), so only 3 people can freely rotate on Thu/Fri.
+      // This ensures each of the 3 gets morning alongside Cris on a fair rotating basis.
       const cycleIdx = (w + this._smRotSeed) % thuFriCycles.length;
       const morningPair = new Set(thuFriCycles[cycleIdx]);
       morningPair.add('cris_c'); // cris_c always morning weekdays
@@ -311,7 +314,10 @@ class ScheduleGenerator {
         this.set(id, w, FRI, shift);
       }
 
-      // Sat: rotate pairs (cris_c can be either)
+      // Sat: rotate pairs (cris_c participates freely on Sat — morningOnly applies Mon-Fri only)
+      // Uses a 6-cycle rotation among all possible pairs of the 4 SMs to maximise Saturday
+      // coverage variation. The formula (w*2 + seed*3) % 6 spreads across all 6 pairs
+      // more evenly than a simple modulo 6 would when iterated over 13 weeks.
       const satIdx = (w * 2 + this._smRotSeed * 3) % satCycles.length;
       const satMorning = new Set(satCycles[satIdx]);
       for (const id of smIds) {
@@ -820,7 +826,14 @@ function scoreSchedule(sched, qStartStr) {
   coverageScore = totalDayChecks > 0 ? (coveragePassed / totalDayChecks) * 40 : 0;
 
   // 2. Rotation equity (25%): measure how balanced morning/afternoon is for SMs and Managers
-  // Exclude heavily-constrained people whose morning/afternoon ratio can't be 50/50
+  // Exclude people with hard constraints that prevent a 50/50 morning/afternoon split:
+  // - 'meri': Meri Alvarez has fixed per-day shifts (Mon/Tue afternoon, Wed-Fri morning)
+  // - 'ane': Ane Pazos alternates whole-week morning (Week A) vs flexible (Week B)
+  // - 'cris_c': Cris Carcel is always morning Mon-Fri (unbreakable constraint)
+  // - 'jorge': Jorge Gil is fixed morning on Mon and Wed (2 days/week always morning)
+  // - 'eva_h': Eva Hernandez always morning (unbreakable constraint)
+  // - 'eli': Eli Moreno always morning (unbreakable constraint)
+  // These exclusions prevent their fixed constraints from distorting the equity measurement.
   const equityExcluded = new Set(['meri','ane','cris_c','jorge','eva_h','eli']);
   const smMgrIds = TEAM_DATA.filter(p =>
     (p.role === 'SM' || p.role === 'MGR' || p.role === 'LEAD_GENIUS' || p.role === 'LEAD_SHOPPING' || p.role === 'OPS_LEAD')
@@ -1085,6 +1098,11 @@ function generateVariants() {
   setTimeout(() => {
     try {
       const variants = [];
+      // Generate 3 variants using seeds 0, 1, 2. Each seed produces a different rotation
+      // configuration: SM Wed-Sat rotation phase, manager morning/afternoon starting week,
+      // Ops Lead starting direction, and Lead rotation phase. The variants are differentiated
+      // by which people work morning vs afternoon on any given week (where rotation is free),
+      // resulting in meaningfully different schedules for the user to compare and choose from.
       for (let seed = 0; seed < 3; seed++) {
         const gen   = new ScheduleGenerator({ qStartDate: state.qStartDate, season: state.season }, seed);
         const sched = gen.generate();
