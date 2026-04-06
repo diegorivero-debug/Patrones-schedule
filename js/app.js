@@ -2006,7 +2006,6 @@ function generatePattern() {
     //     have maximum floor coverage.
     //   - Mid shifts: AOR at start (default, same as before).
     const storeCloseIdx = getOpenEnd(); // e.g. 30 for 21:30, 29 for 21:00
-    const peakStartIdx  = TIME_SLOTS.indexOf('17:00'); // 21
 
     for (let c = si; c < ei && c < n; c++) {
       if (row.acts[c] !== '') continue;

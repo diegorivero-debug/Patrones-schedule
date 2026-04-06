@@ -799,7 +799,7 @@
     cfg.patrones.coberturaFranja.transicionMax    = parseInt(document.getElementById('cfg-franja-transicion-max').value, 10) || 5;
     cfg.patrones.coberturaFranja.horaPuntaMin     = parseInt(document.getElementById('cfg-franja-punta').value, 10)          || 6;
     cfg.patrones.coberturaFranja.cierreMin        = parseInt(document.getElementById('cfg-franja-cierre').value, 10)         || 4;
-    // Keep floorHoraPunta in sync with the franja punta field
+    // Keep floorHoraPunta (used by generatePattern repair pass) in sync with the franja punta setting
     cfg.patrones.cobertura.floorHoraPunta         = cfg.patrones.coberturaFranja.horaPuntaMin;
 
     // Patrones – Reglas flexibilizadas
