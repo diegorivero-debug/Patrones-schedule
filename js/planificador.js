@@ -787,7 +787,26 @@ class ScheduleGenerator {
         }
         if (vacDays >= 4) continue; // mostly on vacation
 
-        const workSat = pattern[w];
+        let workSat = pattern[w];
+
+        // Before giving Saturday off, verify minimum Saturday coverage won't be breached.
+        // Count how many OTHER non-SL people are already confirmed working Saturday.
+        if (!workSat && !isVacation(this.get(p.id, w, SAT))) {
+          const satMin = getMinStaffByDay(SAT);
+          let satWorkers = 0;
+          for (const t of TEAM_DATA) {
+            if (t.role === 'SL' || t.id === p.id) continue;
+            const tSat = this.get(t.id, w, SAT);
+            // Counts as working if already has a shift or their pattern says they work Sat
+            if (isWorking(tSat) && !isVacation(tSat)) satWorkers++;
+            else if (workSatPattern[t.id] && workSatPattern[t.id][w] && !isVacation(tSat)) satWorkers++;
+          }
+          // If adding this person's OFF would leave Saturday below the minimum, override
+          if (satWorkers < satMin) {
+            workSat = true; // force this person to work Saturday
+            pattern[w] = true;
+          }
+        }
 
         if (!workSat) {
           // Don't work Saturday → mark Sat as OFF (if not already set)
@@ -852,28 +871,48 @@ class ScheduleGenerator {
   }
 
   _pickWeekdayOff(p, w) {
-    // Pick the best weekday to take off, respecting constraints
+    // Pick the best weekday to take off, respecting constraints and coverage minimums.
     const c = p.c || {};
-    const neverOff = c.neverOffDays || [];
+    const neverOff = [...(c.neverOffDays || [])];
     const avoidOff = c.avoidOffDays || [];
 
     // Never off on Thursday for Clara
     if (p.id === 'clara') neverOff.push(THU);
 
+    // Helper: count how many non-SL people work on day d in week w (excluding this person)
+    const countWorking = (dayIdx) => {
+      let count = 0;
+      for (const t of TEAM_DATA) {
+        if (t.role === 'SL' || t.id === p.id) continue;
+        const s = this.get(t.id, w, dayIdx);
+        if (isWorking(s) && !isVacation(s)) count++;
+      }
+      return count;
+    };
+
     // Prefer candidate days not in neverOff/avoidOff
     const candidates = [MON, THU, FRI].filter(d => !neverOff.includes(d));
-    if (candidates.length === 0) {
-      // Fall back to any weekday not in neverOff
-      const fallback = [MON,TUE,WED,THU,FRI].filter(d => !neverOff.includes(d));
-      const seedIdx = (w + TEAM_DATA.findIndex(t => t.id === p.id)) % fallback.length;
-      return fallback[seedIdx] ?? FRI;
+    const pool0 = candidates.length > 0
+      ? candidates
+      : [MON,TUE,WED,THU,FRI].filter(d => !neverOff.includes(d));
+
+    if (pool0.length === 0) {
+      // Absolute fallback — respect nothing (shouldn't happen)
+      const seedIdx = (w + TEAM_DATA.findIndex(t => t.id === p.id)) % 5;
+      return [MON, TUE, WED, THU, FRI][seedIdx];
     }
 
     // Prefer days not in avoidOff
-    const preferred = candidates.filter(d => !avoidOff.includes(d));
-    const pool = preferred.length > 0 ? preferred : candidates;
-    const idx = (w + TEAM_DATA.findIndex(t => t.id === p.id)) % pool.length;
-    return pool[idx];
+    const preferred = pool0.filter(d => !avoidOff.includes(d));
+    const pool1 = preferred.length > 0 ? preferred : pool0;
+
+    // Among preferred days, prefer those where coverage won't drop below minimum
+    // (i.e., there will still be getMinStaffByDay(d) - 1 others working)
+    const safeDays = pool1.filter(d => countWorking(d) >= getMinStaffByDay(d));
+    const pool2 = safeDays.length > 0 ? safeDays : pool1;
+
+    const idx = (w + TEAM_DATA.findIndex(t => t.id === p.id)) % pool2.length;
+    return pool2[idx];
   }
 
   // ── Fill any remaining null cells ─────────────────────────────────────────
@@ -966,6 +1005,61 @@ class ScheduleGenerator {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STAFFING HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Returns the minimum number of staff required for a given day index.
+ * Reads from CONFIG.patrones.staffingMinimos when available, with hardcoded
+ * fallback values to keep the planner functional if CONFIG is not loaded.
+ *
+ * dayIdx: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat
+ */
+function getMinStaffByDay(dayIdx) {
+  const mins = (typeof CONFIG !== 'undefined' && CONFIG.patrones && CONFIG.patrones.staffingMinimos)
+    ? CONFIG.patrones.staffingMinimos
+    : { normal: 14, martes: 14, miercoles: 14, sabado: 12 };
+  if (dayIdx === SAT) return mins.sabado   != null ? mins.sabado   : 12;
+  if (dayIdx === TUE) return mins.martes   != null ? mins.martes   : 14;
+  if (dayIdx === WED) return mins.miercoles != null ? mins.miercoles : 14;
+  return mins.normal != null ? mins.normal : 14; // MON, THU, FRI
+}
+
+/**
+ * Returns the minimum floor coverage required during meeting hours on Tue/Wed.
+ * martes:   2 Mgr Support + 1 Lead stay on floor during 14:00-16:00 comercial meeting
+ * miercoles: 1 Manager + 3 Leads stay on floor during 14:00-16:00 leadership meeting
+ */
+function getReunionFloorMin(dayIdx) {
+  const rfm = (typeof CONFIG !== 'undefined' && CONFIG.patrones && CONFIG.patrones.reunionFloorMin)
+    ? CONFIG.patrones.reunionFloorMin
+    : { martes: 3, miercoles: 4 };
+  if (dayIdx === TUE) return rfm.martes   != null ? rfm.martes   : 3;
+  if (dayIdx === WED) return rfm.miercoles != null ? rfm.miercoles : 4;
+  return 0;
+}
+
+/**
+ * Returns the minimum number of staff required in the morning block.
+ */
+function getMorningMin() {
+  if (typeof CONFIG !== 'undefined' && CONFIG.patrones && CONFIG.patrones.morningMin != null) {
+    return CONFIG.patrones.morningMin;
+  }
+  return 7;
+}
+
+/**
+ * Returns the minimum number of staff required in the afternoon block.
+ */
+function getAfternoonMin() {
+  if (typeof CONFIG !== 'undefined' && CONFIG.patrones && CONFIG.patrones.afternoonMin != null) {
+    return CONFIG.patrones.afternoonMin;
+  }
+  return 7;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SCORING
 // ─────────────────────────────────────────────────────────────────────────────
 function scoreSchedule(sched, qStartStr) {
@@ -981,7 +1075,7 @@ function scoreSchedule(sched, qStartStr) {
   let totalDayChecks = 0, coveragePassed = 0;
   for (let w = 0; w < WEEKS; w++) {
     for (let d = 0; d < DAYS_PER_WEEK; d++) {
-      const minRequired = d === SAT ? 12 : 14;
+      const minRequired = getMinStaffByDay(d);
       let working = 0;
       for (const p of TEAM_DATA) {
         if (p.role === 'SL') continue;
@@ -1124,7 +1218,9 @@ function validateSchedule(sched, qStartStr) {
 
     // Rule: Coverage minimums per day
     for (let d = 0; d < DAYS_PER_WEEK; d++) {
-      const minPeople = d === SAT ? 12 : 14;
+      const minPeople = getMinStaffByDay(d);
+      const morningMin = getMorningMin();
+      const afternoonMin = getAfternoonMin();
       let working = 0, morningCount = 0, afternoonCount = 0;
       for (const p of TEAM_DATA) {
         if (p.role === 'SL') continue;
@@ -1138,6 +1234,38 @@ function validateSchedule(sched, qStartStr) {
       if (working < minPeople) {
         violations.push({ week: wLabel, level: 'error',
           msg: `${DAY_NAMES[d]} S${w+1}: solo ${working} personas (mínimo ${minPeople})` });
+      }
+      // Sub-checks only for weekdays where morning/afternoon split matters
+      if (d !== SAT) {
+        if (morningCount < morningMin) {
+          violations.push({ week: wLabel, level: 'warning',
+            msg: `${DAY_NAMES[d]} S${w+1}: solo ${morningCount} personas de mañana (mínimo ${morningMin})` });
+        }
+        if (afternoonCount < afternoonMin) {
+          violations.push({ week: wLabel, level: 'warning',
+            msg: `${DAY_NAMES[d]} S${w+1}: solo ${afternoonCount} personas de tarde (mínimo ${afternoonMin})` });
+        }
+      }
+      // Rule: Martes — during 14:00-16:00 meeting, minimum floor coverage
+      if (d === TUE) {
+        const tuesdayFloorMin = getReunionFloorMin(TUE);
+        // Minimum attendees needed to hold a valid meeting (at least 4 people in the meeting room).
+        // With floorMin on floor + meetingMin in the room, warn if total working is below both.
+        const meetingMinAttendees = 4;
+        if (working > 0 && working < tuesdayFloorMin + meetingMinAttendees) {
+          violations.push({ week: wLabel, level: 'warning',
+            msg: `Martes S${w+1}: posible cobertura insuficiente durante reunión comercial (${working} total, mín ${tuesdayFloorMin} en floor)` });
+        }
+      }
+      // Rule: Miércoles — during 14:00-16:00 meeting, minimum floor coverage
+      if (d === WED) {
+        const wednesdayFloorMin = getReunionFloorMin(WED);
+        // Same principle: need floor coverage + minimum meeting attendance.
+        const meetingMinAttendees = 4;
+        if (working > 0 && working < wednesdayFloorMin + meetingMinAttendees) {
+          violations.push({ week: wLabel, level: 'warning',
+            msg: `Miércoles S${w+1}: posible cobertura insuficiente durante leadership meeting (${working} total, mín ${wednesdayFloorMin} en floor)` });
+        }
       }
     }
 
