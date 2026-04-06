@@ -46,6 +46,7 @@
       <input type="file" id="file-import" accept=".xlsx,.xls,.csv">
     </label>
     <button class="btn btn-export" id="btn-export">⬇️ Exportar CSV</button>
+    <button class="btn btn-resumen" id="btn-resumen">📊 Resumen</button>
   </div>
 
   <!-- Legend -->
@@ -71,6 +72,17 @@
   </div>
 
 </main>
+
+<!-- ===== RESUMEN MODAL ===== -->
+<div class="modal-overlay hidden" id="resumen-modal">
+  <div class="modal modal-wide">
+    <div class="modal-header-row">
+      <h2>📊 Resumen de Ausencias — <span id="resumen-year"></span></h2>
+      <button class="btn" id="btn-resumen-close">✕ Cerrar</button>
+    </div>
+    <div id="resumen-content" class="resumen-content-wrap"></div>
+  </div>
+</div>
 
 <!-- ===== PERIOD EDIT MODAL ===== -->
 <div class="modal-overlay hidden" id="period-modal">

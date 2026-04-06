@@ -58,14 +58,30 @@ const TEAM = [
 
 // ── State ────────────────────────────────────────────
 let currentYear = new Date().getFullYear();
-let data = {};   // { personId: { week: absenceType } }
+let data = {};   // { personId: { week: { type: absenceType, status: 'approved'|'pending'|'confirmed' } } }
 let periods = JSON.parse(JSON.stringify(DEFAULT_PERIODS));
 let alertsDismissed = new Set();
+
+// Status cycle order
+const STATUS_CYCLE = ['approved', 'pending', 'confirmed'];
 
 // ── Helpers ──────────────────────────────────────────
 function getPersonName(id) {
   const p = TEAM.find(m => !m.section && m.id === id);
   return p ? p.name : id;
+}
+
+// Extract type from a cell value (handles old string format and new object format)
+function getCellType(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value.type || '';
+}
+
+// Extract status from a cell value
+function getCellStatus(value) {
+  if (!value || typeof value === 'string') return 'approved';
+  return value.status || 'approved';
 }
 
 // ── LocalStorage helpers ─────────────────────────────
@@ -87,6 +103,15 @@ function loadData(year) {
       const parsed = JSON.parse(raw);
       data = parsed.data || {};
       periods = parsed.periods || JSON.parse(JSON.stringify(DEFAULT_PERIODS));
+      // Migrate old string format to new object format for backward compatibility
+      Object.keys(data).forEach(personId => {
+        Object.keys(data[personId]).forEach(week => {
+          const v = data[personId][week];
+          if (typeof v === 'string') {
+            data[personId][week] = { type: v, status: 'approved' };
+          }
+        });
+      });
     } catch(e) {
       data = {};
       periods = JSON.parse(JSON.stringify(DEFAULT_PERIODS));
@@ -160,7 +185,8 @@ function generateAlerts() {
     let count = 0;
     TEAM.forEach(p => {
       if (p.section) return;
-      const type = (data[p.id] || {})[week];
+      const entry = (data[p.id] || {})[week];
+      const type = getCellType(entry);
       if (type && type !== '') count++;
     });
     if (count > 5) {
@@ -180,12 +206,14 @@ function generateAlerts() {
       if (p.section) return;
       const personData = data[p.id] || {};
       peakPeriod.weeks.forEach(w => {
-        if (personData[w] && personData[w] !== '') {
+        const entry = personData[w];
+        const type = getCellType(entry);
+        if (type && type !== '') {
           alerts.push({
             key: `peak_${p.id}_w${w}`,
             level: 'orange',
             icon: '⚠️',
-            msg: `${p.name}: ausencia (${personData[w]}) durante semana PEAK (sem. ${w})`,
+            msg: `${p.name}: ausencia (${type}) durante semana PEAK (sem. ${w})`,
           });
         }
       });
@@ -331,16 +359,20 @@ function renderTable() {
     weeks.forEach(({ week }) => {
       const td = document.createElement('td');
       td.className = 'vac-cell';
-      const type = (data[p.id] || {})[week] || '';
+      const entry = (data[p.id] || {})[week];
+      const type = getCellType(entry);
+      const status = getCellStatus(entry);
       td.dataset.type = type;
+      td.dataset.status = status;
       td.dataset.personId = p.id;
       td.dataset.week = week;
       td.tabIndex = 0;
       td.setAttribute('role', 'button');
-      applyCell(td, type);
+      applyCell(td, type, status);
       td.setAttribute('aria-label', `${p.name}, semana ${week}, ${ABSENCE_LABELS[type] || ABSENCE_LABELS['']}`);
       if (type !== '') total++;
       td.addEventListener('click', onCellClick);
+      td.addEventListener('contextmenu', onCellRightClick);
       td.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -370,7 +402,8 @@ function renderTable() {
   weeks.forEach(({ week }) => {
     let count = 0;
     people.forEach(p => {
-      const type = (data[p.id] || {})[week];
+      const entry = (data[p.id] || {})[week];
+      const type = getCellType(entry);
       if (type && type !== '') count++;
     });
     const td = document.createElement('td');
@@ -391,13 +424,19 @@ function renderTable() {
   container.appendChild(tbl);
 }
 
-function applyCell(td, type) {
+function applyCell(td, type, status) {
   // Remove all type classes
   ABSENCE_TYPES.forEach(t => td.classList.remove(`type-${t === '' ? 'empty' : t}`));
+  td.classList.remove('status-pending', 'status-confirmed', 'status-approved');
   td.classList.add(`type-${type === '' ? 'empty' : type}`);
+  if (type !== '' && status) {
+    td.classList.add(`status-${status}`);
+  }
   td.textContent = type;
   td.dataset.type = type;
-  td.title = ABSENCE_LABELS[type] || '';
+  td.dataset.status = status || 'approved';
+  const statusLabel = status && status !== 'approved' ? ` (${status})` : '';
+  td.title = (ABSENCE_LABELS[type] || '') + statusLabel;
 }
 
 // ── Cell click → cycle absence type ─────────────────
@@ -413,10 +452,14 @@ function onCellClick(e) {
   if (nextType === '') {
     delete data[personId][week];
   } else {
-    data[personId][week] = nextType;
+    // Preserve existing status when changing type, default to 'approved' for new entries
+    const existing = data[personId][week];
+    const existingStatus = (existing && typeof existing === 'object') ? (existing.status || 'approved') : 'approved';
+    data[personId][week] = { type: nextType, status: existingStatus };
   }
 
-  applyCell(td, nextType);
+  const newStatus = nextType !== '' ? (data[personId][week].status || 'approved') : '';
+  applyCell(td, nextType, newStatus);
   td.setAttribute('aria-label', `${getPersonName(personId)}, semana ${week}, ${ABSENCE_LABELS[nextType] || ABSENCE_LABELS['']}`);
   updateRowTotal(personId);
   updateWeekCount(week);
@@ -425,9 +468,33 @@ function onCellClick(e) {
   renderAlerts();
 }
 
+// ── Cell right-click → cycle approval status ─────────
+function onCellRightClick(e) {
+  e.preventDefault();
+  const td = e.currentTarget;
+  const personId = td.dataset.personId;
+  const week = parseInt(td.dataset.week, 10);
+  const entry = (data[personId] || {})[week];
+  const type = getCellType(entry);
+  if (!type) return; // no absence to change status for
+
+  const currentStatus = getCellStatus(entry);
+  const idx = STATUS_CYCLE.indexOf(currentStatus);
+  const nextStatus = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+
+  data[personId][week] = { type, status: nextStatus };
+  applyCell(td, type, nextStatus);
+  saveData();
+  const statusLabels = { approved: 'Aprobada', pending: 'Pendiente', confirmed: 'Confirmada' };
+  showToast(`Estado: ${statusLabels[nextStatus] || nextStatus}`);
+}
+
 function updateRowTotal(personId) {
   const personData = data[personId] || {};
-  const total = Object.values(personData).filter(v => v && v !== '').length;
+  const total = Object.values(personData).filter(v => {
+    const type = getCellType(v);
+    return type && type !== '';
+  }).length;
   const el = document.getElementById(`total-${personId}`);
   if (el) el.textContent = total || '';
 }
@@ -436,7 +503,8 @@ function updateWeekCount(week) {
   const people = TEAM.filter(p => !p.section);
   let count = 0;
   people.forEach(p => {
-    const type = (data[p.id] || {})[week];
+    const entry = (data[p.id] || {})[week];
+    const type = getCellType(entry);
     if (type && type !== '') count++;
   });
   const td = document.getElementById(`count-w${week}`);
@@ -641,7 +709,7 @@ function importRows(rows) {
         if (val === '') {
           delete data[person.id][c];
         } else {
-          data[person.id][c] = val;
+          data[person.id][c] = { type: val, status: 'approved' };
         }
       }
     }
@@ -661,7 +729,7 @@ function exportCSV() {
 
   TEAM.forEach(p => {
     if (p.section) return;
-    const row = [p.name, ...weeks.map(w => (data[p.id] || {})[w.week] || '')];
+    const row = [p.name, ...weeks.map(w => getCellType((data[p.id] || {})[w.week]) || '')];
     rows.push(row);
   });
 
@@ -676,7 +744,86 @@ function exportCSV() {
   showToast('✅ CSV exportado');
 }
 
-// ── Theme toggle ─────────────────────────────────────
+// ── Resumen panel ────────────────────────────────────
+function openResumenPanel() {
+  const people = TEAM.filter(p => !p.section);
+  const types = ABSENCE_TYPES.filter(t => t !== '');
+  const typeTotals = {};
+  types.forEach(t => { typeTotals[t] = 0; });
+  let grandTotal = 0;
+
+  let html = '<table class="resumen-table">';
+  html += '<thead><tr><th>Persona</th>';
+  types.forEach(t => { html += `<th>${t}</th>`; });
+  html += '<th>Total</th></tr></thead><tbody>';
+
+  people.forEach(p => {
+    const personData = data[p.id] || {};
+    const counts = {};
+    types.forEach(t => { counts[t] = 0; });
+    Object.values(personData).forEach(entry => {
+      const type = getCellType(entry);
+      if (type && counts[type] !== undefined) counts[type]++;
+    });
+    const total = Object.values(counts).reduce((s, v) => s + v, 0);
+    grandTotal += total;
+    types.forEach(t => { typeTotals[t] += counts[t]; });
+
+    html += `<tr><td class="resumen-name">${p.name}</td>`;
+    types.forEach(t => {
+      const v = counts[t];
+      html += `<td class="resumen-cell">${v > 0 ? `<span class="type-${t} resumen-badge">${v}</span>` : ''}</td>`;
+    });
+    html += `<td class="resumen-total">${total || ''}</td></tr>`;
+  });
+
+  // Footer totals row
+  html += '<tr class="resumen-footer"><td class="resumen-name">👥 Total</td>';
+  types.forEach(t => {
+    html += `<td class="resumen-cell">${typeTotals[t] || ''}</td>`;
+  });
+  html += `<td class="resumen-total">${grandTotal || ''}</td></tr>`;
+  html += '</tbody></table>';
+
+  document.getElementById('resumen-year').textContent = currentYear;
+  document.getElementById('resumen-content').innerHTML = html;
+  document.getElementById('resumen-modal').classList.remove('hidden');
+}
+
+function closeResumenPanel() {
+  document.getElementById('resumen-modal').classList.add('hidden');
+}
+
+// ── Exported functions for other modules ─────────────
+window.getVacacionesForWeek = function(year, weekNumber) {
+  const raw = localStorage.getItem('vacaciones_' + year);
+  if (!raw) return [];
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch(e) { return []; }
+  const vacData = parsed.data || {};
+  const result = [];
+  Object.keys(vacData).forEach(personId => {
+    const weekData = vacData[personId][weekNumber];
+    if (weekData) {
+      const type = typeof weekData === 'string' ? weekData : weekData.type;
+      const status = typeof weekData === 'string' ? 'approved' : (weekData.status || 'approved');
+      if (type && type !== '') {
+        result.push({ personId, personName: getPersonName(personId), type, status });
+      }
+    }
+  });
+  return result;
+};
+
+window.getVacacionesForPerson = function(year, personId) {
+  const raw = localStorage.getItem('vacaciones_' + year);
+  if (!raw) return {};
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch(e) { return {}; }
+  return (parsed.data || {})[personId] || {};
+};
+
+
 function toggleTheme() {
   const html = document.documentElement;
   const isDark = html.getAttribute('data-theme') === 'dark';
@@ -717,6 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('file-import').addEventListener('change', onImportFile);
   document.getElementById('btn-add-period').addEventListener('click', addPeriod);
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  document.getElementById('btn-resumen').addEventListener('click', openResumenPanel);
 
   // Period modal buttons
   document.getElementById('btn-period-save').addEventListener('click', savePeriodModal);
@@ -725,5 +873,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Close modal on overlay click
   document.getElementById('period-modal').addEventListener('click', function(e) {
     if (e.target === this) closePeriodModal();
+  });
+
+  // Resumen modal
+  document.getElementById('btn-resumen-close').addEventListener('click', closeResumenPanel);
+  document.getElementById('resumen-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeResumenPanel();
   });
 });
