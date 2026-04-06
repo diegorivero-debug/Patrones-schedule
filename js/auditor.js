@@ -83,7 +83,182 @@ const SHIFT_TYPES = {
 const DAYS_ES = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STATE
+// SHIFT HELPERS (top-level, reused by PERSONAL_RULES and audit checks)
+// ═══════════════════════════════════════════════════════════════════════════
+function shiftCatOf(s)  { const t = SHIFT_TYPES[s]; return t ? t.category : null; }
+function isEarlyS(s)    { return ['early','open','bh','tg'].includes(shiftCatOf(s)); }
+function isLateS(s)     { return ['late','close'].includes(shiftCatOf(s)); }
+function isMidS(s)      { return shiftCatOf(s) === 'mid'; }
+function isWorkingS(s)  { const t = SHIFT_TYPES[s]; return t ? t.isWorking : (!!s && s !== 'Off' && s !== 'Holidays'); }
+function isOffS(s)      { const t = SHIFT_TYPES[s]; return t ? t.isOff : (!s || s === 'Off' || s === 'Holidays'); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PERSONAL RULES — Concreciones y peticiones aprobadas por cada persona
+// ═══════════════════════════════════════════════════════════════════════════
+const PERSONAL_RULES = [
+  {
+    nameMatch: /eva.*hern/i,
+    displayName: 'Eva Hernandez',
+    description: 'Siempre mañana (inquebrantable)',
+    severity: 'critical',
+    rule: 'Eva Hernandez: petición aprobada — siempre turno de mañana (Early/Open)',
+    days: null,
+    check: (shift) => !isWorkingS(shift) || isEarlyS(shift),
+  },
+  {
+    nameMatch: /eli.*mor/i,
+    displayName: 'Eli Moreno',
+    description: 'Siempre mañana (inquebrantable)',
+    severity: 'critical',
+    rule: 'Eli Moreno: petición aprobada — siempre turno de mañana (Early/Open)',
+    days: null,
+    check: (shift) => !isWorkingS(shift) || isEarlyS(shift),
+  },
+  {
+    nameMatch: /cris.*car/i,
+    displayName: 'Cris Carcel',
+    description: 'Lunes a Viernes de mañana (entre 7:00-17:00, inquebrantable)',
+    severity: 'critical',
+    rule: 'Cris Carcel: petición aprobada — L-V en turno de mañana (7:00-17:00)',
+    days: ['Mon','Tue','Wed','Thu','Fri'],
+    check: (shift) => !isWorkingS(shift) || isEarlyS(shift),
+  },
+  {
+    nameMatch: /meri.*alv/i,
+    displayName: 'Meri Alvarez',
+    description: 'Horarios fijos: Lun 10-cierre (Mid o tarde), Mar 10-19 (Mid/tarde), Mié-Vie 7-16 (mañana)',
+    severity: 'important',
+    rule: 'Meri Alvarez: petición — Lun/Mar Mid o tarde (entrada 10:00), Mié-Vie Early (entrada 7:00-8:00)',
+    days: null,
+    check: (shift, dayKey) => {
+      if (!isWorkingS(shift)) return true;
+      if (dayKey === 'Mon') return isLateS(shift) || isMidS(shift);
+      if (dayKey === 'Tue') return isMidS(shift) || isLateS(shift);
+      if (dayKey === 'Wed' || dayKey === 'Thu' || dayKey === 'Fri') return isEarlyS(shift);
+      return true;
+    },
+  },
+  {
+    nameMatch: /clara.*gonz/i,
+    displayName: 'Clara González',
+    description: 'No puede librar el Jueves (horas sindicales 9-13)',
+    severity: 'important',
+    rule: 'Clara González: horas sindicales Jueves 9:00-13:00 — no puede tener Off el jueves',
+    days: ['Thu'],
+    check: (shift) => shift !== 'Off',
+  },
+  {
+    nameMatch: /jorge.*gil/i,
+    displayName: 'Jorge Gil',
+    description: 'Lunes y Miércoles: turno de mañana (8:00-17:00)',
+    severity: 'important',
+    rule: 'Jorge Gil: petición — Lunes y Miércoles turno de mañana (8:00-17:00)',
+    days: ['Mon','Wed'],
+    check: (shift) => !isWorkingS(shift) || isEarlyS(shift),
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIT TEAM — Mapeo nombre → ID para cruce con vacaciones.js
+// ═══════════════════════════════════════════════════════════════════════════
+const AUDIT_TEAM = [
+  { id: 'diego',    names: ['Diego Rivero','Diego'],                         section: 'Store Leader' },
+  { id: 'jordi',    names: ['Jordi Pajares','Jordi'],                        section: 'Store Leader' },
+  { id: 'jorge',    names: ['Jorge Gil','Jorge'],                            section: 'Senior Manager' },
+  { id: 'sheila',   names: ['Sheila Yubero','Sheila'],                       section: 'Senior Manager' },
+  { id: 'itziar',   names: ['Itziar Cacho','Itziar'],                        section: 'Senior Manager' },
+  { id: 'cris_c',   names: ['Cris Carcel','Cris C'],                         section: 'Senior Manager' },
+  { id: 'jesus',    names: ['Jesús Pazos','Jesus Pazos','Jesus'],             section: 'Manager' },
+  { id: 'pedro',    names: ['Pedro Borlido','Pedro'],                         section: 'Manager' },
+  { id: 'julie',    names: ['Julie Robin','Julie'],                           section: 'Manager' },
+  { id: 'javi_s',   names: ['Javi Sánchez','Javi Sanchez','Javi S'],          section: 'Manager' },
+  { id: 'meri',     names: ['Meri Alvarez','Meri'],                           section: 'Manager' },
+  { id: 'toni',     names: ['Toni Medina','Toni'],                            section: 'Manager' },
+  { id: 'deborah',  names: ['Deborah Ibañez','Deborah'],                      section: 'Manager' },
+  { id: 'ane',      names: ['Ane Pazos','Ane'],                               section: 'Manager' },
+  { id: 'ricardo',  names: ['Ricardo Sosa','Ricardo'],                        section: 'Manager' },
+  { id: 'javi_q',   names: ['Javi Quiros','Javi Quirós','Javi Q'],            section: 'Manager' },
+  { id: 'cris_u',   names: ['Cris Usón','Cris Uson','Cris U'],                section: 'Manager' },
+  { id: 'javi_can', names: ['Javi Canfranc','Javi Can'],                      section: 'Manager' },
+  { id: 'david',    names: ['David Carrillo','David'],                         section: 'Manager' },
+  { id: 'aurora',   names: ['Aurora Comesaña','Aurora Comesana','Aurora'],    section: 'Lead' },
+  { id: 'ruben',    names: ['Rubén Martínez','Ruben Martinez','Rubén','Ruben'], section: 'Lead' },
+  { id: 'eva_f',    names: ['Eva Famoso','Eva F'],                             section: 'Lead' },
+  { id: 'eva_h',    names: ['Eva Hernandez','Eva H'],                          section: 'Lead' },
+  { id: 'alberto',  names: ['Alberto Ortiz','Alberto'],                        section: 'Lead' },
+  { id: 'clara',    names: ['Clara González','Clara Gonzalez','Clara'],        section: 'Lead' },
+  { id: 'eli',      names: ['Eli Moreno','Eli'],                               section: 'Lead' },
+];
+
+function findTeamMember(name) {
+  const nl = (name || '').toLowerCase().trim();
+  return AUDIT_TEAM.find(m => m.names.some(n => {
+    const lo = n.toLowerCase();
+    return lo === nl || nl.includes(lo) || lo.includes(nl);
+  })) || null;
+}
+
+// ISO week number (1-52) from a Date object
+function getISOWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return { week: Math.ceil((((d - yearStart) / 86400000) + 1) / 7), year: d.getUTCFullYear() };
+}
+
+// Try to parse a real date from a day-label string (e.g. "Lunes 30/03", "Mon 30 mar", "30/3")
+function parseDateFromLabel(label) {
+  const s = String(label || '');
+  const MONTH_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
+
+  // DD/MM[/YYYY] or DD-MM[/YYYY]
+  const numMatch = s.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+  if (numMatch) {
+    const day = parseInt(numMatch[1], 10);
+    const month = parseInt(numMatch[2], 10) - 1;
+    const year = numMatch[3] ? parseInt(numMatch[3], 10) : new Date().getFullYear();
+    const fullYear = year < 100 ? 2000 + year : year;
+    if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+      return new Date(fullYear, month, day);
+    }
+  }
+
+  // DD mes (e.g. "30 mar", "1 abr")
+  const textMatch = s.match(/(\d{1,2})\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)/i);
+  if (textMatch) {
+    const day = parseInt(textMatch[1], 10);
+    const month = MONTH_MAP[textMatch[2].toLowerCase()];
+    if (month !== undefined) return new Date(new Date().getFullYear(), month, day);
+  }
+
+  return null;
+}
+
+// Build an improved dayLabel that includes full Spanish name + date if available
+function buildWeekDayLabel(rawLabel, dayIndex) {
+  const raw = String(rawLabel || '').trim();
+  const fullNames = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const dayName = fullNames[dayIndex] || raw;
+
+  const numDateMatch = raw.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if (numDateMatch) {
+    return `${dayName} ${numDateMatch[1]}/${numDateMatch[2]}`;
+  }
+
+  const textDateMatch = raw.match(/(\d{1,2})\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)/i);
+  if (textDateMatch) {
+    return `${dayName} ${textDateMatch[1]} ${textDateMatch[2].toLowerCase()}`;
+  }
+
+  // If raw has a day prefix, strip it and keep any trailing date info
+  const stripped = raw.replace(/^(?:mon|tue|wed|thu|fri|sat|sun|lun|mar|mi[eé]|jue|vie|s[aá]b|dom)\w*\s*/i, '').trim();
+  return stripped ? `${dayName} ${stripped}` : dayName;
+}
+
+// Threshold: if more than this fraction of managers work a weekend, suggest equity review
+const WEEKEND_EQUITY_THRESHOLD = 0.75;
+
 // ═══════════════════════════════════════════════════════════════════════════
 let state = {
   fileName: null,
@@ -305,7 +480,7 @@ function parseScheduleSheet(rows) {
   const dayKeys = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const weekDates = dayLabels.slice(0, 7).map((d, i) => ({
     key: dayKeys[i] || d.key,
-    label: d.label || DAYS_ES[i] || d.key,
+    label: buildWeekDayLabel(d.label, i),
   }));
   const usedDayCols = dayColIndices.slice(0, 7);
 
@@ -667,6 +842,369 @@ function runAudit() {
     }
   }
 
+  // ── Check 12: Personal Rules (concreciones/peticiones aprobadas) ────────
+  for (const person of persons) {
+    const rule = PERSONAL_RULES.find(r => r.nameMatch.test(person.name));
+    if (!rule) continue;
+    for (const wd of weekDates) {
+      const dk = wd.key;
+      if (rule.days && !rule.days.includes(dk)) continue;
+      const shift = person.days[dk] || '';
+      if (shift === '' || shift === 'Holidays') continue; // no data / holidays → skip
+      if (!rule.check(shift, dk)) {
+        addIssue({
+          severity: rule.severity,
+          title: `Petición incumplida — ${rule.displayName} el ${wd.label}`,
+          meta: `Petición: ${rule.description}. Asignado: "${shift}"`,
+          rule: rule.rule,
+          fix: `Revisar el turno de ${rule.displayName} el ${wd.label}. Debería respetar: ${rule.description}.`,
+          day: dk,
+          personName: person.name,
+        });
+      }
+    }
+  }
+
+  // ── Check 13: Vacaciones — cruce con localStorage ──────────────────────
+  // localStorage key: `vacaciones_${year}` → JSON { data: { personId: { weekNum: absenceType } }, periods: [...] }
+  // absenceType: '' = working, or one of VACATION_TYPES = approved absence
+  {
+    // Determine year and ISO week from weekDates labels (use first working day)
+    let schedYear = new Date().getFullYear();
+    let schedWeek = null;
+    for (const wd of weekDates) {
+      const d = parseDateFromLabel(wd.label);
+      if (d) {
+        const iw = getISOWeekNumber(d);
+        schedYear = iw.year;
+        schedWeek = iw.week;
+        break;
+      }
+    }
+
+    const raw = localStorage.getItem(`vacaciones_${schedYear}`);
+    if (raw) {
+      let vacData;
+      try { vacData = JSON.parse(raw).data || {}; } catch(e) { vacData = null; }
+
+      if (vacData) {
+        const VACATION_TYPES = ['V','V25','F','TGD','Parental','Paternidad','Lactancia','UNPAID'];
+
+        for (const person of persons) {
+          const member = findTeamMember(person.name);
+          if (!member) continue;
+          const personVac = vacData[member.id] || {};
+
+          // Per-day check — all 7 days of the same week share the same absence type
+          for (const wd of weekDates) {
+            const shift = person.days[wd.key] || '';
+            const absType = schedWeek !== null ? (personVac[schedWeek] || '') : '';
+
+            if (VACATION_TYPES.includes(absType) && shift !== 'Holidays') {
+              addIssue({
+                severity: 'critical',
+                title: `Vacaciones no reflejadas — ${person.name} el ${wd.label}`,
+                meta: `Tiene "${absType}" aprobado pero horario muestra "${shift || 'sin asignar'}"`,
+                rule: `Si una persona tiene ausencia aprobada (${absType}), debe aparecer como "Holidays" en el horario`,
+                fix: `Cambiar el turno de ${person.name} el ${wd.label} a "Holidays". Ausencia aprobada: ${absType}.`,
+                day: wd.key,
+                personName: person.name,
+              });
+            }
+
+            if (shift === 'Holidays' && !VACATION_TYPES.includes(absType)) {
+              addIssue({
+                severity: 'important',
+                title: `Holidays sin aprobación — ${person.name} el ${wd.label}`,
+                meta: `Aparece como "Holidays" pero no hay ausencia aprobada en el sistema`,
+                rule: `Un "Holidays" en el horario debe tener respaldo de ausencia aprobada en vacaciones`,
+                fix: `Verificar si ${person.name} tiene una ausencia aprobada para esta semana. Si no, ajustar el horario.`,
+                day: wd.key,
+                personName: person.name,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ── Check 14: Senior Managers Lunes+Martes de mañana ───────────────────
+  const isSM = p => /senior/i.test(p.role);
+  const seniorMgrs = persons.filter(isSM);
+  for (const sm of seniorMgrs) {
+    for (const wd of weekDates) {
+      if (wd.key !== 'Mon' && wd.key !== 'Tue') continue;
+      const shift = sm.days[wd.key] || '';
+      if (isOffS(shift) || shift === 'Holidays') continue;
+      if (isWorkingS(shift) && !isEarlyS(shift)) {
+        addIssue({
+          severity: 'critical',
+          title: `SM turno tarde L/M — ${sm.name} el ${wd.label}`,
+          meta: `Senior Manager con turno "${shift}" — L y M deben ser mañana sin excepción`,
+          rule: `Los 4 Senior Managers van de mañana Lunes y Martes (sin excepción)`,
+          fix: `Cambiar el turno de ${sm.name} el ${wd.label} a turno de mañana (Early/Open).`,
+          day: wd.key,
+          personName: sm.name,
+        });
+      }
+    }
+  }
+
+  // ── Check 15: SM rotación Mié-Sáb (2 mañana + 2 tarde) ────────────────
+  for (const wd of weekDates) {
+    if (!['Wed','Thu','Fri','Sat'].includes(wd.key)) continue;
+    const workingSMs = seniorMgrs.filter(sm => isWorkingS(sm.days[wd.key]));
+    if (workingSMs.length < 2) continue; // not enough data
+    const smEarly = workingSMs.filter(sm => isEarlyS(sm.days[wd.key]));
+    const smLate  = workingSMs.filter(sm => isLateS(sm.days[wd.key]));
+    if (workingSMs.length >= 4) {
+      if (smEarly.length !== 2 || smLate.length !== 2) {
+        addIssue({
+          severity: 'important',
+          title: `SM rotación desequilibrada el ${wd.label}`,
+          meta: `${smEarly.length} SM mañana + ${smLate.length} SM tarde (se esperan 2+2)`,
+          rule: `Mié-Sáb: 2 Senior Managers de mañana + 2 de tarde`,
+          fix: `Rebalancear turnos SM el ${wd.label}: ${smEarly.map(s=>s.name).join(',')||'ninguno'} mañana / ${smLate.map(s=>s.name).join(',')||'ninguno'} tarde.`,
+          day: wd.key,
+          personName: null,
+        });
+      }
+    }
+  }
+
+  // ── Check 16: Manager — semana completa en el mismo turno ──────────────
+  const isRegMgr = p => /manager/i.test(p.role) && !/senior/i.test(p.role) && !/store/i.test(p.role);
+  for (const person of persons.filter(isRegMgr)) {
+    const dks = weekDates.map(w => w.key);
+    const workDks = dks.filter(dk => isWorkingS(person.days[dk]));
+    if (workDks.length < 3) continue;
+    const hasEarlyDay = workDks.some(dk => isEarlyS(person.days[dk]));
+    const hasLateDay  = workDks.some(dk => isLateS(person.days[dk]));
+    if (hasEarlyDay && hasLateDay) {
+      addIssue({
+        severity: 'important',
+        title: `Manager mezcla turnos — ${person.name}`,
+        meta: `Tiene turnos de mañana y tarde en la misma semana`,
+        rule: `Un Manager debe estar toda la semana en mañana O toda en tarde (no mezclar)`,
+        fix: `Unificar los turnos de ${person.name}: decidir si esta semana es toda mañana o toda tarde.`,
+        day: null,
+        personName: person.name,
+      });
+    }
+  }
+
+  // ── Check 17: Ops Leads cruzados (Aurora ↔ Rubén) ──────────────────────
+  {
+    const auroraTeam = AUDIT_TEAM.find(m => m.id === 'aurora');
+    const rubenTeam  = AUDIT_TEAM.find(m => m.id === 'ruben');
+    const aurora = auroraTeam ? persons.find(p => auroraTeam.names.some(n => p.name.toLowerCase().includes(n.toLowerCase()))) : null;
+    const ruben  = rubenTeam  ? persons.find(p => rubenTeam.names.some(n => p.name.toLowerCase().includes(n.toLowerCase()))) : null;
+
+  for (const wd of weekDates) {
+    const dk = wd.key;
+    if (!aurora || !ruben) continue;
+    const aShift = aurora.days[dk] || '';
+    const rShift = ruben.days[dk] || '';
+    if (!isWorkingS(aShift) && !isWorkingS(rShift)) continue;
+
+    // If Aurora is on vacation, Rubén must be early
+    if (!isWorkingS(aShift) && aShift === 'Holidays') {
+      if (isWorkingS(rShift) && !isEarlyS(rShift)) {
+        addIssue({
+          severity: 'important',
+          title: `Rubén debe ir mañana (Aurora de vacaciones) — ${wd.label}`,
+          meta: `Aurora de Holidays → Rubén debe cubrir de mañana`,
+          rule: `Ops Leads cruzados: si Aurora está de vacaciones, Rubén debe ir de mañana`,
+          fix: `Cambiar turno de Rubén a mañana el ${wd.label} (Aurora en Holidays).`,
+          day: dk,
+          personName: ruben.name,
+        });
+      }
+      continue;
+    }
+
+    if (isWorkingS(aShift) && isWorkingS(rShift)) {
+      const aEarly = isEarlyS(aShift);
+      const rEarly = isEarlyS(rShift);
+      if (aEarly === rEarly) {
+        addIssue({
+          severity: 'critical',
+          title: `Ops Leads en el mismo turno — ${wd.label}`,
+          meta: `Aurora (${aShift}) y Rubén (${rShift}) en ${aEarly ? 'mañana' : 'tarde'} — deben cruzarse`,
+          rule: `Aurora y Rubén siempre deben estar cruzados: uno mañana, otro tarde`,
+          fix: `Cambiar uno de los dos al turno contrario el ${wd.label}.`,
+          day: dk,
+          personName: null,
+        });
+      }
+    }
+  }
+  } // end check 17
+
+  // ── Check 18: SM no librar Lunes-Martes-Miércoles ─────────────────────
+  for (const sm of seniorMgrs) {
+    for (const wd of weekDates) {
+      if (!['Mon','Tue','Wed'].includes(wd.key)) continue;
+      const shift = sm.days[wd.key] || '';
+      if (shift === 'Off') {
+        addIssue({
+          severity: 'important',
+          title: `SM libra ${wd.label} — ${sm.name}`,
+          meta: `Senior Manager con Off el ${wd.label}`,
+          rule: `Senior Managers no deberían librar Lunes, Martes ni Miércoles`,
+          fix: `Mover el día libre de ${sm.name} a Jueves, Viernes o fin de semana.`,
+          day: wd.key,
+          personName: sm.name,
+        });
+      }
+    }
+  }
+
+  // ── Check 19: Managers no librar Martes-Miércoles ──────────────────────
+  for (const person of persons.filter(isRegMgr)) {
+    for (const wd of weekDates) {
+      if (!['Tue','Wed'].includes(wd.key)) continue;
+      const shift = person.days[wd.key] || '';
+      if (shift === 'Off') {
+        addIssue({
+          severity: 'important',
+          title: `Manager libra ${wd.label} — ${person.name}`,
+          meta: `Manager con Off el ${wd.label} (solo pueden librar Lunes)`,
+          rule: `Managers no deberían librar Martes ni Miércoles (pueden librar Lunes)`,
+          fix: `Mover el día libre de ${person.name} a Lunes o fin de semana.`,
+          day: wd.key,
+          personName: person.name,
+        });
+      }
+    }
+  }
+
+  // ── Check 20: Máximo 5 días de trabajo por semana (SAGRADO) ────────────
+  for (const person of persons) {
+    const dks = weekDates.map(w => w.key);
+    const workCount = dks.filter(dk => isWorkingS(person.days[dk])).length;
+    if (workCount >= 6) {
+      addIssue({
+        severity: 'critical',
+        title: `Trabaja 6+ días — ${person.name}`,
+        meta: `${workCount} días de trabajo esta semana (máximo permitido: 5)`,
+        rule: `SAGRADO: nadie puede trabajar más de 5 días por semana`,
+        fix: `Asignar al menos ${workCount - 5} día(s) libre(s) a ${person.name} esta semana.`,
+        day: null,
+        personName: person.name,
+      });
+    }
+  }
+
+  // ── Check 21: Mix departamental (no 3+ managers del mismo dept en mismo turno) ──
+  const deptGroups = {};
+  for (const person of persons.filter(p => isRegMgr(p) || isSM(p))) {
+    const dept = (person.dept || 'General').trim();
+    if (!deptGroups[dept]) deptGroups[dept] = [];
+    deptGroups[dept].push(person);
+  }
+  for (const wd of weekDates) {
+    const dk = wd.key;
+    for (const [dept, members] of Object.entries(deptGroups)) {
+      if (members.length < 3) continue;
+      const workMbrs = members.filter(p => isWorkingS(p.days[dk]));
+      if (workMbrs.length < 3) continue;
+      const earlyCount = workMbrs.filter(p => isEarlyS(p.days[dk])).length;
+      const lateCount  = workMbrs.filter(p => isLateS(p.days[dk])).length;
+      if (earlyCount >= 3 || lateCount >= 3) {
+        addIssue({
+          severity: 'suggestion',
+          title: `Mix departamental — ${dept} el ${wd.label}`,
+          meta: `${earlyCount >= 3 ? earlyCount + ' managers de mañana' : lateCount + ' managers de tarde'} del mismo departamento`,
+          rule: `Recomendado: no tener 3+ managers del mismo departamento todos en el mismo turno`,
+          fix: `Valorar mover 1 manager de ${dept} al turno contrario el ${wd.label} para mejorar cobertura cruzada.`,
+          day: dk,
+          personName: null,
+        });
+      }
+    }
+  }
+
+  // ── Check 22: Cobertura cierre mejorada (mín. 2 Leads + 1 Manager en Close) ──
+  for (const wd of weekDates) {
+    const dk = wd.key;
+    if (dk === 'Sun') continue;
+    const closeWorkers = persons.filter(p => isLateS(p.days[dk]));
+    const closeLeads   = closeWorkers.filter(isLead);
+    const closeMgrs    = closeWorkers.filter(p => isManager(p));
+    const needLeads  = BUSINESS_RULES.closing.minLeads;
+    const needMgrs   = BUSINESS_RULES.closing.minManagers;
+    if (closeLeads.length < needLeads || closeMgrs.length < needMgrs) {
+      const parts = [];
+      if (closeLeads.length < needLeads) parts.push(`${closeLeads.length}/${needLeads} Leads`);
+      if (closeMgrs.length  < needMgrs)  parts.push(`${closeMgrs.length}/${needMgrs} Managers`);
+      addIssue({
+        severity: 'critical',
+        title: `Cobertura cierre insuficiente — ${wd.label}`,
+        meta: `Cierre: ${parts.join(', ')} en turno de tarde/cierre`,
+        rule: `Mínimo ${needLeads} Leads + ${needMgrs} Manager en turno de cierre todos los días`,
+        fix: `Asignar ${parts.join(' y ')} adicional(es) al turno de tarde/cierre el ${wd.label}.`,
+        day: dk,
+        personName: null,
+      });
+    }
+  }
+
+  // ── Check 23: Martes reunión comercial — 2 Mgr Support + 1 Lead en floor ──
+  const tuesdayWd = weekDates.find(w => w.key === 'Tue');
+  if (tuesdayWd) {
+    const tuLeads = persons.filter(p => isLead(p) && isWorkingS(p.days['Tue']));
+    const tuMgrs  = persons.filter(p => isRegMgr(p) && isWorkingS(p.days['Tue']));
+    if (tuLeads.length < BUSINESS_RULES.meetings.martes.exceptions.leadFloor) {
+      addIssue({
+        severity: 'important',
+        title: `Reunión Comercial — Lead insuficiente en floor (${tuesdayWd.label})`,
+        meta: `${tuLeads.length} Leads trabajando — necesario al menos ${BUSINESS_RULES.meetings.martes.exceptions.leadFloor} en floor durante reunión 14:00-16:00`,
+        rule: `Martes Reunión Comercial 14:00-16:00: ${BUSINESS_RULES.meetings.martes.exceptions.leadFloor} Lead en floor + ${BUSINESS_RULES.meetings.martes.exceptions.mgrSupport} Mgr Support`,
+        fix: `Garantizar que al menos ${BUSINESS_RULES.meetings.martes.exceptions.leadFloor} Lead quede en floor el ${tuesdayWd.label} durante la Reunión Comercial (14:00-16:00).`,
+        day: 'Tue',
+        personName: null,
+      });
+    }
+    if (tuMgrs.length < BUSINESS_RULES.meetings.martes.exceptions.mgrSupport) {
+      addIssue({
+        severity: 'important',
+        title: `Reunión Comercial — Managers Support insuficientes (${tuesdayWd.label})`,
+        meta: `${tuMgrs.length} Managers disponibles — se necesitan ${BUSINESS_RULES.meetings.martes.exceptions.mgrSupport} Mgr Support en floor`,
+        rule: `Martes Reunión Comercial 14:00-16:00: ${BUSINESS_RULES.meetings.martes.exceptions.mgrSupport} Mgr Support deben quedarse en floor`,
+        fix: `Asegurarse de que ${BUSINESS_RULES.meetings.martes.exceptions.mgrSupport} Managers de Support queden en floor el ${tuesdayWd.label} 14:00-16:00.`,
+        day: 'Tue',
+        personName: null,
+      });
+    }
+  }
+
+  // ── Check 24: Finde sí/finde no — equidad fines de semana ─────────────
+  for (const person of persons.filter(p => isManager(p))) {
+    const satShift = person.days['Sat'] || '';
+    const sunShift = person.days['Sun'] || '';
+    const workedWeekend = isWorkingS(satShift) || isWorkingS(sunShift);
+    // Gather count as suggestion only when 4+ managers working the weekend
+    if (workedWeekend) {
+      const weekendWorkers = persons.filter(p => isManager(p) && (isWorkingS(p.days['Sat']) || isWorkingS(p.days['Sun'])));
+      const weekendOff     = persons.filter(p => isManager(p) && !isWorkingS(p.days['Sat']) && !isWorkingS(p.days['Sun']));
+      if (weekendWorkers.length > 0 && weekendOff.length > 0 &&
+          weekendWorkers.length / (weekendWorkers.length + weekendOff.length) > WEEKEND_EQUITY_THRESHOLD) {
+        addIssue({
+          severity: 'suggestion',
+          title: `Alta proporción de managers trabajando fin de semana`,
+          meta: `${weekendWorkers.length} de ${weekendWorkers.length + weekendOff.length} managers trabajan el fin de semana`,
+          rule: `Equidad finde sí/finde no: los managers deben alternar fines de semana trabajados`,
+          fix: `Revisar equidad de fines de semana: valorar librar a algunos managers este sábado/domingo para balancear el quarter.`,
+          day: 'Sat',
+          personName: null,
+        });
+        break; // add once
+      }
+    }
+  }
+
   // Sort by severity
   const sevOrder = { critical: 0, important: 1, suggestion: 2 };
   state.auditIssues.sort((a, b) => sevOrder[a.severity] - sevOrder[b.severity]);
@@ -1023,6 +1561,130 @@ function exportCSV() {
   showToast('CSV exportado ✅', 'ok');
 }
 
+function generateHTMLReport() {
+  const score = calculateScore();
+  const criticals   = state.auditIssues.filter(i => i.severity === 'critical').length;
+  const importants  = state.auditIssues.filter(i => i.severity === 'important').length;
+  const suggestions = state.auditIssues.filter(i => i.severity === 'suggestion').length;
+  const dateStr     = new Date().toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // Per-person issue summary
+  const personMap = {};
+  for (const issue of state.auditIssues) {
+    if (issue.personName) {
+      if (!personMap[issue.personName]) personMap[issue.personName] = [];
+      personMap[issue.personName].push(issue);
+    }
+  }
+
+  const sevColor = { critical: '#dc2626', important: '#d97706', suggestion: '#ca8a04' };
+  const sevBg    = { critical: '#fef2f2', important: '#fffbeb', suggestion: '#fefce8' };
+  const sevIcon  = { critical: '🔴', important: '🟠', suggestion: '🟡' };
+  const sevLabel = { critical: 'CRÍTICO', important: 'IMPORTANTE', suggestion: 'SUGERENCIA' };
+
+  const scoreColor = score >= 80 ? '#16a34a' : score >= 60 ? '#d97706' : '#dc2626';
+
+  let issueRows = '';
+  for (const issue of state.auditIssues) {
+    const status = state.acceptedFixes.has(issue.id) ? ' ✅' : state.rejectedFixes.has(issue.id) ? ' ❌' : '';
+    issueRows += `
+      <tr style="border-bottom:1px solid #e5e7eb;background:${sevBg[issue.severity]}">
+        <td style="padding:8px 12px;white-space:nowrap;font-size:12px">
+          <span style="color:${sevColor[issue.severity]};font-weight:700">${sevIcon[issue.severity]} ${sevLabel[issue.severity]}</span>
+        </td>
+        <td style="padding:8px 12px;font-weight:600;font-size:13px">${esc(issue.title)}${status}</td>
+        <td style="padding:8px 12px;font-size:12px;color:#6b7280">${esc(issue.meta)}</td>
+        <td style="padding:8px 12px;font-size:12px">${esc(issue.fix)}</td>
+      </tr>`;
+  }
+
+  let personRows = '';
+  for (const [name, issues] of Object.entries(personMap)) {
+    const crits = issues.filter(i => i.severity === 'critical').length;
+    const impts = issues.filter(i => i.severity === 'important').length;
+    const suggs = issues.filter(i => i.severity === 'suggestion').length;
+    personRows += `
+      <tr style="border-bottom:1px solid #e5e7eb">
+        <td style="padding:6px 12px;font-weight:600;font-size:13px">${esc(name)}</td>
+        <td style="padding:6px 12px;text-align:center">${crits > 0 ? `<span style="color:#dc2626;font-weight:700">🔴 ${crits}</span>` : ''}</td>
+        <td style="padding:6px 12px;text-align:center">${impts > 0 ? `<span style="color:#d97706;font-weight:700">🟠 ${impts}</span>` : ''}</td>
+        <td style="padding:6px 12px;text-align:center">${suggs > 0 ? `<span style="color:#ca8a04">🟡 ${suggs}</span>` : ''}</td>
+      </tr>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; color: #111827; margin: 0; padding: 0; }
+  table { border-collapse: collapse; width: 100%; }
+  th { background: #f3f4f6; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 8px 12px; text-align: left; }
+</style>
+</head><body>
+<div style="max-width:800px;margin:0 auto;padding:24px">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;border-radius:12px;padding:24px 28px;margin-bottom:24px">
+    <h1 style="margin:0 0 4px;font-size:22px">🔍 Informe de Auditoría de Horarios</h1>
+    <p style="margin:0;opacity:.85;font-size:14px">Archivo: ${esc(state.fileName || '—')} · ${dateStr}</p>
+  </div>
+
+  <!-- Score + Summary -->
+  <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+    <div style="flex:1;min-width:140px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px;text-align:center">
+      <div style="font-size:11px;text-transform:uppercase;color:#6b7280;letter-spacing:.05em">Puntuación</div>
+      <div style="font-size:36px;font-weight:800;color:${scoreColor}">${score}%</div>
+      <div style="font-size:12px;color:#6b7280">${score >= 80 ? 'Buen horario' : score >= 60 ? 'Mejorable' : 'Requiere revisión'}</div>
+    </div>
+    <div style="flex:1;min-width:120px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px;text-align:center">
+      <div style="font-size:11px;text-transform:uppercase;color:#dc2626;letter-spacing:.05em">🔴 Críticos</div>
+      <div style="font-size:36px;font-weight:800;color:#dc2626">${criticals}</div>
+      <div style="font-size:12px;color:#9ca3af">Violaciones graves</div>
+    </div>
+    <div style="flex:1;min-width:120px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px;text-align:center">
+      <div style="font-size:11px;text-transform:uppercase;color:#d97706;letter-spacing:.05em">🟠 Importantes</div>
+      <div style="font-size:36px;font-weight:800;color:#d97706">${importants}</div>
+      <div style="font-size:12px;color:#9ca3af">Requieren atención</div>
+    </div>
+    <div style="flex:1;min-width:120px;background:#fefce8;border:1px solid #fef08a;border-radius:10px;padding:16px;text-align:center">
+      <div style="font-size:11px;text-transform:uppercase;color:#ca8a04;letter-spacing:.05em">🟡 Sugerencias</div>
+      <div style="font-size:36px;font-weight:800;color:#ca8a04">${suggestions}</div>
+      <div style="font-size:12px;color:#9ca3af">Mejoras opcionales</div>
+    </div>
+  </div>
+
+  <!-- Issues table -->
+  <h2 style="font-size:16px;margin-bottom:12px;color:#1f2937">📋 Detalle de Incidencias</h2>
+  ${issueRows ? `<table style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px">
+    <thead><tr>
+      <th>Severidad</th><th>Incidencia</th><th>Detalle</th><th>Propuesta</th>
+    </tr></thead>
+    <tbody>${issueRows}</tbody>
+  </table>` : '<p style="color:#16a34a;margin-bottom:24px">✅ Sin incidencias detectadas.</p>'}
+
+  <!-- Per-person summary -->
+  ${personRows ? `<h2 style="font-size:16px;margin-bottom:12px;color:#1f2937">👤 Resumen por Persona</h2>
+  <table style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px">
+    <thead><tr>
+      <th>Persona</th><th style="text-align:center">🔴 Críticos</th><th style="text-align:center">🟠 Importantes</th><th style="text-align:center">🟡 Sugerencias</th>
+    </tr></thead>
+    <tbody>${personRows}</tbody>
+  </table>` : ''}
+
+  <!-- Recommended actions -->
+  ${criticals > 0 ? `<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:16px;margin-bottom:16px">
+    <strong style="color:#dc2626">⚡ Acciones prioritarias:</strong>
+    <ul style="margin:8px 0 0;padding-left:20px;font-size:13px">
+      ${state.auditIssues.filter(i=>i.severity==='critical').map(i=>`<li>${esc(i.title)}: ${esc(i.fix)}</li>`).join('')}
+    </ul>
+  </div>` : ''}
+
+  <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af">
+    Generado por Auditor de Horarios · Patrones-Schedule · ${new Date().toLocaleString('es-ES')}
+  </div>
+</div>
+</body></html>`;
+}
+
 function exportReport() {
   if (!state.auditIssues.length && !state.parsedPersons.length) {
     showToast('Sin datos para exportar', 'error');
@@ -1055,7 +1717,48 @@ function exportReport() {
   }
 
   downloadText(lines.join('\n'), 'informe-auditoria.txt', 'text/plain;charset=utf-8;');
-  showToast('Informe exportado ✅', 'ok');
+  showToast('Informe TXT exportado ✅', 'ok');
+}
+
+function exportReportHTML() {
+  if (!state.auditIssues.length && !state.parsedPersons.length) {
+    showToast('Sin datos para exportar', 'error');
+    return;
+  }
+  const html = generateHTMLReport();
+  downloadText(html, 'informe-auditoria.html', 'text/html;charset=utf-8;');
+  showToast('Informe HTML exportado ✅', 'ok');
+}
+
+async function copyReportForMail() {
+  if (!state.parsedPersons.length && !state.auditIssues.length) {
+    showToast('Sin datos para copiar', 'error');
+    return;
+  }
+  const html = generateHTMLReport();
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      const blob = new Blob([html], { type: 'text/html' });
+      await navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]);
+      showToast('Informe HTML copiado al portapapeles ✅ — pega directamente en Gmail/Outlook', 'ok');
+    } else {
+      // Fallback: copy as plain text
+      const score = calculateScore();
+      const lines = [
+        `INFORME AUDITORÍA — ${state.fileName || ''}`,
+        `Puntuación: ${score}%`,
+        `Críticos: ${state.auditIssues.filter(i=>i.severity==='critical').length}`,
+        `Importantes: ${state.auditIssues.filter(i=>i.severity==='important').length}`,
+        `Sugerencias: ${state.auditIssues.filter(i=>i.severity==='suggestion').length}`,
+        '',
+        ...state.auditIssues.map(i => `[${i.severity.toUpperCase()}] ${i.title}\n  ${i.meta}\n  → ${i.fix}`),
+      ];
+      await navigator.clipboard.writeText(lines.join('\n'));
+      showToast('Informe copiado (texto) — portapapeles no soporta HTML en este navegador', 'ok');
+    }
+  } catch(e) {
+    showToast('No se pudo copiar al portapapeles: ' + e.message, 'error');
+  }
 }
 
 function downloadText(content, filename, mimeType) {

@@ -84,7 +84,9 @@
   <button class="btn-secondary" onclick="runAudit(); renderSummaryCards(); renderScheduleTable(); renderAuditResults();" title="Re-ejecutar auditoría">🔄 Re-auditar</button>
   <span class="action-bar-sep"></span>
   <button class="btn-primary" onclick="exportCSV()" title="Exportar horario como CSV">⬇️ Exportar CSV</button>
-  <button class="btn-secondary" onclick="exportReport()" title="Exportar informe de auditoría">📄 Exportar Informe</button>
+  <button class="btn-secondary" onclick="exportReport()" title="Exportar informe de auditoría en texto plano">📄 Exportar TXT</button>
+  <button class="btn-secondary" onclick="exportReportHTML()" title="Exportar informe en formato HTML">🌐 Exportar HTML</button>
+  <button class="btn-primary" onclick="copyReportForMail()" title="Copia el informe en formato HTML listo para pegar en Gmail/Outlook">📧 Copiar para Mail</button>
 </div>
 
 <!-- ===== TOAST ===== -->
