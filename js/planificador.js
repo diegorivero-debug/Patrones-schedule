@@ -73,6 +73,21 @@ const TEAM_DATA = [
     c:{ morningOnly:true, altWeekend:true }},
 ];
 
+// Merge CONFIG overrides into TEAM_DATA constraints
+(function mergeConfigConstraints() {
+  var C = window.CONFIG;
+  if (!C || !C.planificador || !C.planificador.restriccionesPersonales) return;
+  var overrides = C.planificador.restriccionesPersonales;
+  TEAM_DATA.forEach(function(p) {
+    if (overrides[p.id]) {
+      if (!p.c) p.c = {};
+      Object.keys(overrides[p.id]).forEach(function(k) {
+        p.c[k] = overrides[p.id][k];
+      });
+    }
+  });
+})();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SHIFT DEFINITIONS
 // ─────────────────────────────────────────────────────────────────────────────
