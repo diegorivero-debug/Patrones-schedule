@@ -33,19 +33,19 @@ const TEAM = (window.TEAM_REGISTRY && window.TEAM_REGISTRY.getSections)
     { id: 'jorge',    name: 'Jorge Gil' },
     { id: 'sheila',   name: 'Sheila Yubero' },
     { id: 'itziar',   name: 'Itziar Cacho' },
-    { id: 'cris_c',   name: 'Cris Carcel' },
+    { id: 'cris_c',   name: 'Cristina Carcel' },
     { section: 'Managers' },
     { id: 'jesus',    name: 'Jesús Pazos' },
     { id: 'pedro',    name: 'Pedro Borlido' },
     { id: 'julie',    name: 'Julie Robin' },
-    { id: 'javi_s',   name: 'Javi Sánchez' },
+    { id: 'javi_s',   name: 'Javi Sanchez' },
     { id: 'meri',     name: 'Meri Alvarez' },
     { id: 'toni',     name: 'Toni Medina' },
     { id: 'deborah',  name: 'Deborah Ibañez' },
-    { id: 'ane',      name: 'Ane Pazos' },
+    { id: 'ane',      name: 'Ana Maria Pazos' },
     { id: 'ricardo',  name: 'Ricardo Sosa' },
-    { id: 'javi_q',   name: 'Javi Quiros' },
-    { id: 'cris_u',   name: 'Cris Usón' },
+    { id: 'javi_q',   name: 'Javier Quiros' },
+    { id: 'cris_u',   name: 'Cristina Uson' },
     { id: 'javi_can', name: 'Javi Canfranc' },
     { id: 'david',    name: 'David Carrillo' },
     { section: 'Leads' },
@@ -57,6 +57,53 @@ const TEAM = (window.TEAM_REGISTRY && window.TEAM_REGISTRY.getSections)
     { id: 'clara',    name: 'Clara González' },
     { id: 'eli',      name: 'Eli Moreno' },
   ];
+
+// ── Default vacation data 2026 ───────────────────────
+// Loaded automatically the first time vacaciones_2026 is accessed.
+const DEFAULT_VACACIONES_2026 = {
+  periods: [
+    { label: 'PEAK',                      weeks: [2,3,4,5],                   color: '#ffd700', textColor: '#5c4200' },
+    { label: 'Pre-Semana Santa',           weeks: [12,13],                     color: '#b0b0b0', textColor: '#333' },
+    { label: 'Post Semana Santa',          weeks: [14,15],                     color: '#c8b0d0', textColor: '#3a1a4a' },
+    { label: 'Puente de Mayo',             weeks: [18],                        color: '#d4f0c0', textColor: '#1a4a20' },
+    { label: 'Segunda Pascua - 25 de Mayo',weeks: [21,22],                     color: '#ffd0a0', textColor: '#4a2a00' },
+    { label: '24 DE JUNIO',                weeks: [26],                        color: '#d0f0ff', textColor: '#003a5c' },
+    { label: 'APR',                        weeks: [27,28,29,30,31,32,33,34,35],color: '#90cdf4', textColor: '#1a3a5c' },
+    { label: 'PREPARACION NPI',            weeks: [36,37],                     color: '#e0d0f0', textColor: '#2a1a4a' },
+    { label: 'NPI',                        weeks: [38,39,40],                  color: '#90cdf4', textColor: '#1a3a5c' },
+    { label: 'PEAK',                       weeks: [50,51,52,53],               color: '#ffd700', textColor: '#5c4200' },
+  ],
+  data: {
+    sheila:   { 6:'F', 14:'V', 28:'TGD', 29:'V', 30:'V', 31:'V', 47:'V' },
+    cris_c:   { 8:'F', 14:'V', 28:'TGD', 31:'V', 32:'V', 33:'V', 44:'V' },
+    itziar:   { 16:'TGD', 29:'V', 30:'V', 31:'V', 37:'V', 44:'V' },
+    jorge:    { 12:'TGD', 14:'V', 28:'V', 30:'V', 31:'V', 34:'V' },
+    ane:      { 4:'V25', 5:'V25', 6:'V25', 16:'TGD', 22:'V', 23:'V', 30:'V25', 31:'V', 32:'V', 42:'V', 43:'V25' },
+    cris_u:   { 10:'TGD', 11:'V', 28:'V', 30:'V', 38:'V', 39:'V', 52:'V' },
+    david:    { 11:'V', 12:'V', 21:'F', 22:'V', 30:'V', 31:'V', 45:'V' },
+    deborah:  { 12:'TGD', 13:'V', 17:'F', 30:'V', 31:'V', 45:'V', 46:'V' },
+    javi_can: { 2:'Parental', 3:'Parental', 4:'Parental', 5:'Parental', 6:'Lactancia', 7:'Lactancia',
+                19:'F', 20:'TGD', 21:'V', 22:'V', 23:'V', 24:'V', 25:'V',
+                26:'Paternidad', 27:'Paternidad', 28:'Paternidad', 29:'Paternidad', 30:'Paternidad',
+                31:'Paternidad', 32:'Paternidad', 33:'Paternidad', 34:'Paternidad', 35:'Paternidad',
+                36:'Paternidad', 37:'Paternidad', 38:'Paternidad' },
+    javi_s:   { 4:'F', 14:'V', 20:'TGD', 30:'V', 31:'V', 32:'V', 42:'V' },
+    javi_q:   { 10:'TGD', 11:'F', 28:'V', 31:'V', 32:'V', 33:'V', 52:'V' },
+    jesus:    { 13:'V', 20:'TGD', 28:'V', 31:'V', 32:'V', 45:'V' },
+    meri:     { 14:'TGD', 28:'V', 32:'V', 33:'V', 34:'V', 44:'V' },
+    pedro:    { 6:'F', 12:'TGD', 14:'V', 28:'V', 31:'V', 32:'V', 44:'V' },
+    ricardo:  { 17:'F', 22:'V', 24:'V', 25:'TGD', 32:'V', 33:'V', 45:'V' },
+    julie:    { 31:'V', 32:'V', 41:'V', 48:'V' },
+    toni:     { 4:'F', 11:'V', 12:'V', 20:'TGD', 28:'V', 33:'V', 42:'V' },
+    aurora:   { 11:'V', 23:'TGD', 28:'V', 33:'V', 34:'V', 38:'V', 52:'V' },
+    ruben:    { 12:'V', 23:'F', 24:'TGD', 25:'V', 32:'V', 33:'V', 45:'V' },
+    eva_f:    { 10:'V', 16:'V', 23:'TGD', 24:'F', 25:'V', 41:'V', 48:'V' },
+    alberto:  { 15:'F', 25:'TGD', 26:'V', 27:'V', 32:'V', 37:'V', 45:'V' },
+    eva_h:    { 18:'UNPAID', 25:'TGD', 27:'V', 29:'V', 33:'V', 34:'V', 44:'V' },
+    clara:    { 11:'F', 12:'TGD', 17:'V', 22:'V', 28:'V', 39:'V', 40:'V' },
+    eli:      { 9:'TGD', 15:'V', 17:'F', 28:'V', 32:'V', 33:'V', 52:'V' },
+  },
+};
 
 // ── State ────────────────────────────────────────────
 let currentYear = new Date().getFullYear();
@@ -119,6 +166,18 @@ function loadData(year) {
       data = {};
       periods = JSON.parse(JSON.stringify(DEFAULT_PERIODS));
     }
+  } else if (year === 2026 && DEFAULT_VACACIONES_2026) {
+    // Load built-in 2026 defaults the first time (no user data yet)
+    periods = JSON.parse(JSON.stringify(DEFAULT_VACACIONES_2026.periods));
+    data = {};
+    const src = DEFAULT_VACACIONES_2026.data;
+    Object.keys(src).forEach(personId => {
+      data[personId] = {};
+      Object.keys(src[personId]).forEach(week => {
+        const v = src[personId][week];
+        data[personId][week] = { type: v, status: 'approved' };
+      });
+    });
   } else {
     data = {};
     periods = JSON.parse(JSON.stringify(DEFAULT_PERIODS));
