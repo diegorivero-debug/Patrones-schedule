@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚖️ Equity Tracker · Patrones de Schedule</title>
+<link rel="stylesheet" href="css/equity.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div>
+    <h1>⚖️ Equity Tracker</h1>
+    <span class="subtitle">Seguimiento de equidad de turnos por trimestre</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-header" id="theme-toggle" onclick="toggleTheme()">🌙 Oscuro</button>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="site-nav">
+  <a class="nav-btn" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
+  <a class="nav-btn" href="equipo.html">👥 Equipo</a>
+  <a class="nav-btn" href="vacaciones.html">🌴 Vacaciones</a>
+  <a class="nav-btn" href="planificador-13w.html">📅 Planificador</a>
+  <a class="nav-btn active" href="equity.html">⚖️ Equidad</a>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <!-- Quarter bar -->
+  <div class="quarter-bar" id="quarter-bar"></div>
+
+  <!-- Main tabs -->
+  <div class="tabs-nav" id="tabs-nav">
+    <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab-btn" data-tab="table" onclick="switchTab('table')">📋 Tabla Resumen</button>
+    <button class="tab-btn" data-tab="timeline" onclick="switchTab('timeline')">📅 Timeline</button>
+    <button class="tab-btn" data-tab="alerts" onclick="switchTab('alerts')">⚠️ Alertas <span id="alerts-badge" class="badge" style="display:none"></span></button>
+  </div>
+
+  <!-- Tab: Dashboard -->
+  <div class="tab-panel active" id="panel-dashboard">
+    <!-- Import section -->
+    <div class="eq-section" id="import-section">
+      <h2>📂 Semanas importadas</h2>
+      <div id="weeks-list-container"></div>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" multiple>
+        <span class="upload-icon">📁</span>
+        <p>Arrastra archivos de semanas cerradas aquí</p>
+        <p><small>Formatos: .xlsx, .xls, .csv — 1 archivo = 1 semana (o varias sheets = varias semanas)</small></p>
+        <span class="btn-browse">Seleccionar archivos</span>
+      </div>
+    </div>
+
+    <!-- Group filter -->
+    <div class="filter-bar" id="filter-bar">
+      <span style="font-size:.85rem;color:var(--text-muted);font-weight:600;">Filtrar por rol:</span>
+      <button class="filter-btn active" data-group="all" onclick="filterByGroup('all')">Todos</button>
+      <button class="filter-btn" data-group="SM" onclick="filterByGroup('SM')">Senior Managers</button>
+      <button class="filter-btn" data-group="MGR" onclick="filterByGroup('MGR')">Managers</button>
+      <button class="filter-btn" data-group="LEAD" onclick="filterByGroup('LEAD')">Leads</button>
+    </div>
+
+    <!-- Person cards grid -->
+    <div class="eq-grid" id="eq-grid"></div>
+  </div>
+
+  <!-- Tab: Table -->
+  <div class="tab-panel" id="panel-table">
+    <div class="eq-section">
+      <h2>📋 Tabla Resumen de Equidad</h2>
+      <div id="eq-table-container"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Timeline -->
+  <div class="tab-panel" id="panel-timeline">
+    <div class="eq-section">
+      <h2>📅 Timeline del Trimestre</h2>
+      <div id="timeline-container"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Alerts -->
+  <div class="tab-panel" id="panel-alerts">
+    <div class="eq-section">
+      <h2>⚠️ Alertas de Desequilibrio</h2>
+      <div id="alerts-container"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ACTION BAR -->
+<div class="action-bar" id="action-bar" style="display:none;">
+  <button class="btn-secondary" onclick="exportCSV()">⬇️ Exportar CSV</button>
+  <button class="btn-secondary" onclick="exportHTML()">🌐 Exportar HTML</button>
+  <div class="action-bar-sep"></div>
+  <button class="btn-primary" onclick="copyForMail()">📧 Copiar para Mail</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="js/equity.js"></script>
+</body>
+</html>
