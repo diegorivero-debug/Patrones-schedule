@@ -35,6 +35,10 @@
   header h1 { font-size: 1.35rem; font-weight: 700; }
   header p  { font-size: .8rem; color: var(--text-light); margin-top: 2px; }
 
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .btn-home { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.12); color: #fff; font-size: .8rem; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background .15s; flex-shrink: 0; }
+  .btn-home:hover { background: rgba(255,255,255,.22); }
+
   /* ── Tabs bar ───────────────────────────────────────── */
   .tabs-bar { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; flex-wrap: wrap; gap: 6px; }
   .tabs { display: flex; gap: 0; }
@@ -42,14 +46,27 @@
   .tab-btn:hover { color: var(--text); }
   .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
 
-  .action-btns { display: flex; gap: 6px; padding: 6px 0; flex-wrap: wrap; }
+  .action-btns { display: flex; gap: 8px; padding: 6px 0; flex-wrap: wrap; align-items: center; }
   .action-btns button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: .8rem; font-weight: 600; color: #4a5568; transition: .15s; white-space: nowrap; }
   .action-btns button:hover { background: #edf2f7; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
   .btn-export { color: var(--green) !important; border-color: #9ae6b4 !important; }
-  .btn-reset  { color: #9b2c2c !important; border-color: #feb2b2 !important; }
+  .btn-reset  { color: #9b2c2c !important; border-color: #feb2b2 !important; min-width: 36px; padding: 6px 10px !important; }
   .btn-add    { color: var(--accent) !important; border-color: var(--accent-light) !important; }
   .btn-gen    { color: #553c9a !important; border-color: #d6bcfa !important; }
   .btn-rules  { color: #b7791f !important; border-color: #fefcbf !important; }
+  .btn-undo, .btn-redo { min-width: 36px; padding: 6px 10px !important; font-size: .95rem !important; }
+
+  /* ── Tool groups ──────────────────────────────────── */
+  .tool-group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .tool-group + .tool-group { border-left: 1px solid var(--border); padding-left: 8px; margin-left: 2px; }
+
+  /* ── Export dropdown ─────────────────────────────── */
+  .export-dropdown { position: relative; display: inline-block; }
+  .export-toggle { color: var(--green) !important; border-color: #9ae6b4 !important; }
+  .export-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.15); z-index: 150; min-width: 160px; overflow: hidden; }
+  .export-dropdown.open .export-menu { display: block; }
+  .export-menu button { display: block; width: 100%; padding: 8px 14px; border: none; background: transparent; text-align: left; font-size: .82rem; font-weight: 500; color: var(--text) !important; border-color: transparent !important; border-radius: 0; }
+  .export-menu button:hover { background: var(--surface-alt) !important; box-shadow: none !important; }
 
   /* ── Main ────────────────────────────────────────────── */
   .main { padding: 16px 24px 40px; }
@@ -224,7 +241,11 @@
   body.dark td.sum-heat-low  { background: #0d2818 !important; }
   body.dark td.sum-heat-med  { background: #10351e !important; }
   body.dark td.sum-heat-high { background: #134424 !important; }
-  body.dark td.sum-heat-max  { background: #16522c !important; color: #7ee787 !important; }
+  body.dark .export-menu { background: var(--surface); border-color: var(--border); }
+  body.dark .export-menu button { color: var(--text) !important; }
+  body.dark .export-menu button:hover { background: var(--surface-alt) !important; }
+  body.dark .tool-group + .tool-group { border-left-color: var(--border); }
+  body.dark .action-btns button:hover { background: var(--surface-alt); }
 
   /* ── Weekly View ─────────────────────────────────────── */
   .weekly-view { margin-top: 0; }

@@ -9,9 +9,12 @@
 <body>
 <header>
   <div class="header-row-top">
-    <div>
-      <h1>🗓️ Patrones de Schedule - Dashboard</h1>
-      <p id="subtitle">Selecciona un patrón para visualizar</p>
+    <div class="header-left">
+      <a href="index.html" class="btn-home">🏠 Inicio</a>
+      <div>
+        <h1>🗓️ Patrones de Schedule - Dashboard</h1>
+        <p id="subtitle">Selecciona un patrón para visualizar</p>
+      </div>
     </div>
     <div class="header-controls">
       <div class="season-toggle">
@@ -33,23 +36,31 @@
     <button class="tab-btn"        data-pat="planner">📋 Planificar</button>
   </div>
   <div class="action-btns">
-    <button class="btn-team"   onclick="openTeamModal()">👥 Equipo</button>
-    <a class="btn-team-link" href="equipo.html" title="Abrir gestión del equipo">👥 Gestionar Equipo ↗</a>
-    <a class="btn-team-link" href="auditor.html" title="Auditor de Horarios">🔍 Auditor ↗</a>
-    <a class="btn-team-link" href="vacaciones.html" title="Calendario de Vacaciones">🌴 Vacaciones ↗</a>
-    <a class="btn-team-link" href="planificador-13w.html" title="Planificador 13 Semanas">📅 Planificador ↗</a>
-    <a class="btn-team-link" href="equity.html" title="Equity Tracker">⚖️ Equidad ↗</a>
-    <button class="btn-alerts" id="alerts-btn" onclick="toggleAlertDrawer()">🔔 Alertas<span id="alerts-badge" class="alert-badge ok">0</span></button>
-    <button class="btn-add"    onclick="openAddFigure()">➕ Añadir Figura</button>
-    <button class="btn-gen"    onclick="openGenerate()">⚙️ Generar Patrón</button>
-    <button class="btn-whatif" id="btn-whatif" onclick="toggleWhatif()">🔮 What-if</button>
-    <button class="btn-rules"  onclick="openRules()">📋 Reglas</button>
-    <button class="btn-export" onclick="exportCSV()">⬇️ Exportar CSV</button>
-    <button class="btn-export" onclick="window.print()">🖨️ Imprimir</button>
-    <button class="btn-ai" id="btn-ai" onclick="openAIPanel()" title="Análisis inteligente del patrón">🤖 IA Advisor<span id="ai-badge" class="ai-badge" style="display:none"></span></button>
-    <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer (Ctrl+Z)" aria-label="Deshacer cambio (Ctrl+Z)">↩️ Deshacer</button>
-    <button class="btn-redo" id="btn-redo" onclick="redo()" disabled title="Rehacer (Ctrl+Y)" aria-label="Rehacer cambio (Ctrl+Y)">↪️ Rehacer</button>
-    <button class="btn-reset"  onclick="resetPattern()">🔄 Reset</button>
+    <!-- Grupo Edición -->
+    <div class="tool-group">
+      <button class="btn-add"    onclick="openAddFigure()">➕ Añadir Figura</button>
+      <button class="btn-gen"    onclick="openGenerate()">⚙️ Generar Patrón</button>
+      <button class="btn-whatif" id="btn-whatif" onclick="toggleWhatif()">🔮 What-if</button>
+      <button class="btn-rules"  onclick="openRules()">📋 Reglas</button>
+    </div>
+    <!-- Grupo Análisis -->
+    <div class="tool-group">
+      <button class="btn-alerts" id="alerts-btn" onclick="toggleAlertDrawer()">🔔 Alertas<span id="alerts-badge" class="alert-badge ok">0</span></button>
+      <button class="btn-ai" id="btn-ai" onclick="openAIPanel()" title="Análisis inteligente del patrón">🤖 IA Advisor<span id="ai-badge" class="ai-badge" style="display:none"></span></button>
+    </div>
+    <!-- Grupo Acciones -->
+    <div class="tool-group">
+      <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer (Ctrl+Z)" aria-label="Deshacer cambio (Ctrl+Z)">↩️</button>
+      <button class="btn-redo" id="btn-redo" onclick="redo()" disabled title="Rehacer (Ctrl+Y)" aria-label="Rehacer cambio (Ctrl+Y)">↪️</button>
+      <button class="btn-reset" onclick="resetPattern()" title="Resetear patrón">🔄</button>
+      <div class="export-dropdown">
+        <button class="btn-export export-toggle" onclick="this.parentElement.classList.toggle('open')">⬇️ Exportar ▾</button>
+        <div class="export-menu">
+          <button onclick="exportCSV(); this.closest('.export-dropdown').classList.remove('open')">⬇️ Exportar CSV</button>
+          <button onclick="window.print(); this.closest('.export-dropdown').classList.remove('open')">🖨️ Imprimir</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -150,7 +161,18 @@
   </div>
 </div>
 
+<script src="js/config.js"></script>
 <script src="js/app.js"></script>
+<script>
+/* Cierra el dropdown de exportar al hacer clic fuera */
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.export-dropdown')) {
+    document.querySelectorAll('.export-dropdown.open').forEach(function(el) {
+      el.classList.remove('open');
+    });
+  }
+});
+</script>
 <div class="footer">Patrones de Schedule Dashboard · v3.0</div>
 <div id="undo-toast" class="undo-toast"></div>
 
