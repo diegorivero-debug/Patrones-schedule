@@ -418,6 +418,24 @@ let state = {
 // ═══════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   applyTheme(state.theme);
+
+  // Check for data pre-loaded from the Planificador
+  const preloadRaw = localStorage.getItem('auditor_preload');
+  if (preloadRaw) {
+    // Remove immediately so a page reload doesn't re-trigger it
+    localStorage.removeItem('auditor_preload');
+    try {
+      const preload = JSON.parse(preloadRaw);
+      if (preload && Array.isArray(preload.persons) && preload.persons.length > 0) {
+        loadFromPreload(preload);
+        return; // skip normal setup
+      }
+    } catch(e) {
+      // Fall through to normal mode if payload is malformed
+    }
+  }
+
+  // Normal mode
   setupUploadZone();
   setupTabs();
   renderEmptyState();
@@ -433,6 +451,117 @@ function toggleTheme() {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
   localStorage.setItem('auditor_theme', state.theme);
   applyTheme(state.theme);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PLANNER PRELOAD — load data passed from planificador-13w via localStorage
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Holds metadata about the planner source (set when loadFromPreload is called)
+state.plannerMeta = null;
+
+function loadFromPreload(preload) {
+  state.parsedPersons = preload.persons.map(p => ({
+    name: p.name,
+    role: p.role,
+    dept: p.dept || '',
+    fwa:  p.fwa  || '',
+    plan: p.plan || 0,
+    sch:  p.sch  || 0,
+    days: p.days || {},
+  }));
+  state.weekDates  = preload.weekDates || [];
+  state.fileName   = `${preload.weekLabel} (Planificador)`;
+  state.plannerMeta = {
+    weekNumber: preload.weekNumber,
+    weekLabel:  preload.weekLabel,
+    quarter:    preload.quarter,
+    timestamp:  preload.timestamp,
+  };
+
+  // Hide the upload section and show the planner banner instead
+  const uploadSection = document.getElementById('upload-section');
+  if (uploadSection) uploadSection.style.display = 'none';
+
+  // Set up tabs (they may not be initialized yet)
+  setupTabs();
+
+  runAudit();
+  renderSummaryCards();
+  renderScheduleTable();
+  renderAuditResults();
+  showActionBar(true);
+
+  // Show "Volver al Planificador" button in the action bar
+  const backBtn = document.getElementById('btn-back-planner');
+  if (backBtn) backBtn.style.display = '';
+
+  renderPlannerBanner(preload);
+
+  showToast(`📅 Semana cargada desde el Planificador — ${preload.weekLabel}`, 'ok');
+}
+
+function renderPlannerBanner(preload) {
+  const banner = document.getElementById('planner-banner');
+  if (!banner) return;
+
+  const personCount = (preload.persons || []).length;
+  banner.innerHTML = `
+    <div class="planner-banner-inner">
+      <div class="planner-banner-info">
+        <span class="planner-banner-icon">📅</span>
+        <div>
+          <strong>Datos cargados desde el Planificador de 13 Semanas</strong>
+          <div class="planner-banner-sub">
+            ${esc(preload.weekLabel)} · ${esc(preload.quarter || '')} · ${personCount} personas
+            <span class="planner-banner-origin">Origen: Planificador de 13 Semanas</span>
+          </div>
+        </div>
+      </div>
+      <div class="planner-banner-actions">
+        <button class="btn-banner-load" onclick="showUploadZone()"
+          title="Volver al modo de subida de archivos">📁 Cargar otro archivo</button>
+        <button class="btn-banner-reaudit"
+          onclick="runAudit(); renderSummaryCards(); renderScheduleTable(); renderAuditResults();"
+          title="Volver a ejecutar todas las comprobaciones">🔄 Re-auditar</button>
+      </div>
+    </div>`;
+  banner.style.display = 'block';
+}
+
+// Restore the normal upload zone (called from the banner's "Cargar otro archivo" button)
+function showUploadZone() {
+  // Hide planner banner
+  const banner = document.getElementById('planner-banner');
+  if (banner) banner.style.display = 'none';
+
+  // Show upload section
+  const uploadSection = document.getElementById('upload-section');
+  if (uploadSection) uploadSection.style.display = '';
+
+  // Reset state
+  state.parsedPersons = [];
+  state.weekDates     = [];
+  state.auditIssues   = [];
+  state.acceptedFixes = new Set();
+  state.rejectedFixes = new Set();
+  state.fileName      = null;
+  state.plannerMeta   = null;
+
+  // Hide file-info bar and action bar; reset content
+  document.getElementById('file-info').style.display = 'none';
+  document.getElementById('summary-cards').innerHTML  = '';
+  document.getElementById('file-input').value         = '';
+  const backBtn = document.getElementById('btn-back-planner');
+  if (backBtn) backBtn.style.display = 'none';
+  showActionBar(false);
+  renderEmptyState();
+  showToast('Modo de importación de archivos restaurado', '');
+}
+
+// Navigate back to the Planificador
+function returnToPlanner() {
+  window.location.href = 'planificador-13w.html';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1942,6 +2071,14 @@ function clearFile() {
   state.auditIssues = [];
   state.acceptedFixes = new Set();
   state.rejectedFixes = new Set();
+  state.plannerMeta = null;
+
+  // Hide planner banner if visible
+  const banner = document.getElementById('planner-banner');
+  if (banner) banner.style.display = 'none';
+  // Hide "Volver al Planificador" button
+  const backBtn = document.getElementById('btn-back-planner');
+  if (backBtn) backBtn.style.display = 'none';
 
   document.getElementById('upload-section').style.display = '';
   document.getElementById('file-info').style.display = 'none';

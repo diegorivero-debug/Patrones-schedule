@@ -1410,6 +1410,119 @@ function renderVariantsPanel() {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT WEEK — build preload payload and redirect to auditor
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Map planificador shift codes to the codes the auditor understands
+function plannerShiftToAuditor(shift) {
+  if (!shift) return '';
+  // Vacation-type shifts all map to 'Holidays' in the auditor
+  if (['V','V25','TGD','F','Parental','Paternidad','Lactancia','UNPAID'].includes(shift)) return 'Holidays';
+  // OFF → Off (auditor uses title-case)
+  if (shift === 'OFF') return 'Off';
+  // Every other shift already matches the auditor's SHIFT_TYPES keys
+  return shift;
+}
+
+// Build the auditor_preload payload for a given week index (0-based)
+function buildWeekAuditData(weekIdx) {
+  if (!state.activeSchedule) return null;
+
+  const weekDates = computeWeekDates(state.qStartDate);
+  const weekStart = weekDates[weekIdx]; // Date object (Monday)
+
+  const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const dayNamesFull = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const dayKeys = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  // Build weekDates array for the 7-day week (planificador tracks Mon-Sat; add Sun=Off)
+  const auditWeekDates = dayKeys.map((key, i) => {
+    const d = addDays(weekStart, i);
+    const dayNum   = d.getDate();
+    const monShort = MONTH_SHORT[d.getMonth()];
+    return { key, label: `${dayNamesFull[i]} ${dayNum} ${monShort}` };
+  });
+
+  // Compute a human-readable quarter label
+  const qYear  = parseDate(state.qStartDate).getFullYear();
+  const qMonth = parseDate(state.qStartDate).getMonth() + 1; // 1-12
+  const qNum   = qMonth <= 3 ? 1 : qMonth <= 6 ? 2 : qMonth <= 9 ? 3 : 4;
+  const qLabel = `Q${qNum} FY${String(qYear).slice(-2)}`;
+
+  // Build week label e.g. "Semana 1 — 30 mar 2026"
+  const ws = weekStart;
+  const weekLabel = `Semana ${weekIdx + 1} — ${ws.getDate()} ${MONTH_SHORT[ws.getMonth()]} ${ws.getFullYear()}`;
+
+  // Build persons array — exclude Store Leaders (SL) to match auditor convention
+  // Map abbreviated role names to full names that the auditor's regex-based role detection understands
+  const ROLE_MAP = {
+    'SM':           'Senior Manager',
+    'MGR':          'Manager',
+    'OPS_LEAD':     'Lead',
+    'LEAD_GENIUS':  'Lead',
+    'LEAD_SHOPPING':'Lead',
+  };
+  const persons = TEAM_DATA
+    .filter(p => p.role !== 'SL')
+    .map(p => {
+      const days = {};
+      const baseIdx = weekIdx * DAYS_PER_WEEK; // planificador has 6 days/week (Mon-Sat)
+      for (let d = 0; d < DAYS_PER_WEEK; d++) {
+        const key = dayKeys[d];
+        const rawShift = state.activeSchedule[p.id]?.[baseIdx + d] || '';
+        days[key] = plannerShiftToAuditor(rawShift);
+      }
+      // Sunday is not tracked by the planificador — everyone is Off
+      days['Sun'] = 'Off';
+
+      // Hours plan: Eva H has 32h, everyone else defaults to 40h
+      const plan = p.hours === 32 ? 32 : 40;
+
+      return {
+        name: p.name,
+        role: ROLE_MAP[p.role] || p.role,
+        dept: p.dept || p.area || '',
+        fwa:  '',
+        plan,
+        sch:  0,
+        days,
+      };
+    });
+
+  return {
+    source:     'planificador-13w',
+    weekNumber: weekIdx + 1,
+    weekLabel,
+    quarter:    qLabel,
+    timestamp:  new Date().toISOString(),
+    weekDates:  auditWeekDates,
+    persons,
+  };
+}
+
+// Serialize the selected week to localStorage and navigate to the auditor
+function auditWeek() {
+  if (!state.activeSchedule) {
+    showToast('Genera un horario primero', 'error');
+    return;
+  }
+  const sel = document.getElementById('audit-week-select');
+  const weekIdx = sel ? parseInt(sel.value, 10) : 0;
+  const data = buildWeekAuditData(weekIdx);
+  if (!data) {
+    showToast('Error al preparar los datos para el auditor', 'error');
+    return;
+  }
+  try {
+    localStorage.setItem('auditor_preload', JSON.stringify(data));
+  } catch(e) {
+    showToast('Error al guardar datos: ' + e.message, 'error');
+    return;
+  }
+  window.location.href = 'auditor.html';
+}
+
 function renderScheduleSection() {
   const section = document.getElementById('schedule-section');
   if (!section) return;
@@ -1423,6 +1536,14 @@ function renderScheduleSection() {
     return;
   }
 
+  // Build week options for the audit week selector
+  const weekDates = computeWeekDates(state.qStartDate);
+  const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  let weekOptions = '';
+  weekDates.forEach((wd, wi) => {
+    weekOptions += `<option value="${wi}">S${wi+1} — ${wd.getDate()} ${MONTH_SHORT[wd.getMonth()]} ${wd.getFullYear()}</option>`;
+  });
+
   section.innerHTML = `
     <div class="sched-toolbar">
       <div class="sched-toolbar-left">
@@ -1434,6 +1555,14 @@ function renderScheduleSection() {
         </label>
       </div>
       <div class="sched-toolbar-right">
+        <select id="audit-week-select" class="btn btn-export" style="padding:5px 8px;font-size:.80rem;cursor:pointer"
+          title="Selecciona la semana a auditar">
+          ${weekOptions}
+        </select>
+        <button class="btn btn-audit" id="btn-audit-week" onclick="auditWeek()"
+          title="Enviar esta semana al Auditor para validar contra todas las reglas">
+          🔍 Auditar esta semana
+        </button>
         <button class="btn btn-export" onclick="exportCSV()">⬇️ CSV</button>
         <button class="btn btn-export" onclick="exportExcel()">📊 Excel</button>
       </div>

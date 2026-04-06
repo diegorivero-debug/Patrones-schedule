@@ -32,6 +32,9 @@
 <!-- ===== MAIN ===== -->
 <main class="main">
 
+  <!-- Planner preload banner (shown when data arrives from the Planificador) -->
+  <div class="planner-banner" id="planner-banner" style="display:none;"></div>
+
   <!-- Loading bar (hidden by default) -->
   <div id="loading-bar" class="loading-bar" style="display:none;margin-bottom:12px;"></div>
 
@@ -81,6 +84,7 @@
 
 <!-- ===== ACTION BAR (sticky bottom) ===== -->
 <div class="action-bar" id="action-bar" style="display:none;">
+  <button class="btn-planner-back" id="btn-back-planner" onclick="returnToPlanner()" style="display:none;" title="Volver al Planificador de 13 Semanas">↩️ Volver al Planificador</button>
   <button class="btn-success" onclick="applyAllSafeFixes()" title="Acepta automáticamente todos los fixes de tipo Importante y Sugerencia">⚡ Aplicar Fixes Seguros</button>
   <button class="btn-secondary" onclick="runAudit(); renderSummaryCards(); renderScheduleTable(); renderAuditResults();" title="Re-ejecutar auditoría">🔄 Re-auditar</button>
   <span class="action-bar-sep"></span>
