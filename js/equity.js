@@ -533,13 +533,16 @@ function generateAlerts(equityMap, weeksTotal) {
       }
     }
 
-    // Eva H and Eli Moreno — should always be morning
+    // Eva Hernandez and Eli Moreno have an approved personal request (concreción aprobada)
+    // requiring them to always work the morning shift — this is a permanent, non-negotiable constraint.
     if ((id === 'eva_h' || id === 'eli') && stats.weeksAfternoon > 0) {
       alerts.push({ severity: 'critical', personId: id, message: `${name}: petición aprobada — siempre mañana, pero tiene ${stats.weeksAfternoon} semana(s) de tarde asignadas` });
     }
   }
 
-  // Check Aurora/Rubén opposite shifts
+  // Aurora Comesaña and Rubén Martínez are the two Ops Leads (Operaciones). Per scheduling policy
+  // (SPECS_13W.md), they must always work opposite shift types each week so that both morning and
+  // afternoon operations are always covered by a senior Ops Lead.
   const aurora = equityMap.get('aurora');
   const ruben  = equityMap.get('ruben');
   if (aurora && ruben && weeksTotal >= 2) {
