@@ -679,8 +679,9 @@
           count++;
         });
         var st = document.getElementById('backup-status');
-        if (st) st.textContent = '✅ Importadas ' + count + ' claves. Recarga la página para aplicar.';
-        showToast('✅ Configuración importada');
+        if (st) st.textContent = '✅ Importadas ' + count + ' claves. Recargando…';
+        showToast('✅ Configuración importada — recargando');
+        setTimeout(function() { location.reload(); }, 1500);
       } catch(e) {
         showToast('⚠️ Error al importar: ' + e.message);
       }

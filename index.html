@@ -156,7 +156,7 @@
         if (weekPlans) {
           var plans = JSON.parse(weekPlans);
           var today = new Date().getDay(); // 0=Sun,1=Mon...6=Sat
-          var dayMap = [null,'lunes','martes','miercoles','jueves','viernes','sabado'];
+          var dayMap = [null,'lunes','martes','miércoles','jueves','viernes','sábado'];
           var todayKey = dayMap[today];
           if (todayKey && plans[todayKey]) {
             var count = Object.keys(plans[todayKey]).length;

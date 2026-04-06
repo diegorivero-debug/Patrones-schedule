@@ -1197,7 +1197,7 @@ function loadTeam() {
       const leads = [];
       const managers = [];
       people.forEach(function(p) {
-        const isLead = p.role === 'OPS_LEAD' || p.role === 'LEAD_GENIUS' || p.role === 'LEAD_SHOPPING';
+        const isLead = ['OPS_LEAD', 'LEAD_GENIUS', 'LEAD_SHOPPING'].includes(p.role);
         const isManager = p.role === 'MGR';
         const isSM = p.role === 'SM';
         const isSL = p.role === 'SL';
