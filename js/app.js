@@ -2146,8 +2146,7 @@ function openShiftEdit(e, patIdx, rowIdx) {
   const curStart = parts[0], curEnd = parts[1];
   // Use all time slots as start/end options (excluding 22:00 as a start time)
   // This allows any half-hour time like 12:30 to be used as a shift start/end
-  const allTimes = TIME_SLOTS.filter(t => t !== '22:00');
-  const starts = allTimes.filter(t => t !== '22:00');
+  const starts = TIME_SLOTS.filter(t => t !== '22:00');
   const ends   = TIME_SLOTS.filter(t => t !== '07:00' && t !== '07:30');
 
   const pop = document.createElement('div');
