@@ -8,7 +8,7 @@ const ABSENCE_LABELS = {
   'V':         'Vacaciones',
   'V25':       'Vac. año anterior',
   'F':         'Festivo personal',
-  'TGD':       'Training Group Day',
+  'TGD':       'Thanksgiving Days',
   'Parental':  'Parental',
   'Paternidad':'Paternidad',
   'Lactancia': 'Lactancia',
@@ -230,8 +230,10 @@ function renderAlerts() {
   const container = document.getElementById('alerts-container');
   const alerts = generateAlerts();
   container.innerHTML = '';
+  let visibleCount = 0;
   alerts.forEach((a) => {
     if (alertsDismissed.has(a.key)) return;
+    visibleCount++;
     const div = document.createElement('div');
     div.className = `alert alert-${a.level}`;
     const span = document.createElement('span');
@@ -245,6 +247,13 @@ function renderAlerts() {
     div.appendChild(btn);
     container.appendChild(div);
   });
+  const badge = document.getElementById('alerts-count-badge');
+  if (badge) badge.textContent = visibleCount;
+  const details = document.getElementById('alerts-details');
+  if (details) {
+    const hint = details.querySelector('.toggle-hint');
+    if (hint) hint.textContent = details.open ? '(clic para contraer)' : '(clic para expandir)';
+  }
 }
 
 function dismissAlert(key) {
@@ -446,6 +455,14 @@ function renderTable() {
       applyCell(td, type, status);
       td.setAttribute('aria-label', `${p.name}, semana ${week}, ${ABSENCE_LABELS[type] || ABSENCE_LABELS['']}`);
       if (type !== '') total++;
+      // Drag & drop support
+      if (type !== '') {
+        td.draggable = true;
+        td.addEventListener('dragstart', onCellDragStart);
+      }
+      td.addEventListener('dragover', onCellDragOver);
+      td.addEventListener('drop', onCellDrop);
+      td.addEventListener('dragleave', onCellDragLeave);
       td.addEventListener('click', onCellClick);
       td.addEventListener('contextmenu', onCellRightClick);
       td.addEventListener('keydown', function(e) {
@@ -512,6 +529,72 @@ function applyCell(td, type, status) {
   td.dataset.status = status || 'approved';
   const statusLabel = status && status !== 'approved' ? ` (${status})` : '';
   td.title = (ABSENCE_LABELS[type] || '') + statusLabel;
+}
+
+// ── Cell Drag & Drop ────────────────────────────────
+let vacDragSource = null; // { personId, week, type, status }
+
+function onCellDragStart(e) {
+  const td = e.currentTarget;
+  vacDragSource = {
+    personId: td.dataset.personId,
+    week: parseInt(td.dataset.week, 10),
+    type: td.dataset.type,
+    status: td.dataset.status || 'approved',
+  };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'vacdrag');
+  td.classList.add('vac-dragging');
+}
+
+function onCellDragOver(e) {
+  if (!vacDragSource) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('vac-drag-over');
+}
+
+function onCellDragLeave(e) {
+  e.currentTarget.classList.remove('vac-drag-over');
+}
+
+function onCellDrop(e) {
+  e.preventDefault();
+  if (!vacDragSource) return;
+  const td = e.currentTarget;
+  td.classList.remove('vac-drag-over');
+  document.querySelectorAll('.vac-dragging').forEach(el => el.classList.remove('vac-dragging'));
+
+  const dstPersonId = td.dataset.personId;
+  const dstWeek = parseInt(td.dataset.week, 10);
+  if (dstPersonId === vacDragSource.personId && dstWeek === vacDragSource.week) {
+    vacDragSource = null;
+    return;
+  }
+
+  const srcType = vacDragSource.type;
+  const srcStatus = vacDragSource.status;
+  const dstType = td.dataset.type || '';
+  const dstStatus = td.dataset.status || 'approved';
+
+  // Move src to dst; if dst had content, move it to src (swap)
+  if (!data[dstPersonId]) data[dstPersonId] = {};
+  if (!data[vacDragSource.personId]) data[vacDragSource.personId] = {};
+
+  // Place dragged entry at destination
+  data[dstPersonId][dstWeek] = { type: srcType, status: srcStatus };
+
+  // Move destination entry to source (swap) or clear source
+  if (dstType && dstType !== '') {
+    data[vacDragSource.personId][vacDragSource.week] = { type: dstType, status: dstStatus };
+  } else {
+    delete data[vacDragSource.personId][vacDragSource.week];
+  }
+
+  vacDragSource = null;
+  saveData();
+  alertsDismissed.clear();
+  render();
 }
 
 // ── Cell click → cycle absence type ─────────────────
@@ -903,12 +986,12 @@ function toggleTheme() {
   const isDark = html.getAttribute('data-theme') === 'dark';
   html.setAttribute('data-theme', isDark ? 'light' : 'dark');
   document.getElementById('theme-toggle').textContent = isDark ? '🌙 Oscuro' : '☀️ Claro';
-  try { localStorage.setItem('vac_theme', isDark ? 'light' : 'dark'); } catch(e) {}
+  try { localStorage.setItem('app_theme', isDark ? 'light' : 'dark'); } catch(e) {}
 }
 
 function loadTheme() {
   try {
-    const t = localStorage.getItem('vac_theme') || 'light';
+    const t = localStorage.getItem('app_theme') || 'light';
     document.documentElement.setAttribute('data-theme', t);
     document.getElementById('theme-toggle').textContent = t === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
   } catch(e) {}

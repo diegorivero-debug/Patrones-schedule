@@ -33,8 +33,8 @@ const PATTERN_NAMES = [
 const WEEK_DAYS       = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const DAY_PATTERN_IDX = [0, 1, 2, 0, 0, 3]; // [Mon=pat0, Tue=pat1, Wed=pat2, Thu→pat0, Fri→pat0, Sat=pat3]
 
-const SHIFT_OPTIONS_VERANO   = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','13:00-22:00'];
-const SHIFT_OPTIONS_INVIERNO = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','12:30-21:30'];
+const SHIFT_OPTIONS_VERANO   = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','12:00-21:00','12:30-21:30','13:00-22:00'];
+const SHIFT_OPTIONS_INVIERNO = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00-19:00','11:00-20:00','12:00-21:00','12:30-21:30','13:00-22:00'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BUSINESS RULES  (single source of truth for all scheduling constraints)
@@ -256,7 +256,7 @@ const ORIGINAL_WINTER_PATTERNS = deriveWinterPatterns(ORIGINAL_PATTERNS);
 const LS_KEY_PATTERNS  = 'schedule_patterns_v2';
 const LS_KEY_RULES     = 'schedule_rules';
 const LS_KEY_SEASON    = 'schedule_season';
-const LS_KEY_THEME     = 'schedule_theme';
+const LS_KEY_THEME     = 'app_theme';
 const LS_KEY_TEAM      = 'schedule_team';
 
 function deepClone(patterns) {
@@ -1989,12 +1989,18 @@ function generatePattern() {
     }
 
     // Pass 1: fill shift edges with management activity (AOR/LDOPS) for better
-    // floor coverage during core hours — edges = first/last edgeLen slots
+    // floor coverage during core hours — edges = first/last edgeLen slots.
+    // EXCEPTION: for afternoon/close shifts, cap the trailing AOR edge so it
+    // does NOT start before store closing — this ensures floor coverage during
+    // peak hours (17:00-21:00) for Close shifts (13:00-22:00 / 12:30-21:30).
+    const storeCloseIdx = getOpenEnd(); // e.g. 30 for 21:30, 29 for 21:00
+    const trailEdgeStart = Math.max(si + edgeLen + 1, storeCloseIdx);
     for (let c = si; c < ei && c < n; c++) {
       if (row.acts[c] !== '') continue;
       const fromStart = c - si;
-      const fromEnd   = ei - 1 - c;
-      if (fromStart < edgeLen || fromEnd < edgeLen) {
+      const isLeadingEdge  = fromStart < edgeLen;
+      const isTrailingEdge = c >= trailEdgeStart;
+      if (isLeadingEdge || isTrailingEdge) {
         row.acts[c] = isLead ? 'LDOPS' : 'AOR';
       }
     }
@@ -2138,12 +2144,10 @@ function openShiftEdit(e, patIdx, rowIdx) {
   const row = currentState[patIdx][rowIdx];
   const parts = row.shift.split('-');
   const curStart = parts[0], curEnd = parts[1];
-  const shiftOpts = activeSeason === 'invierno' ? SHIFT_OPTIONS_INVIERNO : SHIFT_OPTIONS_VERANO;
-  // Collect unique start/end times
-  const starts = [...new Set(shiftOpts.map(s => s.split('-')[0]))].sort();
-  const ends   = [...new Set(shiftOpts.map(s => s.split('-')[1]))].sort();
-  if (!starts.includes(curStart)) { starts.push(curStart); starts.sort(); }
-  if (!ends.includes(curEnd))     { ends.push(curEnd);     ends.sort(); }
+  // Use all time slots as start/end options (excluding 22:00 as a start time)
+  // This allows any half-hour time like 12:30 to be used as a shift start/end
+  const starts = TIME_SLOTS.filter(t => t !== '22:00');
+  const ends   = TIME_SLOTS.filter(t => t !== '07:00' && t !== '07:30');
 
   const pop = document.createElement('div');
   pop.className = 'shift-popover';

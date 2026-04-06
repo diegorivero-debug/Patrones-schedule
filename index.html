@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🏠 Inicio · Patrones de Schedule</title>
+<title>🏠 Inicio · Leadership Schedule</title>
 <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
 <!-- ===== HEADER ===== -->
 <header class="site-header">
   <div>
-    <h1>📅 Patrones de Schedule</h1>
+    <h1>📅 Leadership Schedule</h1>
     <span class="subtitle">Selecciona un módulo para empezar</span>
   </div>
   <div class="header-actions">
@@ -95,6 +95,14 @@
       <span>Alertas:</span>
       <span class="status-badge badge-alerts-warn" id="badge-alerts">—</span>
     </div>
+    <div class="status-item" id="team-today-status" style="display:none;">
+      <span>Equipo hoy:</span>
+      <span class="status-badge" id="badge-team-today">—</span>
+    </div>
+    <div class="status-item" id="pattern-status" style="display:none;">
+      <span>Último patrón:</span>
+      <span class="status-badge" id="badge-pattern">—</span>
+    </div>
   </div>
 
 </main>
@@ -108,7 +116,7 @@
   'use strict';
 
   /* ── Theme ──────────────────────────────────────── */
-  var LS_THEME = 'index_theme';
+  var LS_THEME = 'app_theme';
 
   function loadTheme() {
     try {
@@ -141,6 +149,42 @@
         badgeSeason.textContent = 'No definida';
         badgeSeason.className = 'status-badge';
       }
+
+      // Team today: count people scheduled from schedule_week_plans
+      try {
+        var weekPlans = localStorage.getItem('schedule_week_plans');
+        if (weekPlans) {
+          var plans = JSON.parse(weekPlans);
+          var today = new Date().getDay(); // 0=Sun,1=Mon...6=Sat
+          var dayMap = [null,'lunes','martes','miércoles','jueves','viernes','sábado'];
+          var todayKey = dayMap[today];
+          if (todayKey && plans[todayKey]) {
+            var count = Object.keys(plans[todayKey]).length;
+            if (count > 0) {
+              var teamEl = document.getElementById('team-today-status');
+              var teamBadge = document.getElementById('badge-team-today');
+              if (teamEl && teamBadge) {
+                teamBadge.textContent = count + ' personas';
+                teamEl.style.display = '';
+              }
+            }
+          }
+        }
+      } catch(e2) {}
+
+      // Last pattern generation
+      try {
+        var lastPattern = localStorage.getItem('schedule_last_generated');
+        if (lastPattern) {
+          var patEl = document.getElementById('pattern-status');
+          var patBadge = document.getElementById('badge-pattern');
+          if (patEl && patBadge) {
+            var d = new Date(lastPattern);
+            patBadge.textContent = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+            patEl.style.display = '';
+          }
+        }
+      } catch(e3) {}
     } catch (e) {}
   }
 

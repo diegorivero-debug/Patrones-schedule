@@ -176,6 +176,14 @@ a { color: var(--accent); text-decoration: none; }
 .btn-resumen { color: #553c9a; border-color: #d6bcfa; }
 .btn-resumen:hover { background: #faf5ff; }
 
+/* ── Alerts collapsible ──────────────────────────── */
+#alerts-details { margin-bottom: 8px; }
+#alerts-details summary { display: none; }
+#alerts-details:has(.alert) summary { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 4px; user-select: none; }
+#alerts-details summary::-webkit-details-marker { display: none; }
+.alerts-count-badge { background: var(--accent); color: #fff; border-radius: 999px; font-size: 0.72rem; font-weight: 700; padding: 1px 7px; min-width: 20px; text-align: center; }
+.toggle-hint { font-weight: 400; color: var(--text-muted); font-size: 0.78rem; }
+
 /* ── Alerts panel ────────────────────────────────── */
 .alerts-panel {
   margin-bottom: 16px;
@@ -428,6 +436,8 @@ td.vac-cell:hover {
   box-shadow: inset 0 0 0 2px rgba(0,0,0,.25);
   z-index: 2;
 }
+td.vac-cell.vac-dragging { opacity: 0.5; }
+td.vac-cell.vac-drag-over { box-shadow: inset 0 0 0 2px var(--accent); filter: brightness(1.1); }
 td.vac-cell.type-V        { background: var(--color-V); color: #1a5c1a; }
 td.vac-cell.type-V25      { background: var(--color-V25); color: #7a0040; }
 td.vac-cell.type-F        { background: var(--color-F); color: #7a0000; }

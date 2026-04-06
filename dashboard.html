@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🗓️ Patrones de Schedule - Dashboard</title>
+<title>🗓️ Leadership Schedule - Dashboard</title>
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
     <div class="header-left">
       <a href="index.html" class="btn-home">🏠 Inicio</a>
       <div>
-        <h1>🗓️ Patrones de Schedule - Dashboard</h1>
+        <h1>🗓️ Leadership Schedule - Dashboard</h1>
         <p id="subtitle">Selecciona un patrón para visualizar</p>
       </div>
     </div>
@@ -26,7 +26,16 @@
   </div>
 </header>
 
-<div class="tabs-bar">
+<nav class="site-nav">
+  <a class="nav-btn active" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
+  <a class="nav-btn" href="equipo.html">👥 Equipo</a>
+  <a class="nav-btn" href="vacaciones.html">🌴 Vacaciones</a>
+  <a class="nav-btn" href="planificador-13w.html">📅 Planificador</a>
+  <a class="nav-btn" href="equity.html">⚖️ Equidad</a>
+  <a class="nav-btn" href="ajustes.html">⚙️ Ajustes</a>
+  <a class="nav-btn" href="index.html">🏠 Inicio</a>
+</nav>
   <div class="tabs">
     <button class="tab-btn active" data-pat="0">Día Normal</button>
     <button class="tab-btn"        data-pat="1">Martes</button>
@@ -173,7 +182,7 @@ document.addEventListener('click', function(e) {
   }
 });
 </script>
-<div class="footer">Patrones de Schedule Dashboard · v3.0</div>
+<div class="footer">Leadership Schedule Dashboard · v3.0</div>
 <div id="undo-toast" class="undo-toast"></div>
 
 <!-- AI Advisor Panel -->
