@@ -232,3 +232,110 @@ button { cursor: pointer; font-family: inherit; }
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ── macOS Install card ───────────────────────────── */
+.mac-install-card {
+  background: var(--surface);
+  border: 1.5px solid var(--accent-light);
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  box-shadow: 0 2px 12px rgba(43,108,176,.12);
+  max-width: 640px;
+  position: relative;
+  overflow: hidden;
+}
+.mac-install-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1a73e8, #0d47a1);
+}
+.mac-install-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.mac-install-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+.mac-install-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.mac-install-subtitle {
+  font-size: .82rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.mac-install-desc {
+  font-size: .88rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+.btn-mac-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  background: linear-gradient(135deg, #1a73e8, #0d47a1);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .2s, transform .15s;
+  margin-bottom: 22px;
+}
+.btn-mac-install:hover { opacity: .9; transform: translateY(-1px); }
+.btn-mac-install:active { transform: translateY(0); }
+.mac-install-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.install-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: .84rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: .75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.install-step code {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: .8rem;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+}
+.mac-install-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .82rem;
+  color: var(--text-muted);
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
