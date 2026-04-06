@@ -483,7 +483,7 @@ function loadFromPreload(preload) {
   const uploadSection = document.getElementById('upload-section');
   if (uploadSection) uploadSection.style.display = 'none';
 
-  // Set up tabs (they may not be initialised yet)
+  // Set up tabs (they may not be initialized yet)
   setupTabs();
 
   runAudit();
