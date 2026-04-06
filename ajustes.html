@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚙️ Ajustes · Patrones de Schedule</title>
+<link rel="stylesheet" href="css/ajustes.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+  <div>
+    <h1>⚙️ Ajustes</h1>
+    <span class="subtitle">Reglas de negocio, patrones y configuración general</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-header" id="theme-toggle">🌙 Oscuro</button>
+  </div>
+</header>
+
+<!-- ===== NAV ===== -->
+<nav class="site-nav">
+  <a class="nav-btn" href="index.html">🏠 Inicio</a>
+  <a class="nav-btn" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-btn" href="equipo.html">👥 Equipo</a>
+  <a class="nav-btn" href="vacaciones.html">🌴 Vacaciones</a>
+  <a class="nav-btn" href="planificador-13w.html">📅 Planificador</a>
+  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
+  <a class="nav-btn" href="equity.html">⚖️ Equidad</a>
+  <a class="nav-btn active" href="ajustes.html">⚙️ Ajustes</a>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+  <!-- Page tabs -->
+  <div class="page-tabs" id="page-tabs">
+    <button class="page-tab-btn active" data-tab="tienda">🏪 Tienda</button>
+    <button class="page-tab-btn" data-tab="patrones">📊 Patrones</button>
+    <button class="page-tab-btn" data-tab="planificador">📅 13 Semanas</button>
+    <button class="page-tab-btn" data-tab="personas">👤 Personas</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════ TAB: TIENDA ═══ -->
+  <div class="tab-panel active" id="tab-tienda">
+
+    <div class="settings-card">
+      <h2>🕐 Horarios de apertura y cierre</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-apertura">Apertura (L-V)</label>
+          <input type="time" id="cfg-apertura">
+        </div>
+        <div class="form-group">
+          <label for="cfg-cierre-verano">Cierre Verano</label>
+          <input type="time" id="cfg-cierre-verano">
+        </div>
+        <div class="form-group">
+          <label for="cfg-cierre-invierno">Cierre Invierno</label>
+          <input type="time" id="cfg-cierre-invierno">
+        </div>
+        <div class="form-group">
+          <label for="cfg-sabado-apertura">Apertura Sábado</label>
+          <input type="time" id="cfg-sabado-apertura">
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <h2>👤 Entradas mínimas por rol</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-entrada-lead">Entrada Lead (mínima)</label>
+          <input type="time" id="cfg-entrada-lead">
+        </div>
+        <div class="form-group">
+          <label for="cfg-entrada-manager">Entrada Manager (mínima)</label>
+          <input type="time" id="cfg-entrada-manager">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ TAB: PATRONES ═══ -->
+  <div class="tab-panel" id="tab-patrones">
+
+    <!-- Lunch -->
+    <div class="settings-card">
+      <h2>🥗 Reglas de Lunch</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-lunch-desde">Ventana desde</label>
+          <input type="time" id="cfg-lunch-desde">
+        </div>
+        <div class="form-group">
+          <label for="cfg-lunch-hasta">Ventana hasta</label>
+          <input type="time" id="cfg-lunch-hasta">
+        </div>
+        <div class="form-group">
+          <label for="cfg-lunch-slots">Duración (slots de 30 min)</label>
+          <input type="number" id="cfg-lunch-slots" min="1" max="6">
+        </div>
+        <div class="form-group">
+          <label for="cfg-lunch-max">Máx. simultáneo</label>
+          <input type="number" id="cfg-lunch-max" min="1" max="10">
+        </div>
+      </div>
+    </div>
+
+    <!-- Cobertura -->
+    <div class="settings-card">
+      <h2>🏢 Cobertura de floor</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-floor-min">Floor mínimo</label>
+          <input type="number" id="cfg-floor-min" min="0" max="20">
+        </div>
+        <div class="form-group">
+          <label for="cfg-mgr-floor-min">Managers en floor (mínimo)</label>
+          <input type="number" id="cfg-mgr-floor-min" min="0" max="10">
+        </div>
+        <div class="form-group">
+          <label for="cfg-coach-min">Coach mínimo</label>
+          <input type="number" id="cfg-coach-min" min="0" max="10">
+        </div>
+        <div class="form-group">
+          <label for="cfg-floor-punta">Floor en hora punta</label>
+          <input type="number" id="cfg-floor-punta" min="0" max="20">
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="form-group">
+          <label>Horas punta (ej: 12:00-14:00)</label>
+          <div class="tags-input" id="horas-punta-tags">
+            <input type="text" id="horas-punta-input" placeholder="HH:MM-HH:MM y pulsa Enter">
+          </div>
+          <span class="form-hint">Pulsa Enter para añadir. Haz clic en × para eliminar.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bloques -->
+    <div class="settings-card">
+      <h2>🧱 Bloques de actividad</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-floor-slots-min">Floor: slots mínimos consecutivos</label>
+          <input type="number" id="cfg-floor-slots-min" min="1" max="20">
+        </div>
+        <div class="form-group">
+          <label for="cfg-aor-max-bloques">AOR: máx. bloques separados</label>
+          <input type="number" id="cfg-aor-max-bloques" min="1" max="10">
+        </div>
+      </div>
+    </div>
+
+    <!-- Reuniones -->
+    <div class="settings-card">
+      <h2>📋 Reuniones semanales</h2>
+      <div class="reunion-row">
+        <div class="reunion-day">Martes</div>
+        <div class="form-group">
+          <label for="cfg-reu-mar-hora">Horario</label>
+          <input type="text" id="cfg-reu-mar-hora" placeholder="14:00-16:00">
+        </div>
+        <div class="form-group">
+          <label for="cfg-reu-mar-tipo">Tipo</label>
+          <input type="text" id="cfg-reu-mar-tipo" placeholder="comercial">
+        </div>
+        <div class="form-group">
+          <label for="cfg-reu-mar-nombre">Nombre</label>
+          <input type="text" id="cfg-reu-mar-nombre" placeholder="Reunión Comercial">
+        </div>
+      </div>
+      <div class="reunion-row">
+        <div class="reunion-day">Miércoles</div>
+        <div class="form-group">
+          <label for="cfg-reu-mie-hora">Horario</label>
+          <input type="text" id="cfg-reu-mie-hora" placeholder="14:00-16:00">
+        </div>
+        <div class="form-group">
+          <label for="cfg-reu-mie-tipo">Tipo</label>
+          <input type="text" id="cfg-reu-mie-tipo" placeholder="leadership">
+        </div>
+        <div class="form-group">
+          <label for="cfg-reu-mie-nombre">Nombre</label>
+          <input type="text" id="cfg-reu-mie-nombre" placeholder="Leadership Meeting">
+        </div>
+      </div>
+    </div>
+
+    <!-- Apertura / Cierre -->
+    <div class="settings-card">
+      <h2>🔓 Apertura y cierre de tienda</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-apertura-min-personas">Personas mínimas en apertura</label>
+          <input type="number" id="cfg-apertura-min-personas" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label for="cfg-cierre-min-leads">Leads mínimos en cierre</label>
+          <input type="number" id="cfg-cierre-min-leads" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label for="cfg-cierre-min-managers">Managers mínimos en cierre</label>
+          <input type="number" id="cfg-cierre-min-managers" min="0" max="10">
+        </div>
+      </div>
+    </div>
+
+    <!-- Rol Manager -->
+    <div class="settings-card">
+      <h2>🎯 Rol de Manager por semana</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-coach-dias">Días como Coach (mín–máx)</label>
+          <input type="text" id="cfg-coach-dias" placeholder="ej: 2,3">
+          <span class="form-hint">Valores separados por coma (mínimo, máximo)</span>
+        </div>
+        <div class="form-group">
+          <label for="cfg-support-dias">Días como Support (mín–máx)</label>
+          <input type="text" id="cfg-support-dias" placeholder="ej: 2,3">
+          <span class="form-hint">Valores separados por coma (mínimo, máximo)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ TAB: PLANIFICADOR ═══ -->
+  <div class="tab-panel" id="tab-planificador">
+
+    <div class="settings-card">
+      <h2>📅 Configuración general del planificador</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-max-dias">Máx. días laborables por semana</label>
+          <input type="number" id="cfg-max-dias" min="1" max="7">
+        </div>
+        <div class="form-group">
+          <label for="cfg-equidad">Equidad mañana/tarde (0–1)</label>
+          <input type="number" id="cfg-equidad" min="0" max="1" step="0.05">
+          <span class="form-hint">0.5 = equilibrio perfecto</span>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;" class="form-group">
+        <label>SM: mañana obligatoria los días</label>
+        <div class="tags-input" id="sm-mañana-tags">
+          <input type="text" id="sm-mañana-input" placeholder="LUN, MAR… y pulsa Enter">
+        </div>
+        <span class="form-hint">Pulsa Enter para añadir. Haz clic en × para eliminar.</span>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="checkbox-row">
+          <input type="checkbox" id="cfg-ops-cruzados">
+          <label for="cfg-ops-cruzados">Ops Leads siempre cruzados (uno mañana, otro tarde)</label>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ TAB: PERSONAS ═══ -->
+  <div class="tab-panel" id="tab-personas">
+
+    <div class="settings-card">
+      <h2>👤 Restricciones personales en el planificador</h2>
+      <p style="font-size:.83rem;color:var(--text-muted);margin-bottom:16px;">
+        Días con formato abreviado en inglés: MON, TUE, WED, THU, FRI, SAT, SUN.
+        Los campos de tipo lista aceptan valores separados por coma.
+      </p>
+      <div class="persons-table-wrap">
+        <table class="persons-table" id="persons-table">
+          <thead>
+            <tr>
+              <th>ID Persona</th>
+              <th>fixedMorningDays</th>
+              <th>neverOffDays</th>
+              <th>avoidOffDays</th>
+              <th>aorFixedDays</th>
+              <th>morningOnly</th>
+              <th>morningOnlyWeekdays</th>
+              <th>altWeekend</th>
+              <th>weekAB</th>
+              <th>hours32</th>
+              <th>neverOffThursday</th>
+              <th>crossedWith</th>
+            </tr>
+          </thead>
+          <tbody id="persons-tbody">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ===== ACTION BAR ===== -->
+<div class="action-bar">
+  <button class="btn-save" id="btn-save">💾 Guardar ajustes</button>
+  <button class="btn-reset" id="btn-reset">🔄 Restaurar valores por defecto</button>
+  <span class="action-bar-info" id="action-bar-info">Los cambios se guardan en el navegador.</span>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/config.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ── Theme ──────────────────────────────────────── */
+  var LS_THEME = 'ajustes_theme';
+
+  function loadTheme() {
+    try {
+      var t = localStorage.getItem(LS_THEME) || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+      document.getElementById('theme-toggle').textContent = t === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+    } catch (e) {}
+  }
+
+  function toggleTheme() {
+    var html = document.documentElement;
+    var isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('theme-toggle').textContent = isDark ? '🌙 Oscuro' : '☀️ Claro';
+    try { localStorage.setItem(LS_THEME, isDark ? 'light' : 'dark'); } catch (e) {}
+  }
+
+  /* ── Tabs ───────────────────────────────────────── */
+  function initTabs() {
+    document.getElementById('page-tabs').addEventListener('click', function (e) {
+      var btn = e.target.closest('.page-tab-btn');
+      if (!btn) return;
+      document.querySelectorAll('.page-tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  }
+
+  /* ── Tags helper ────────────────────────────────── */
+  function initTagsInput(wrapperId, inputId, getValues, setValues) {
+    var wrapper = document.getElementById(wrapperId);
+    var input   = document.getElementById(inputId);
+
+    function render() {
+      // Remove existing tags (keep input)
+      wrapper.querySelectorAll('.tag').forEach(function (t) { t.remove(); });
+      getValues().forEach(function (val) {
+        var tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = val + ' ';
+        var del = document.createElement('button');
+        del.className = 'tag-del';
+        del.type = 'button';
+        del.textContent = '×';
+        del.addEventListener('click', function () {
+          var arr = getValues().filter(function (v) { return v !== val; });
+          setValues(arr);
+          render();
+        });
+        tag.appendChild(del);
+        wrapper.insertBefore(tag, input);
+      });
+    }
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        var val = input.value.trim().replace(/,$/, '');
+        if (val) {
+          var arr = getValues();
+          if (!arr.includes(val)) { arr.push(val); setValues(arr); }
+          input.value = '';
+          render();
+        }
+      }
+    });
+
+    wrapper.addEventListener('click', function () { input.focus(); });
+    render();
+    return render;
+  }
+
+  /* ── Populate form from CONFIG ──────────────────── */
+  var cfg = window.CONFIG;
+
+  // Arrays for tags inputs (held in closure)
+  var horasPunta   = cfg.patrones.cobertura.horasPunta.slice();
+  var smMañana     = cfg.planificador.smMañanaObligatoria.slice();
+
+  var renderHorasPunta, renderSmMañana;
+
+  function populateForm() {
+    cfg = window.CONFIG;
+
+    // Tienda
+    document.getElementById('cfg-apertura').value           = cfg.tienda.apertura;
+    document.getElementById('cfg-cierre-verano').value      = cfg.tienda.cierreVerano;
+    document.getElementById('cfg-cierre-invierno').value    = cfg.tienda.cierreInvierno;
+    document.getElementById('cfg-sabado-apertura').value    = cfg.tienda.sabadoApertura;
+    document.getElementById('cfg-entrada-lead').value       = cfg.tienda.entradaLeadMin;
+    document.getElementById('cfg-entrada-manager').value    = cfg.tienda.entradaManagerMin;
+
+    // Patrones – Lunch
+    document.getElementById('cfg-lunch-desde').value  = cfg.patrones.lunch.ventanaDesde;
+    document.getElementById('cfg-lunch-hasta').value  = cfg.patrones.lunch.ventanaHasta;
+    document.getElementById('cfg-lunch-slots').value  = cfg.patrones.lunch.duracionSlots;
+    document.getElementById('cfg-lunch-max').value    = cfg.patrones.lunch.maxSimultaneo;
+
+    // Patrones – Cobertura
+    document.getElementById('cfg-floor-min').value       = cfg.patrones.cobertura.floorMinimo;
+    document.getElementById('cfg-mgr-floor-min').value   = cfg.patrones.cobertura.managersFloorMinimo;
+    document.getElementById('cfg-coach-min').value       = cfg.patrones.cobertura.coachMinimo;
+    document.getElementById('cfg-floor-punta').value     = cfg.patrones.cobertura.floorHoraPunta;
+    horasPunta = cfg.patrones.cobertura.horasPunta.slice();
+    if (renderHorasPunta) renderHorasPunta();
+
+    // Patrones – Bloques
+    document.getElementById('cfg-floor-slots-min').value  = cfg.patrones.bloques.floorMinimoSlots;
+    document.getElementById('cfg-aor-max-bloques').value  = cfg.patrones.bloques.aorMaxBloques;
+
+    // Patrones – Reuniones
+    document.getElementById('cfg-reu-mar-hora').value    = cfg.patrones.reuniones.martes.hora;
+    document.getElementById('cfg-reu-mar-tipo').value    = cfg.patrones.reuniones.martes.tipo;
+    document.getElementById('cfg-reu-mar-nombre').value  = cfg.patrones.reuniones.martes.nombre;
+    document.getElementById('cfg-reu-mie-hora').value    = cfg.patrones.reuniones.miercoles.hora;
+    document.getElementById('cfg-reu-mie-tipo').value    = cfg.patrones.reuniones.miercoles.tipo;
+    document.getElementById('cfg-reu-mie-nombre').value  = cfg.patrones.reuniones.miercoles.nombre;
+
+    // Patrones – Apertura / Cierre
+    document.getElementById('cfg-apertura-min-personas').value = cfg.patrones.apertura.minimoPersonas;
+    document.getElementById('cfg-cierre-min-leads').value      = cfg.patrones.cierre.minimoLeads;
+    document.getElementById('cfg-cierre-min-managers').value   = cfg.patrones.cierre.minimoManagers;
+
+    // Patrones – Rol manager
+    document.getElementById('cfg-coach-dias').value   = cfg.patrones.managerRol.coachDiasPorSemana.join(',');
+    document.getElementById('cfg-support-dias').value = cfg.patrones.managerRol.supportDiasPorSemana.join(',');
+
+    // Planificador
+    document.getElementById('cfg-max-dias').value    = cfg.planificador.maxDiasLaborables;
+    document.getElementById('cfg-equidad').value     = cfg.planificador.equidadMañanaTarde;
+    document.getElementById('cfg-ops-cruzados').checked = cfg.planificador.opsLeadsCruzados;
+    smMañana = cfg.planificador.smMañanaObligatoria.slice();
+    if (renderSmMañana) renderSmMañana();
+
+    // Personas
+    renderPersonsTable();
+  }
+
+  /* ── Persons table ──────────────────────────────── */
+  function renderPersonsTable() {
+    var tbody = document.getElementById('persons-tbody');
+    tbody.innerHTML = '';
+    var rp = cfg.planificador.restriccionesPersonales;
+
+    Object.keys(rp).forEach(function (id) {
+      var p = rp[id];
+      var tr = document.createElement('tr');
+      tr.dataset.personId = id;
+
+      function cell(content) {
+        var td = document.createElement('td');
+        td.innerHTML = content;
+        tr.appendChild(td);
+        return td;
+      }
+
+      function textCell(field, value) {
+        cell('<input type="text" data-field="' + field + '" value="' + escHtml(value || '') + '">');
+      }
+
+      function checkCell(field, value) {
+        cell('<input type="checkbox" data-field="' + field + '"' + (value ? ' checked' : '') + '>');
+      }
+
+      // ID
+      var idTd = document.createElement('td');
+      idTd.className = 'person-id';
+      idTd.textContent = id;
+      tr.appendChild(idTd);
+
+      textCell('fixedMorningDays',    (p.fixedMorningDays    || []).join(','));
+      textCell('neverOffDays',        (p.neverOffDays        || []).join(','));
+      textCell('avoidOffDays',        (p.avoidOffDays        || []).join(','));
+      textCell('aorFixedDays',        (p.aorFixedDays        || []).join(','));
+      checkCell('morningOnly',         !!p.morningOnly);
+      checkCell('morningOnlyWeekdays', !!p.morningOnlyWeekdays);
+      checkCell('altWeekend',          !!p.altWeekend);
+      checkCell('weekAB',              !!p.weekAB);
+      checkCell('hours32',             !!p.hours32);
+      checkCell('neverOffThursday',    !!p.neverOffThursday);
+      textCell('crossedWith',          p.crossedWith || '');
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  /* ── Collect form values back into CONFIG ────────── */
+  function collectForm() {
+    cfg = window.CONFIG;
+
+    // Tienda
+    cfg.tienda.apertura           = document.getElementById('cfg-apertura').value;
+    cfg.tienda.cierreVerano       = document.getElementById('cfg-cierre-verano').value;
+    cfg.tienda.cierreInvierno     = document.getElementById('cfg-cierre-invierno').value;
+    cfg.tienda.sabadoApertura     = document.getElementById('cfg-sabado-apertura').value;
+    cfg.tienda.entradaLeadMin     = document.getElementById('cfg-entrada-lead').value;
+    cfg.tienda.entradaManagerMin  = document.getElementById('cfg-entrada-manager').value;
+
+    // Patrones – Lunch
+    cfg.patrones.lunch.ventanaDesde   = document.getElementById('cfg-lunch-desde').value;
+    cfg.patrones.lunch.ventanaHasta   = document.getElementById('cfg-lunch-hasta').value;
+    cfg.patrones.lunch.duracionSlots  = parseInt(document.getElementById('cfg-lunch-slots').value, 10) || 2;
+    cfg.patrones.lunch.maxSimultaneo  = parseInt(document.getElementById('cfg-lunch-max').value, 10) || 3;
+
+    // Patrones – Cobertura
+    cfg.patrones.cobertura.floorMinimo         = parseInt(document.getElementById('cfg-floor-min').value, 10) || 0;
+    cfg.patrones.cobertura.managersFloorMinimo = parseInt(document.getElementById('cfg-mgr-floor-min').value, 10) || 0;
+    cfg.patrones.cobertura.coachMinimo         = parseInt(document.getElementById('cfg-coach-min').value, 10) || 0;
+    cfg.patrones.cobertura.floorHoraPunta      = parseInt(document.getElementById('cfg-floor-punta').value, 10) || 0;
+    cfg.patrones.cobertura.horasPunta          = horasPunta.slice();
+
+    // Patrones – Bloques
+    cfg.patrones.bloques.floorMinimoSlots = parseInt(document.getElementById('cfg-floor-slots-min').value, 10) || 1;
+    cfg.patrones.bloques.aorMaxBloques    = parseInt(document.getElementById('cfg-aor-max-bloques').value, 10) || 1;
+
+    // Patrones – Reuniones
+    cfg.patrones.reuniones.martes.hora    = document.getElementById('cfg-reu-mar-hora').value.trim();
+    cfg.patrones.reuniones.martes.tipo    = document.getElementById('cfg-reu-mar-tipo').value.trim();
+    cfg.patrones.reuniones.martes.nombre  = document.getElementById('cfg-reu-mar-nombre').value.trim();
+    cfg.patrones.reuniones.miercoles.hora   = document.getElementById('cfg-reu-mie-hora').value.trim();
+    cfg.patrones.reuniones.miercoles.tipo   = document.getElementById('cfg-reu-mie-tipo').value.trim();
+    cfg.patrones.reuniones.miercoles.nombre = document.getElementById('cfg-reu-mie-nombre').value.trim();
+
+    // Patrones – Apertura / Cierre
+    cfg.patrones.apertura.minimoPersonas = parseInt(document.getElementById('cfg-apertura-min-personas').value, 10) || 1;
+    cfg.patrones.cierre.minimoLeads      = parseInt(document.getElementById('cfg-cierre-min-leads').value, 10) || 1;
+    cfg.patrones.cierre.minimoManagers   = parseInt(document.getElementById('cfg-cierre-min-managers').value, 10) || 0;
+
+    // Patrones – Rol manager (parse comma-separated ints)
+    cfg.patrones.managerRol.coachDiasPorSemana   = parseCsvInts(document.getElementById('cfg-coach-dias').value);
+    cfg.patrones.managerRol.supportDiasPorSemana = parseCsvInts(document.getElementById('cfg-support-dias').value);
+
+    // Planificador
+    cfg.planificador.maxDiasLaborables        = parseInt(document.getElementById('cfg-max-dias').value, 10) || 5;
+    cfg.planificador.equidadMañanaTarde       = parseFloat(document.getElementById('cfg-equidad').value) || 0.5;
+    cfg.planificador.opsLeadsCruzados         = document.getElementById('cfg-ops-cruzados').checked;
+    cfg.planificador.smMañanaObligatoria      = smMañana.slice();
+
+    // Personas
+    var tbody = document.getElementById('persons-tbody');
+    var rows = tbody.querySelectorAll('tr');
+    rows.forEach(function (tr) {
+      var id  = tr.dataset.personId;
+      if (!id) return;
+      var rp  = cfg.planificador.restriccionesPersonales;
+      if (!rp[id]) rp[id] = {};
+      var p   = rp[id];
+
+      tr.querySelectorAll('input[data-field]').forEach(function (inp) {
+        var field = inp.dataset.field;
+        if (inp.type === 'checkbox') {
+          if (inp.checked) { p[field] = true; }
+          else { delete p[field]; }
+        } else {
+          var val = inp.value.trim();
+          var listFields = ['fixedMorningDays', 'neverOffDays', 'avoidOffDays', 'aorFixedDays'];
+          if (listFields.includes(field)) {
+            var arr = val ? val.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+            if (arr.length) { p[field] = arr; } else { delete p[field]; }
+          } else {
+            if (val) { p[field] = val; } else { delete p[field]; }
+          }
+        }
+      });
+    });
+  }
+
+  /* ── Helpers ────────────────────────────────────── */
+  function parseCsvInts(str) {
+    return str.split(',').map(function (s) { return parseInt(s.trim(), 10); }).filter(function (n) { return !isNaN(n); });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Toast ──────────────────────────────────────── */
+  var toastTimer = null;
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2800);
+  }
+
+  /* ── Save ───────────────────────────────────────── */
+  function saveSettings() {
+    collectForm();
+    window.CONFIG.save();
+    showToast('✅ Ajustes guardados');
+    document.getElementById('action-bar-info').textContent = 'Guardado · ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  /* ── Reset ──────────────────────────────────────── */
+  function resetSettings() {
+    if (!confirm('¿Restaurar TODOS los ajustes a los valores por defecto? Los cambios guardados se perderán.')) return;
+    window.CONFIG.reset();
+    horasPunta = window.CONFIG.patrones.cobertura.horasPunta.slice();
+    smMañana   = window.CONFIG.planificador.smMañanaObligatoria.slice();
+    populateForm();
+    showToast('🔄 Valores restaurados');
+  }
+
+  /* ── Init ───────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function () {
+    loadTheme();
+    initTabs();
+
+    // Init tags inputs
+    renderHorasPunta = initTagsInput(
+      'horas-punta-tags', 'horas-punta-input',
+      function () { return horasPunta; },
+      function (arr) { horasPunta = arr; }
+    );
+    renderSmMañana = initTagsInput(
+      'sm-mañana-tags', 'sm-mañana-input',
+      function () { return smMañana; },
+      function (arr) { smMañana = arr; }
+    );
+
+    populateForm();
+
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('btn-save').addEventListener('click', saveSettings);
+    document.getElementById('btn-reset').addEventListener('click', resetSettings);
+  });
+
+})();
+</script>
+</body>
+</html>

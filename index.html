@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏠 Inicio · Patrones de Schedule</title>
+<link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+  <div>
+    <h1>📅 Patrones de Schedule</h1>
+    <span class="subtitle">Selecciona un módulo para empezar</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-header" id="theme-toggle">🌙 Oscuro</button>
+  </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+  <p class="section-title">Módulos</p>
+
+  <!-- ── Cards grid ── -->
+  <div class="cards-grid">
+
+    <!-- Patrones -->
+    <a class="module-card" href="dashboard.html">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Patrones</div>
+      <div class="card-desc">Editor de patrones diarios con vista semanal e IA Advisor</div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- Equipo -->
+    <a class="module-card" href="equipo.html">
+      <div class="card-icon">👥</div>
+      <div class="card-title">Equipo</div>
+      <div class="card-desc">Gestión de plantilla, competencias y restricciones personales</div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- Vacaciones -->
+    <a class="module-card" href="vacaciones.html">
+      <div class="card-icon">🌴</div>
+      <div class="card-title">Vacaciones</div>
+      <div class="card-desc">Calendario anual de ausencias por semana y tipo</div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- 13 Semanas -->
+    <a class="module-card" href="planificador-13w.html">
+      <div class="card-icon">📅</div>
+      <div class="card-title">13 Semanas</div>
+      <div class="card-desc">Planificador trimestral con solver de restricciones</div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- Auditor -->
+    <a class="module-card" href="auditor.html">
+      <div class="card-icon">🔍</div>
+      <div class="card-title">Auditor</div>
+      <div class="card-desc">Importa planificaciones y detecta violaciones de reglas</div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- Equidad -->
+    <a class="module-card" href="equity.html">
+      <div class="card-icon">⚖️</div>
+      <div class="card-title">Equidad</div>
+      <div class="card-desc">Balance de turnos mañana/tarde por trimestre</div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- Ajustes (wide card) -->
+    <a class="module-card card-settings" href="ajustes.html">
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">Ajustes</div>
+      <div class="card-desc">Reglas de patrones, 13 semanas y configuración general</div>
+      <div class="card-arrow">→</div>
+    </a>
+
+  </div>
+
+  <!-- ── Status bar ── -->
+  <div class="status-bar" id="status-bar">
+    <div class="status-item">
+      <span>Temporada activa:</span>
+      <span class="status-badge" id="badge-season">—</span>
+    </div>
+    <div class="status-item" id="alerts-status" style="display:none;">
+      <span>Alertas:</span>
+      <span class="status-badge badge-alerts-warn" id="badge-alerts">—</span>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/config.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ── Theme ──────────────────────────────────────── */
+  var LS_THEME = 'index_theme';
+
+  function loadTheme() {
+    try {
+      var t = localStorage.getItem(LS_THEME) || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+      document.getElementById('theme-toggle').textContent = t === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+    } catch (e) {}
+  }
+
+  function toggleTheme() {
+    var html = document.documentElement;
+    var isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('theme-toggle').textContent = isDark ? '🌙 Oscuro' : '☀️ Claro';
+    try { localStorage.setItem(LS_THEME, isDark ? 'light' : 'dark'); } catch (e) {}
+  }
+
+  /* ── Status bar ─────────────────────────────────── */
+  function renderStatus() {
+    try {
+      var season = localStorage.getItem('schedule_season') || '';
+      var badgeSeason = document.getElementById('badge-season');
+      if (season === 'verano') {
+        badgeSeason.textContent = '☀️ Verano';
+        badgeSeason.className = 'status-badge badge-verano';
+      } else if (season === 'invierno') {
+        badgeSeason.textContent = '❄️ Invierno';
+        badgeSeason.className = 'status-badge badge-invierno';
+      } else {
+        badgeSeason.textContent = 'No definida';
+        badgeSeason.className = 'status-badge';
+      }
+    } catch (e) {}
+  }
+
+  /* ── Toast ──────────────────────────────────────── */
+  var toastTimer = null;
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2800);
+  }
+
+  /* ── Init ───────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function () {
+    loadTheme();
+    renderStatus();
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  });
+
+})();
+</script>
+</body>
+</html>
