@@ -40,7 +40,11 @@
       },
       apertura: { minimoPersonas: 2 },
       cierre: { minimoLeads: 2, minimoManagers: 1 },
-      managerRol: { coachDiasPorSemana: [2, 3], supportDiasPorSemana: [2, 3] }
+      managerRol: { coachDiasPorSemana: [2, 3], supportDiasPorSemana: [2, 3] },
+      dd: { hora: '09:15', duracionMin: 15 },
+      franjasTranquilas: ['09:30-11:00', '15:00-16:00'],
+      libranzas: { maxDiasLaborables: 5, equidadFindeQ: true, maxFindesConsecutivos: 2 },
+      mixDepartamental: { enabled: true, departamentos: ['Shopping+Biz', 'People', 'Support', 'Ops'] }
     },
     planificador: {
       maxDiasLaborables: 5,

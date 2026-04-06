@@ -229,6 +229,55 @@
       </div>
     </div>
 
+    <!-- DD (Daily Download) -->
+    <div class="settings-card">
+      <h2>📢 Daily Download (DD)</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-dd-hora">Hora del DD</label>
+          <input type="time" id="cfg-dd-hora">
+          <span class="form-hint">Por defecto 09:15. Aparece en todos los turnos que estén activos a esa hora.</span>
+        </div>
+        <div class="form-group">
+          <label for="cfg-dd-duracion">Duración (minutos)</label>
+          <input type="number" id="cfg-dd-duracion" min="5" max="60">
+        </div>
+      </div>
+    </div>
+
+    <!-- Franjas tranquilas -->
+    <div class="settings-card">
+      <h2>🤫 Franjas tranquilas (sin actividades intensas)</h2>
+      <div class="form-group">
+        <label>Franjas horarias (ej: 09:30-11:00)</label>
+        <div class="tags-input" id="franjas-tranquilas-tags">
+          <input type="text" id="franjas-tranquilas-input" placeholder="HH:MM-HH:MM y pulsa Enter">
+        </div>
+        <span class="form-hint">Franjas donde no se programan actividades intensas (apertura tranquila, descanso post-lunch).</span>
+      </div>
+    </div>
+
+    <!-- Libranzas -->
+    <div class="settings-card">
+      <h2>📆 Reglas de libranzas</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-lib-max-dias">Máx. días laborables por semana</label>
+          <input type="number" id="cfg-lib-max-dias" min="1" max="7">
+        </div>
+        <div class="form-group">
+          <label for="cfg-lib-max-findes">Máx. fines de semana consecutivos trabajados</label>
+          <input type="number" id="cfg-lib-max-findes" min="1" max="13">
+        </div>
+        <div class="form-group" style="align-items:flex-start;padding-top:1.5rem">
+          <div class="checkbox-row">
+            <input type="checkbox" id="cfg-lib-equidad-finde">
+            <label for="cfg-lib-equidad-finde">Equidad de fines de semana al final del Q</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ═══════════════════════════════════════ TAB: PLANIFICADOR ═══ -->
@@ -418,8 +467,9 @@
   // Arrays for tags inputs (held in closure)
   var horasPunta   = cfg.patrones.cobertura.horasPunta.slice();
   var smMañana     = cfg.planificador.smMañanaObligatoria.slice();
+  var franjasTranquilas = ((cfg.patrones && cfg.patrones.franjasTranquilas) || ['09:30-11:00', '15:00-16:00']).slice();
 
-  var renderHorasPunta, renderSmMañana;
+  var renderHorasPunta, renderSmMañana, renderFranjasTranquilas;
 
   function populateForm() {
     cfg = window.CONFIG;
@@ -466,6 +516,21 @@
     // Patrones – Rol manager
     document.getElementById('cfg-coach-dias').value   = cfg.patrones.managerRol.coachDiasPorSemana.join(',');
     document.getElementById('cfg-support-dias').value = cfg.patrones.managerRol.supportDiasPorSemana.join(',');
+
+    // Patrones – DD
+    var dd = (cfg.patrones.dd || {});
+    document.getElementById('cfg-dd-hora').value     = dd.hora || '09:15';
+    document.getElementById('cfg-dd-duracion').value = dd.duracionMin || 15;
+
+    // Patrones – Franjas tranquilas
+    franjasTranquilas = ((cfg.patrones.franjasTranquilas) || ['09:30-11:00', '15:00-16:00']).slice();
+    if (renderFranjasTranquilas) renderFranjasTranquilas();
+
+    // Patrones – Libranzas
+    var lib = (cfg.patrones.libranzas || {});
+    document.getElementById('cfg-lib-max-dias').value       = lib.maxDiasLaborables || 5;
+    document.getElementById('cfg-lib-max-findes').value     = lib.maxFindesConsecutivos || 2;
+    document.getElementById('cfg-lib-equidad-finde').checked = lib.equidadFindeQ !== false;
 
     // Planificador
     document.getElementById('cfg-max-dias').value    = cfg.planificador.maxDiasLaborables;
@@ -572,6 +637,20 @@
     cfg.patrones.managerRol.coachDiasPorSemana   = parseCsvInts(document.getElementById('cfg-coach-dias').value);
     cfg.patrones.managerRol.supportDiasPorSemana = parseCsvInts(document.getElementById('cfg-support-dias').value);
 
+    // Patrones – DD
+    if (!cfg.patrones.dd) cfg.patrones.dd = {};
+    cfg.patrones.dd.hora       = document.getElementById('cfg-dd-hora').value || '09:15';
+    cfg.patrones.dd.duracionMin = parseInt(document.getElementById('cfg-dd-duracion').value, 10) || 15;
+
+    // Patrones – Franjas tranquilas
+    cfg.patrones.franjasTranquilas = franjasTranquilas.slice();
+
+    // Patrones – Libranzas
+    if (!cfg.patrones.libranzas) cfg.patrones.libranzas = {};
+    cfg.patrones.libranzas.maxDiasLaborables    = parseInt(document.getElementById('cfg-lib-max-dias').value, 10) || 5;
+    cfg.patrones.libranzas.maxFindesConsecutivos = parseInt(document.getElementById('cfg-lib-max-findes').value, 10) || 2;
+    cfg.patrones.libranzas.equidadFindeQ        = document.getElementById('cfg-lib-equidad-finde').checked;
+
     // Planificador
     cfg.planificador.maxDiasLaborables        = parseInt(document.getElementById('cfg-max-dias').value, 10) || 5;
     cfg.planificador.equidadMañanaTarde       = parseFloat(document.getElementById('cfg-equidad').value) || 0.5;
@@ -640,6 +719,7 @@
     window.CONFIG.reset();
     horasPunta = window.CONFIG.patrones.cobertura.horasPunta.slice();
     smMañana   = window.CONFIG.planificador.smMañanaObligatoria.slice();
+    franjasTranquilas = ((window.CONFIG.patrones.franjasTranquilas) || ['09:30-11:00', '15:00-16:00']).slice();
     populateForm();
     showToast('🔄 Valores restaurados');
   }
@@ -704,6 +784,11 @@
       'sm-mañana-tags', 'sm-mañana-input',
       function () { return smMañana; },
       function (arr) { smMañana = arr; }
+    );
+    renderFranjasTranquilas = initTagsInput(
+      'franjas-tranquilas-tags', 'franjas-tranquilas-input',
+      function () { return franjasTranquilas; },
+      function (arr) { franjasTranquilas = arr; }
     );
 
     populateForm();
