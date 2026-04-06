@@ -238,15 +238,15 @@
   body.dark .modal { background: var(--surface); }
   body.dark .modal h2, body.dark .modal label { color: var(--text); }
   body.dark .modal select, body.dark .modal input, body.dark .modal textarea { background: var(--surface-alt); color: var(--text); border-color: var(--border); }
-  body.dark td.sum-heat-low  { background: #0d2818 !important; }
-  body.dark td.sum-heat-med  { background: #10351e !important; }
-  body.dark td.sum-heat-high { background: #134424 !important; }
+  body.dark .action-btns button:hover { background: var(--surface-alt); }
+  body.dark .tool-group + .tool-group { border-left-color: var(--border); }
   body.dark .export-menu { background: var(--surface); border-color: var(--border); }
   body.dark .export-menu button { color: var(--text) !important; }
   body.dark .export-menu button:hover { background: var(--surface-alt) !important; }
-  body.dark .tool-group + .tool-group { border-left-color: var(--border); }
-  body.dark .action-btns button:hover { background: var(--surface-alt); }
-
+  body.dark td.sum-heat-low  { background: #0d2818 !important; }
+  body.dark td.sum-heat-med  { background: #10351e !important; }
+  body.dark td.sum-heat-high { background: #134424 !important; }
+  body.dark td.sum-heat-max  { background: #16522c !important; color: #7ee787 !important; }
   /* ── Weekly View ─────────────────────────────────────── */
   .weekly-view { margin-top: 0; }
   .weekly-table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); }
