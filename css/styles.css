@@ -304,7 +304,7 @@
   body.dark .equity-item.eq-warning { border-color: #6e5a08; background: #1c1800; }
 
   /* ── Coverage Chart ─────────────────────────────────── */
-  .coverage-chart { margin-top: 16px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; width: 100%; }
+  .coverage-chart { margin-top: 16px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; width: 100%; box-sizing: border-box; }
   .coverage-chart-wrap { width: 100%; }
   .coverage-chart-wrap canvas { width: 100% !important; }
   .coverage-chart h3 { font-size: .86rem; font-weight: 700; color: var(--text); margin-bottom: 12px; }

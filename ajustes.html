@@ -257,6 +257,65 @@
       </div>
     </div>
 
+    <!-- Cobertura por franja horaria -->
+    <div class="settings-card">
+      <h2>🏪 Cobertura por franja horaria</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-franja-apertura-min">Apertura — mínimo (personas)</label>
+          <input type="number" id="cfg-franja-apertura-min" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label for="cfg-franja-apertura-max">Apertura — máximo (personas)</label>
+          <input type="number" id="cfg-franja-apertura-max" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label for="cfg-franja-normal-support">Normal/mediodía — Support mínimo</label>
+          <input type="number" id="cfg-franja-normal-support" min="1" max="15">
+        </div>
+        <div class="form-group">
+          <label for="cfg-franja-normal-coach">Normal/mediodía — Coach mínimo</label>
+          <input type="number" id="cfg-franja-normal-coach" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label for="cfg-franja-transicion-min">Transición (lunch) — mínimo</label>
+          <input type="number" id="cfg-franja-transicion-min" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label for="cfg-franja-transicion-max">Transición (lunch) — máximo</label>
+          <input type="number" id="cfg-franja-transicion-max" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label for="cfg-franja-punta">Hora punta — mínimo</label>
+          <input type="number" id="cfg-franja-punta" min="1" max="15">
+          <span class="form-hint">Igual que "Floor en hora punta" — se sincroniza automáticamente</span>
+        </div>
+        <div class="form-group">
+          <label for="cfg-franja-cierre">Cierre — mínimo</label>
+          <input type="number" id="cfg-franja-cierre" min="1" max="10">
+        </div>
+      </div>
+    </div>
+
+    <!-- Reglas flexibilizadas -->
+    <div class="settings-card">
+      <h2>🔄 Reglas flexibilizadas (mundo real)</h2>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="checkbox-row">
+          <input type="checkbox" id="cfg-flex-coach-transicion">
+          <label for="cfg-flex-coach-transicion">✅ 1 Coach OK en transición (en vez de 2)</label>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="cfg-flex-lunch-extendido">
+          <label for="cfg-flex-lunch-extendido">✅ Lunch de manager puede extenderse 30 min si hay cobertura</label>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="cfg-flex-aor-fragmentable">
+          <label for="cfg-flex-aor-fragmentable">✅ AOR fragmentable si la reunión lo requiere</label>
+        </div>
+      </div>
+    </div>
+
     <!-- Libranzas -->
     <div class="settings-card">
       <h2>📆 Reglas de libranzas</h2>
@@ -296,20 +355,54 @@
           <span class="form-hint">0.5 = equilibrio perfecto</span>
         </div>
       </div>
+    </div>
 
-      <div style="margin-top:16px;" class="form-group">
-        <label>SM: mañana obligatoria los días</label>
-        <div class="tags-input" id="sm-mañana-tags">
-          <input type="text" id="sm-mañana-input" placeholder="LUN, MAR… y pulsa Enter">
+    <!-- Ops Leads -->
+    <div class="settings-card">
+      <h2>👥 Reglas de Ops Leads</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-ops-dias-ldops">Días LDOPS por semana</label>
+          <input type="number" id="cfg-ops-dias-ldops" min="1" max="6">
+          <span class="form-hint">Default: 3</span>
         </div>
-        <span class="form-hint">Pulsa Enter para añadir. Haz clic en × para eliminar.</span>
+        <div class="form-group">
+          <label for="cfg-ops-dias-mixtos">Días mixtos por semana</label>
+          <input type="number" id="cfg-ops-dias-mixtos" min="0" max="6">
+          <span class="form-hint">Default: 2</span>
+        </div>
       </div>
-
-      <div style="margin-top:16px;">
+      <div style="margin-top:12px;">
         <div class="checkbox-row">
           <input type="checkbox" id="cfg-ops-cruzados">
           <label for="cfg-ops-cruzados">Ops Leads siempre cruzados (uno mañana, otro tarde)</label>
         </div>
+      </div>
+    </div>
+
+    <!-- SM detallado -->
+    <div class="settings-card">
+      <h2>📅 Reglas de SM detalladas</h2>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="checkbox-row">
+          <input type="checkbox" id="cfg-sm-lm-mañana">
+          <label for="cfg-sm-lm-mañana">L+M: todos los SM hacen turno de mañana</label>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="cfg-sm-mie-cruzado">
+          <label for="cfg-sm-mie-cruzado">Miércoles: Jorge+Cris mañana, Sheila+Itziar tarde</label>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="cfg-sm-juesab-rotacion">
+          <label for="cfg-sm-juesab-rotacion">Jue-Sáb: rotación 2+2 (2 mañana, 2 tarde)</label>
+        </div>
+      </div>
+      <div style="margin-top:16px;" class="form-group">
+        <label>Días en que SM tiene mañana obligatoria</label>
+        <div class="tags-input" id="sm-mañana-tags">
+          <input type="text" id="sm-mañana-input" placeholder="LUN, MAR… y pulsa Enter">
+        </div>
+        <span class="form-hint">Pulsa Enter para añadir. Haz clic en × para eliminar.</span>
       </div>
     </div>
 
@@ -539,6 +632,34 @@
     smMañana = cfg.planificador.smMañanaObligatoria.slice();
     if (renderSmMañana) renderSmMañana();
 
+    // Planificador – Ops Leads
+    var opsLeads = cfg.planificador.opsLeads || {};
+    document.getElementById('cfg-ops-dias-ldops').value  = opsLeads.diasLdops  ?? 3;
+    document.getElementById('cfg-ops-dias-mixtos').value = opsLeads.diasMixtos ?? 2;
+
+    // Planificador – SM detallado
+    var smDet = cfg.planificador.smDetallado || {};
+    document.getElementById('cfg-sm-lm-mañana').checked       = smDet.lmTodosMañana !== false;
+    document.getElementById('cfg-sm-mie-cruzado').checked     = smDet.miercolesJorgeCrisMañana !== false;
+    document.getElementById('cfg-sm-juesab-rotacion').checked = smDet.jueSabRotacion2x2 !== false;
+
+    // Patrones – Cobertura por franja
+    var cf = (cfg.patrones.coberturaFranja || {});
+    document.getElementById('cfg-franja-apertura-min').value    = cf.aperturaMin       ?? 3;
+    document.getElementById('cfg-franja-apertura-max').value    = cf.aperturaMax       ?? 4;
+    document.getElementById('cfg-franja-normal-support').value  = cf.normalSupportMin  ?? 6;
+    document.getElementById('cfg-franja-normal-coach').value    = cf.normalCoachMin    ?? 2;
+    document.getElementById('cfg-franja-transicion-min').value  = cf.transicionMin     ?? 4;
+    document.getElementById('cfg-franja-transicion-max').value  = cf.transicionMax     ?? 5;
+    document.getElementById('cfg-franja-punta').value           = cf.horaPuntaMin      ?? cfg.patrones.cobertura.floorHoraPunta ?? 6;
+    document.getElementById('cfg-franja-cierre').value          = cf.cierreMin         ?? 4;
+
+    // Patrones – Reglas flexibilizadas
+    var fl = (cfg.patrones.flexRules || {});
+    document.getElementById('cfg-flex-coach-transicion').checked  = fl.coachTransicion  !== false;
+    document.getElementById('cfg-flex-lunch-extendido').checked   = fl.lunchExtendido   !== false;
+    document.getElementById('cfg-flex-aor-fragmentable').checked  = fl.aorFragmentable  !== false;
+
     // Personas
     renderPersonsTable();
   }
@@ -656,6 +777,36 @@
     cfg.planificador.equidadMañanaTarde       = parseFloat(document.getElementById('cfg-equidad').value) || 0.5;
     cfg.planificador.opsLeadsCruzados         = document.getElementById('cfg-ops-cruzados').checked;
     cfg.planificador.smMañanaObligatoria      = smMañana.slice();
+
+    // Planificador – Ops Leads
+    if (!cfg.planificador.opsLeads) cfg.planificador.opsLeads = {};
+    cfg.planificador.opsLeads.diasLdops  = parseInt(document.getElementById('cfg-ops-dias-ldops').value, 10)  || 3;
+    cfg.planificador.opsLeads.diasMixtos = parseInt(document.getElementById('cfg-ops-dias-mixtos').value, 10) || 2;
+
+    // Planificador – SM detallado
+    if (!cfg.planificador.smDetallado) cfg.planificador.smDetallado = {};
+    cfg.planificador.smDetallado.lmTodosMañana            = document.getElementById('cfg-sm-lm-mañana').checked;
+    cfg.planificador.smDetallado.miercolesJorgeCrisMañana = document.getElementById('cfg-sm-mie-cruzado').checked;
+    cfg.planificador.smDetallado.jueSabRotacion2x2        = document.getElementById('cfg-sm-juesab-rotacion').checked;
+
+    // Patrones – Cobertura por franja
+    if (!cfg.patrones.coberturaFranja) cfg.patrones.coberturaFranja = {};
+    cfg.patrones.coberturaFranja.aperturaMin      = parseInt(document.getElementById('cfg-franja-apertura-min').value, 10)   || 3;
+    cfg.patrones.coberturaFranja.aperturaMax      = parseInt(document.getElementById('cfg-franja-apertura-max').value, 10)   || 4;
+    cfg.patrones.coberturaFranja.normalSupportMin = parseInt(document.getElementById('cfg-franja-normal-support').value, 10) || 6;
+    cfg.patrones.coberturaFranja.normalCoachMin   = parseInt(document.getElementById('cfg-franja-normal-coach').value, 10)   || 2;
+    cfg.patrones.coberturaFranja.transicionMin    = parseInt(document.getElementById('cfg-franja-transicion-min').value, 10) || 4;
+    cfg.patrones.coberturaFranja.transicionMax    = parseInt(document.getElementById('cfg-franja-transicion-max').value, 10) || 5;
+    cfg.patrones.coberturaFranja.horaPuntaMin     = parseInt(document.getElementById('cfg-franja-punta').value, 10)          || 6;
+    cfg.patrones.coberturaFranja.cierreMin        = parseInt(document.getElementById('cfg-franja-cierre').value, 10)         || 4;
+    // Keep floorHoraPunta (used by generatePattern repair pass) in sync with the franja punta setting
+    cfg.patrones.cobertura.floorHoraPunta         = cfg.patrones.coberturaFranja.horaPuntaMin;
+
+    // Patrones – Reglas flexibilizadas
+    if (!cfg.patrones.flexRules) cfg.patrones.flexRules = {};
+    cfg.patrones.flexRules.coachTransicion  = document.getElementById('cfg-flex-coach-transicion').checked;
+    cfg.patrones.flexRules.lunchExtendido   = document.getElementById('cfg-flex-lunch-extendido').checked;
+    cfg.patrones.flexRules.aorFragmentable  = document.getElementById('cfg-flex-aor-fragmentable').checked;
 
     // Personas
     var tbody = document.getElementById('persons-tbody');

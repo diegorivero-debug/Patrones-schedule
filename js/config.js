@@ -44,13 +44,37 @@
       dd: { hora: '09:15', duracionMin: 15 },
       franjasTranquilas: ['09:30-11:00', '15:00-16:00'],
       libranzas: { maxDiasLaborables: 5, equidadFindeQ: true, maxFindesConsecutivos: 2 },
-      mixDepartamental: { enabled: true, departamentos: ['Shopping+Biz', 'People', 'Support', 'Ops'] }
+      mixDepartamental: { enabled: true, departamentos: ['Shopping+Biz', 'People', 'Support', 'Ops'] },
+      coberturaFranja: {
+        aperturaMin: 3,
+        aperturaMax: 4,
+        normalSupportMin: 6,
+        normalCoachMin: 2,
+        transicionMin: 4,
+        transicionMax: 5,
+        horaPuntaMin: 6,
+        cierreMin: 4
+      },
+      flexRules: {
+        coachTransicion: true,
+        lunchExtendido: true,
+        aorFragmentable: true
+      }
     },
     planificador: {
       maxDiasLaborables: 5,
       smMañanaObligatoria: ['LUN', 'MAR'],
       opsLeadsCruzados: true,
       equidadMañanaTarde: 0.5,
+      opsLeads: {
+        diasLdops: 3,
+        diasMixtos: 2
+      },
+      smDetallado: {
+        lmTodosMañana: true,
+        miercolesJorgeCrisMañana: true,
+        jueSabRotacion2x2: true
+      },
       restriccionesPersonales: {
         jorge:  { fixedMorningDays: ['MON', 'WED'], neverOffDays: ['MON', 'TUE', 'WED'] },
         sheila: { neverOffDays: ['MON', 'TUE', 'WED'] },

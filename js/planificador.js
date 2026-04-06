@@ -507,12 +507,14 @@ class ScheduleGenerator {
         if (block === 'morning') {
           shift = 'Early S';
         } else {
-          // Distribute afternoon shifts: mix Mid, Late, Close for variety
-          // Use person index and week to rotate between afternoon shift types
+          // Distribute afternoon shifts: mix Close C1/C2, Late, Mid for variety.
+          // Using a 4-way rotation so at least 2 of every 4 afternoon managers
+          // get a Coach close shift (C1/C2), meeting the "min 2 Coach" rule.
           const pIdx = managers.findIndex(m => m.id === p.id);
-          const afIndex = (pIdx + w) % 3;
-          if (afIndex === 0) shift = 'Close';
-          else if (afIndex === 1) shift = 'Late';
+          const afIndex = (pIdx + w + this.seed) % 4;
+          if (afIndex === 0) shift = 'Close C1';
+          else if (afIndex === 1) shift = 'Close C2';
+          else if (afIndex === 2) shift = 'Late';
           else shift = 'Mid';
         }
         // Assign Mon-Fri
@@ -520,6 +522,100 @@ class ScheduleGenerator {
           this.set(p.id, w, d, shift);
         }
         // Sat: assigned later in _assignWeekendWorkdays
+      }
+    }
+  }
+
+  // ── Balance daily (per-week) morning/afternoon distribution ─────────────────
+  // Called after _assignManagerShifts to fix weeks where too many managers
+  // ended up on the same block (morning or afternoon).
+  // Target per active week: ≥ MIN_CLOSING_MANAGERS with a Close shift,
+  // and roughly 50% morning / 50% afternoon among all managers.
+  _balanceDailyCoverage() {
+    const MIN_CLOSING_MANAGERS = 2; // need at least 2 managers on Close shifts
+    const managers = TEAM_DATA.filter(
+      p => p.role === 'MGR' && p.id !== 'meri' && p.id !== 'ane'
+    );
+
+    for (let w = 0; w < WEEKS; w++) {
+      // Active managers this week (not on vacation)
+      const active = managers.filter(
+        p => !isVacation(this.get(p.id, w, MON))
+      );
+      if (active.length === 0) continue;
+
+      // Count by block using MON as the representative day
+      const morning  = active.filter(p => isMorning(this.get(p.id, w, MON)));
+      const afternoon = active.filter(p => isAfternoon(this.get(p.id, w, MON)));
+      const closing  = active.filter(p => {
+        const s = this.get(p.id, w, MON);
+        return s === 'Close' || s === 'Close C1' || s === 'Close C2';
+      });
+
+      // Step 1: ensure minimum closing-shift managers
+      if (closing.length < MIN_CLOSING_MANAGERS) {
+        const needed = MIN_CLOSING_MANAGERS - closing.length;
+        // First try from afternoon non-Close people, then from morning
+        const aftNonClose = afternoon.filter(p => {
+          const s = this.get(p.id, w, MON);
+          return s !== 'Close' && s !== 'Close C1' && s !== 'Close C2';
+        });
+        const pool = [...aftNonClose, ...morning];
+        const toPromote = pool.slice(0, needed);
+        let coachIdx = closing.length; // start from existing close coach count
+        for (const p of toPromote) {
+          const closeShift = (coachIdx % 2 === 0) ? 'Close C1' : 'Close C2';
+          for (let d = MON; d <= FRI; d++) {
+            if (!isVacation(this.get(p.id, w, d))) {
+              this.set(p.id, w, d, closeShift);
+            }
+          }
+          if (this._mgrWeekBlock[p.id]) this._mgrWeekBlock[p.id][w] = 'afternoon';
+          coachIdx++;
+        }
+      }
+
+      // Step 2: recount and balance overall morning/afternoon ratio (~50/50)
+      const activeCurrent = managers.filter(
+        p => !isVacation(this.get(p.id, w, MON))
+      );
+      const mornNow = activeCurrent.filter(p => isMorning(this.get(p.id, w, MON)));
+      const aftNow  = activeCurrent.filter(p => isAfternoon(this.get(p.id, w, MON)));
+      const target  = Math.round(activeCurrent.length / 2);
+
+      if (mornNow.length > target + 1) {
+        // Too many morning → flip some to afternoon
+        const excess = mornNow.length - target;
+        const candidates = mornNow.slice(-excess); // take from the end of the list
+        let idx = 0;
+        for (const p of candidates) {
+          const pIdx = managers.findIndex(m => m.id === p.id);
+          // Assign Close C1/C2/Late/Mid in round-robin
+          const afIdx = (pIdx + w + this.seed + idx) % 4;
+          const shift = afIdx === 0 ? 'Close C1'
+                      : afIdx === 1 ? 'Close C2'
+                      : afIdx === 2 ? 'Late'
+                      : 'Mid';
+          for (let d = MON; d <= FRI; d++) {
+            if (!isVacation(this.get(p.id, w, d))) {
+              this.set(p.id, w, d, shift);
+            }
+          }
+          if (this._mgrWeekBlock[p.id]) this._mgrWeekBlock[p.id][w] = 'afternoon';
+          idx++;
+        }
+      } else if (aftNow.length > target + 1) {
+        // Too many afternoon → flip some to morning
+        const excess = aftNow.length - target;
+        const candidates = aftNow.slice(-excess);
+        for (const p of candidates) {
+          for (let d = MON; d <= FRI; d++) {
+            if (!isVacation(this.get(p.id, w, d))) {
+              this.set(p.id, w, d, 'Early S');
+            }
+          }
+          if (this._mgrWeekBlock[p.id]) this._mgrWeekBlock[p.id][w] = 'morning';
+        }
       }
     }
   }
@@ -859,6 +955,7 @@ class ScheduleGenerator {
     this._applyVacations();
     this._assignSMRotation();
     this._assignManagerShifts();
+    this._balanceDailyCoverage();  // ensure morning/afternoon balance + min closing staff
     this._assignOpsLeads();
     this._assignLeadGenius();
     this._assignLeadShopping();
