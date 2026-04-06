@@ -294,16 +294,25 @@ class ScheduleGenerator {
     }
   }
 
-  // ── SM rotation (Mon+Tue: ALL morning; Wed-Sat: 2 morning + 2 afternoon) ───
+  // ── SM rotation ──────────────────────────────────────────────────────────────
+  // Two alternating week types (anchored to seed so each variant is different):
+  //   • MORNING WEEK  : all 4 SMs do morning every working day (Mon–Sat)
+  //   • MIXED WEEK    : Mon+Tue all morning; Wed–Sat split morning/afternoon
+  //     Wed : Jorge + Cris → morning; Sheila + Itziar → afternoon (Late)
+  //     Thu/Fri: Cris always morning + 1 rotating from {Jorge, Sheila, Itziar}
+  //              → 2 morning + 2 afternoon (Late)
+  //     Sat : morning/afternoon pair rotation across all 4 SMs
+  //
+  // Afternoon-shift rules (Late = 12-21; Mid = 11-20):
+  //   • cris_c : never Late → always Mid
+  //   • sheila/itziar on Wed : Late
+  //   • jorge/sheila/itziar on Thu/Fri/Sat : Late
   _assignSMRotation() {
     const smIds = ['jorge','sheila','itziar','cris_c'];
-    const rotatable = ['jorge','sheila','itziar']; // cris_c always morning Mon-Fri
 
-    // Rotation cycles for Thu/Fri: exactly 1 person from {jorge,sheila,itziar} joins
-    // cris_c in the morning, so we get 2 morning + 2 afternoon (spec: 2 SM mañana + 2 SM tarde).
-    // Each of the 3 rotatable SMs gets a morning turn on a 3-week cycle.
+    // Thu/Fri morning rotation cycles through {jorge, sheila, itziar} (3-week cycle)
     const thuFriMorningRotation = ['jorge', 'sheila', 'itziar'];
-    // Sat rotation cycles (all 4 participate): pairs that do morning
+    // Sat morning-pair rotation (all 4 SMs participate; 6-cycle)
     const satCycles = [
       ['jorge','sheila'],
       ['sheila','itziar'],
@@ -323,58 +332,71 @@ class ScheduleGenerator {
         return vacDays >= 3; // majority of week = on vacation
       };
 
-      // Mon + Tue: ALL 4 SM → morning
+      // Alternating week type: even offset = morning week, odd = mixed week
+      const isMorningWeek = (w + this._smRotSeed) % 2 === 0;
+
+      // Mon + Tue: ALL 4 SMs → morning (both week types)
       for (const id of smIds) {
         if (onVac(id)) continue;
-        const morningShift = this._smMorningShift(id);
-        this.set(id, w, MON, morningShift);
-        this.set(id, w, TUE, morningShift);
+        this.set(id, w, MON, this._smMorningShift(id));
+        this.set(id, w, TUE, this._smMorningShift(id));
       }
 
-      // Wed: Jorge (fixedMorning) + Cris (morning-only-weekdays) → morning
-      //      Sheila + Itziar → afternoon
-      if (!onVac('jorge'))    this.set('jorge',   w, WED, this._smMorningShift('jorge'));
-      if (!onVac('cris_c'))   this.set('cris_c',  w, WED, this._smMorningShift('cris_c'));
-      if (!onVac('sheila'))   this.set('sheila',  w, WED, this._smAfternoonShift('sheila'));
-      if (!onVac('itziar'))   this.set('itziar',  w, WED, this._smAfternoonShift('itziar'));
+      if (isMorningWeek) {
+        // ── MORNING WEEK: all SMs do morning Wed–Sat as well ──────────────
+        for (const id of smIds) {
+          if (onVac(id)) continue;
+          this.set(id, w, WED, this._smMorningShift(id));
+          this.set(id, w, THU, this._smMorningShift(id));
+          this.set(id, w, FRI, this._smMorningShift(id));
+          this.set(id, w, SAT, this._smMorningShift(id));
+        }
+      } else {
+        // ── MIXED WEEK: Mon+Tue morning; Wed–Sat split ────────────────────
+        // Wed: Jorge + Cris → morning; Sheila + Itziar → afternoon (Late)
+        if (!onVac('jorge'))  this.set('jorge',  w, WED, this._smMorningShift('jorge'));
+        if (!onVac('cris_c')) this.set('cris_c', w, WED, this._smMorningShift('cris_c'));
+        if (!onVac('sheila')) this.set('sheila', w, WED, this._smAfternoonShift('sheila', WED));
+        if (!onVac('itziar')) this.set('itziar', w, WED, this._smAfternoonShift('itziar', WED));
 
-      // Thu + Fri: Cris always morning (1 SM) + exactly 1 of {jorge,sheila,itziar} morning
-      // → 2 SM morning + 2 SM afternoon, matching the spec (2 mañana + 2 tarde Mié-Sáb).
-      // Jorge's Mon+Wed fixed-morning constraint does NOT apply to Thu/Fri, so jorge rotates freely.
-      const thuFriIdx = (w + this._smRotSeed) % thuFriMorningRotation.length;
-      const thuFriMorning = new Set(['cris_c', thuFriMorningRotation[thuFriIdx]]);
-      for (const id of smIds) {
-        if (onVac(id)) continue;
-        const shift = thuFriMorning.has(id)
-          ? this._smMorningShift(id)
-          : this._smAfternoonShift(id);
-        this.set(id, w, THU, shift);
-        this.set(id, w, FRI, shift);
-      }
+        // Thu + Fri: Cris always morning + 1 rotating → 2 morning + 2 afternoon (Late)
+        const thuFriIdx = (w + this._smRotSeed) % thuFriMorningRotation.length;
+        const thuFriMorning = new Set(['cris_c', thuFriMorningRotation[thuFriIdx]]);
+        for (const id of smIds) {
+          if (onVac(id)) continue;
+          const shift = thuFriMorning.has(id)
+            ? this._smMorningShift(id)
+            : this._smAfternoonShift(id, THU);
+          this.set(id, w, THU, shift);
+          this.set(id, w, FRI, shift);
+        }
 
-      // Sat: rotate pairs (cris_c participates freely on Sat — morningOnly applies Mon-Fri only)
-      // Uses a 6-cycle rotation among all possible pairs of the 4 SMs to maximise Saturday
-      // coverage variation. The formula (w*2 + seed*3) % 6 spreads across all 6 pairs
-      // more evenly than a simple modulo 6 would when iterated over 13 weeks.
-      const satIdx = (w * 2 + this._smRotSeed * 3) % satCycles.length;
-      const satMorning = new Set(satCycles[satIdx]);
-      for (const id of smIds) {
-        if (onVac(id)) continue;
-        // Cris Carcel constraint: morningOnlyWeekdays (Mon-Fri), Sat free
-        const shift = satMorning.has(id)
-          ? this._smMorningShift(id)
-          : this._smAfternoonShift(id);
-        this.set(id, w, SAT, shift);
+        // Sat: rotate morning pairs across all 4 SMs (6-cycle)
+        const satIdx = (w * 2 + this._smRotSeed * 3) % satCycles.length;
+        const satMorning = new Set(satCycles[satIdx]);
+        for (const id of smIds) {
+          if (onVac(id)) continue;
+          const shift = satMorning.has(id)
+            ? this._smMorningShift(id)
+            : this._smAfternoonShift(id, SAT);
+          this.set(id, w, SAT, shift);
+        }
       }
     }
   }
 
   _smMorningShift(id) {
-    if (id === 'jorge')  return 'Early'; // Jorge: 8-17
+    if (id === 'jorge')  return 'Early';   // Jorge: 8-17
     if (id === 'cris_c') return 'Early S'; // Cris Carcel: morning
     return 'Early';
   }
-  _smAfternoonShift(id) { return 'Mid'; }
+  // cris_c never does Late (only Mid); Sheila/Itziar can do Late on Wed;
+  // Jorge/Sheila/Itziar can do Late on Thu, Fri, Sat.
+  _smAfternoonShift(id, day) {
+    if (id === 'cris_c') return 'Mid';
+    if (day === WED || day === THU || day === FRI || day === SAT) return 'Late';
+    return 'Mid';
+  }
 
   // ── Manager shifts (same shift all week; 50/50 balance across Q) ────────────
   _assignManagerShifts() {
