@@ -513,6 +513,20 @@ td.libre-cell { background: var(--surface-alt); }
 .vac-bar { height: 6px; background: var(--bg); border-radius: 999px; margin-top: 4px; overflow: hidden; }
 .vac-bar-fill { height: 100%; border-radius: 999px; background: var(--accent); }
 
+/* ===== VACACIONES READ-ONLY BANNER ===== */
+.vac-readonly-banner {
+  background: #ebf8ff;
+  border: 1px solid #bee3f8;
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: #2c5282;
+}
+.vac-readonly-banner a { color: var(--accent); text-decoration: underline; }
+[data-theme="dark"] .vac-readonly-banner { background: #1a365d; border-color: #2b6cb0; color: #bee3f8; }
+
 /* ===== FICHA (READ-ONLY VIEW) ===== */
 .ficha-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.5rem; }
 .ficha-item label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
@@ -747,6 +761,9 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
 
   <!-- ===== TAB: VACACIONES ===== -->
   <section id="tab-vacaciones" class="tab-panel">
+    <div class="vac-readonly-banner">
+      📌 Las vacaciones se gestionan desde <a href="vacaciones.html">🌴 Vacaciones</a>. Aquí puedes ver un resumen.
+    </div>
     <div class="subtab-nav">
       <button class="subtab-btn active" onclick="showSubTab('vacaciones','lista')">📋 Lista</button>
       <button class="subtab-btn" onclick="showSubTab('vacaciones','calendario')">📅 Calendario</button>
@@ -755,8 +772,8 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
 
     <div id="subtab-vacaciones-lista" class="subtab-panel">
       <div class="toolbar">
-        <button class="btn btn-primary" onclick="openAddAbsenceModal()">➕ Registrar Ausencia</button>
-        <button class="btn btn-secondary ml-auto" onclick="exportAbsencesCSV()">⬇️ Exportar CSV</button>
+        <label style="font-size:.85rem;font-weight:600;color:var(--text-muted)">Año:</label>
+        <select id="vac-year-select" onchange="onVacYearChange()" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);font-size:.85rem"></select>
       </div>
       <div class="table-wrap">
         <table>
@@ -765,11 +782,10 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
               <th>Estado</th>
               <th>Persona</th>
               <th>Tipo</th>
+              <th>Semana</th>
               <th>Desde</th>
               <th>Hasta</th>
-              <th>Días</th>
               <th>Notas</th>
-              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="absences-tbody"></tbody>
@@ -792,11 +808,12 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
           <thead>
             <tr>
               <th>Persona</th>
-              <th>Total días vacaciones</th>
-              <th>Días usados</th>
-              <th>Días pendientes</th>
-              <th>Días disponibles</th>
-              <th>Progreso</th>
+              <th>V (sem.)</th>
+              <th>V25 (sem.)</th>
+              <th>F (sem.)</th>
+              <th>Otros (sem.)</th>
+              <th>Total ausencias</th>
+              <th>Pendientes</th>
             </tr>
           </thead>
           <tbody id="vac-resumen-tbody"></tbody>
@@ -1013,7 +1030,7 @@ function getCurrentWeekAbsences() {
   const weekStart = getISOWeekStart(year, week);
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
   const fmt = d => d.toISOString().split('T')[0];
-  return getAllAbsences().filter(abs =>
+  return getVacacionesAbsences(year).filter(abs =>
     dateInRange(fmt(weekStart), abs.from, abs.to) ||
     dateInRange(fmt(weekEnd), abs.from, abs.to) ||
     (new Date(abs.from) >= weekStart && new Date(abs.from) <= weekEnd)
@@ -1796,25 +1813,119 @@ function deleteAbsence(memberId, absId) {
   renderAbsencesList();
 }
 
+// ===== VACACIONES: READ FROM vacaciones_YYYY =====
+
+// Person name map matching vacaciones.js TEAM roster
+const VAC_TEAM_NAMES = {
+  'diego': 'Diego Rivero', 'jordi': 'Jordi Pajares',
+  'jorge': 'Jorge Gil', 'sheila': 'Sheila Yubero',
+  'itziar': 'Itziar Cacho', 'cris_c': 'Cris Carcel',
+  'jesus': 'Jesús Pazos', 'pedro': 'Pedro Borlido',
+  'julie': 'Julie Robin', 'javi_s': 'Javi Sánchez',
+  'meri': 'Meri Alvarez', 'toni': 'Toni Medina',
+  'deborah': 'Deborah Ibañez', 'ane': 'Ane Pazos',
+  'ricardo': 'Ricardo Sosa', 'javi_q': 'Javi Quiros',
+  'cris_u': 'Cris Usón', 'javi_can': 'Javi Canfranc',
+  'david': 'David Carrillo', 'aurora': 'Aurora Comesaña',
+  'ruben': 'Rubén Martínez', 'eva_f': 'Eva Famoso',
+  'eva_h': 'Eva Hernandez', 'alberto': 'Alberto Ortiz',
+  'clara': 'Clara González', 'eli': 'Eli Moreno'
+};
+
+let vacYear = new Date().getFullYear();
+
+function getVacISOWeekStart(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  const day = jan4.getDay() || 7;
+  const monday = new Date(jan4);
+  monday.setDate(jan4.getDate() - (day - 1) + (week - 1) * 7);
+  return monday;
+}
+
+function vacAbsenceTypeDotClass(t) {
+  const map = {
+    'V': 'dot-vacation', 'V25': 'dot-vacation',
+    'F': 'dot-personal', 'TGD': 'dot-training',
+    'Parental': 'dot-sick', 'Paternidad': 'dot-sick',
+    'Lactancia': 'dot-sick', 'UNPAID': 'dot-sick'
+  };
+  return map[t] || 'dot-vacation';
+}
+
+function getVacacionesAbsences(year) {
+  const raw = localStorage.getItem('vacaciones_' + year);
+  if (!raw) return [];
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch(e) { return []; }
+  const vacData = parsed.data || {};
+  const result = [];
+  Object.keys(vacData).forEach(personId => {
+    const personName = VAC_TEAM_NAMES[personId] || personId;
+    const personShort = personName.split(' ')[0];
+    const weeks = vacData[personId];
+    Object.keys(weeks).forEach(weekStr => {
+      const weekNum = parseInt(weekStr, 10);
+      const entry = weeks[weekStr];
+      const type = typeof entry === 'string' ? entry : (entry.type || '');
+      const status = typeof entry === 'string' ? 'approved' : (entry.status || 'approved');
+      if (!type) return;
+      const monday = getVacISOWeekStart(year, weekNum);
+      const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+      const toISO = d => d.toISOString().split('T')[0];
+      result.push({
+        id: `vac_${personId}_${year}_w${weekNum}`,
+        memberId: personId,
+        memberName: personName,
+        memberShort: personShort,
+        type: type,
+        from: toISO(monday),
+        to: toISO(sunday),
+        status: status,
+        week: weekNum,
+        notes: `Semana ${weekNum}`
+      });
+    });
+  });
+  return result;
+}
+
+function initVacYearSelect() {
+  const sel = document.getElementById('vac-year-select');
+  if (!sel) return;
+  sel.innerHTML = '';
+  const curYear = new Date().getFullYear();
+  for (let y = curYear - 1; y <= curYear + 2; y++) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    if (y === vacYear) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+function onVacYearChange() {
+  const sel = document.getElementById('vac-year-select');
+  if (sel) vacYear = parseInt(sel.value, 10);
+  renderAbsencesList();
+}
+
 function renderAbsencesList() {
   const tbody = document.getElementById('absences-tbody');
   if (!tbody) return;
-  const absences = getAllAbsences().sort((a,b) => b.from.localeCompare(a.from));
+  const absences = getVacacionesAbsences(vacYear).sort((a,b) => a.week - b.week);
   if (absences.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🏖️</div><p>No hay ausencias registradas</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🏖️</div><p>No hay ausencias en vacaciones_${vacYear}. <a href="vacaciones.html">Gestionar →</a></p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = absences.map(a => {
-    const days = countDays(a.from, a.to);
     return `<tr>
       <td>${statusBadgeHTML(a.status)}</td>
       <td><strong>${esc(a.memberName)}</strong></td>
-      <td>${absenceTypeLabel(a.type)}</td>
+      <td>${esc(a.type)}</td>
+      <td><span class="info-chip">S${a.week}</span></td>
       <td>${formatDate(a.from)}</td>
       <td>${formatDate(a.to)}</td>
-      <td><span class="info-chip">${days}d</span></td>
       <td class="text-sm text-muted">${esc(a.notes||'')}</td>
-      <td><button class="btn btn-danger btn-sm btn-icon" onclick="deleteAbsence('${esc(a.memberId)}','${esc(a.id)}')">🗑️</button></td>
     </tr>`;
   }).join('');
 }
@@ -1846,7 +1957,7 @@ function renderAbsencesCalendar() {
   const today = new Date();
   const firstDay = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const absences = getAllAbsences();
+  const absences = getVacacionesAbsences(calYear);
   let html = '<div class="cal-grid">';
   ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].forEach(d => {
     html += `<div class="cal-day-label">${d}</div>`;
@@ -1857,7 +1968,7 @@ function renderAbsencesCalendar() {
     const isToday = today.getDate()===d && today.getMonth()===calMonth && today.getFullYear()===calYear;
     const dayAbs = absences.filter(a => dateInRange(dateStr, a.from, a.to));
     const dots = dayAbs.map(a =>
-      `<span class="abs-dot ${absenceTypeDotClass(a.type)}" title="${esc(a.memberName)} · ${absenceTypeLabel(a.type)}">${esc((a.memberShort||a.memberName||'?').substring(0,2))}</span>`
+      `<span class="abs-dot ${vacAbsenceTypeDotClass(a.type)}" title="${esc(a.memberName)} · ${esc(a.type)}">${esc((a.memberShort||a.memberName||'?').substring(0,2))}</span>`
     ).join('');
     html += `<div class="cal-cell${isToday?' today':''}">
       <div class="day-num">${d}</div>
@@ -1873,27 +1984,32 @@ function renderAbsencesCalendar() {
 function renderAbsencesResumen() {
   const tbody = document.getElementById('vac-resumen-tbody');
   if (!tbody) return;
-  const members = getAllMembers();
-  const today = new Date().toISOString().split('T')[0];
-  tbody.innerHTML = members.map(m => {
-    const vacAbs = (m.absences||[]).filter(a => a.type === 'vacation');
-    const used = vacAbs.filter(a => a.status === 'approved' || a.status === 'confirmed')
-      .reduce((s,a) => s + countDays(a.from, a.to), 0);
-    const pending = vacAbs.filter(a => a.status === 'pending')
-      .reduce((s,a) => s + countDays(a.from, a.to), 0);
-    const total = m.stats?.vacationDaysTotal ?? 22;
-    const available = Math.max(0, total - used);
-    const pct = total > 0 ? Math.min(100, Math.round(used/total*100)) : 0;
+  const absences = getVacacionesAbsences(vacYear);
+  if (absences.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">No hay ausencias en vacaciones_${vacYear}. <a href="vacaciones.html">Gestionar →</a></div></td></tr>`;
+    return;
+  }
+  // Group by person
+  const byPerson = {};
+  absences.forEach(a => {
+    if (!byPerson[a.memberId]) byPerson[a.memberId] = { name: a.memberName, entries: [] };
+    byPerson[a.memberId].entries.push(a);
+  });
+  tbody.innerHTML = Object.values(byPerson).map(({ name, entries }) => {
+    const countV = entries.filter(e => e.type === 'V').length;
+    const countV25 = entries.filter(e => e.type === 'V25').length;
+    const countF = entries.filter(e => e.type === 'F').length;
+    const countOther = entries.filter(e => e.type !== 'V' && e.type !== 'V25' && e.type !== 'F').length;
+    const total = entries.length;
+    const pending = entries.filter(e => e.status === 'pending').length;
     return `<tr>
-      <td><strong>${esc(m.name)}</strong></td>
-      <td>${total}</td>
-      <td>${used}</td>
-      <td>${pending}</td>
-      <td>${available}</td>
-      <td style="min-width:100px">
-        <div class="vac-bar"><div class="vac-bar-fill" style="width:${pct}%"></div></div>
-        <span class="text-sm text-muted">${pct}%</span>
-      </td>
+      <td><strong>${esc(name)}</strong></td>
+      <td>${countV || ''}</td>
+      <td>${countV25 || ''}</td>
+      <td>${countF || ''}</td>
+      <td>${countOther || ''}</td>
+      <td><strong>${total}</strong></td>
+      <td>${pending > 0 ? `<span class="status-badge status-pending">🟡 ${pending}</span>` : ''}</td>
     </tr>`;
   }).join('');
 }
@@ -2937,6 +3053,7 @@ function getSampleData() {
   updateHeaderCount();
   updateBadges();
   renderRoster();
+  initVacYearSelect();
 })();
 </script>
 <div id="eq-toast"></div>
