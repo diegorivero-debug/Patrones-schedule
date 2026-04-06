@@ -15,8 +15,21 @@ const MON=0, TUE=1, WED=2, THU=3, FRI=4, SAT=5;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TEAM DATA  (IDs match vacaciones.js)
+// Read from TEAM_REGISTRY if available (loaded by team-registry.js), otherwise
+// fall back to the static list below.
 // ─────────────────────────────────────────────────────────────────────────────
-const TEAM_DATA = [
+const TEAM_DATA = (function () {
+  if (window.TEAM_REGISTRY && window.TEAM_REGISTRY.getPeople) {
+    // When team-registry.js is loaded, identity data comes from the shared
+    // registry.  Constraints (.c) are NOT in the registry; they are merged
+    // in below by mergeConfigConstraints() from CONFIG.planificador.
+    return window.TEAM_REGISTRY.getPeople().map(function (p) {
+      return { id: p.id, name: p.name, role: p.role, area: p.area, dept: p.dept };
+    });
+  }
+  // Fallback (team-registry.js not loaded): static list with hardcoded constraints.
+  // mergeConfigConstraints() will still override .c values from CONFIG if present.
+  return [
   // Store Leaders — don't generate shifts (excluded from coverage count)
   { id:'diego',    name:'Diego Rivero',    role:'SL',           area:'Store',         dept:'Store'         },
   { id:'jordi',    name:'Jordi Pajares',   role:'SL',           area:'Store',         dept:'Store'         },
@@ -71,7 +84,8 @@ const TEAM_DATA = [
     c:{ neverOffThursday:true }},
   { id:'eli',      name:'Eli Moreno',      role:'LEAD_SHOPPING',area:'Lead Shopping', dept:'Lead Shopping',
     c:{ morningOnly:true, altWeekend:true }},
-];
+  ];
+}());
 
 // Merge CONFIG overrides into TEAM_DATA constraints
 (function mergeConfigConstraints() {

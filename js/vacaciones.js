@@ -22,39 +22,41 @@ const DEFAULT_PERIODS = [
   { label: 'NPI',           weeks: [],  color: '#90cdf4', textColor: '#1a3a5c' },
 ];
 
-// Team roster
-const TEAM = [
-  { section: 'Store Leaders' },
-  { id: 'diego',    name: 'Diego Rivero' },
-  { id: 'jordi',    name: 'Jordi Pajares' },
-  { section: 'Senior Managers' },
-  { id: 'jorge',    name: 'Jorge Gil' },
-  { id: 'sheila',   name: 'Sheila Yubero' },
-  { id: 'itziar',   name: 'Itziar Cacho' },
-  { id: 'cris_c',   name: 'Cris Carcel' },
-  { section: 'Managers' },
-  { id: 'jesus',    name: 'Jesús Pazos' },
-  { id: 'pedro',    name: 'Pedro Borlido' },
-  { id: 'julie',    name: 'Julie Robin' },
-  { id: 'javi_s',   name: 'Javi Sánchez' },
-  { id: 'meri',     name: 'Meri Alvarez' },
-  { id: 'toni',     name: 'Toni Medina' },
-  { id: 'deborah',  name: 'Deborah Ibañez' },
-  { id: 'ane',      name: 'Ane Pazos' },
-  { id: 'ricardo',  name: 'Ricardo Sosa' },
-  { id: 'javi_q',   name: 'Javi Quiros' },
-  { id: 'cris_u',   name: 'Cris Usón' },
-  { id: 'javi_can', name: 'Javi Canfranc' },
-  { id: 'david',    name: 'David Carrillo' },
-  { section: 'Leads' },
-  { id: 'aurora',   name: 'Aurora Comesaña' },
-  { id: 'ruben',    name: 'Rubén Martínez' },
-  { id: 'eva_f',    name: 'Eva Famoso' },
-  { id: 'eva_h',    name: 'Eva Hernandez' },
-  { id: 'alberto',  name: 'Alberto Ortiz' },
-  { id: 'clara',    name: 'Clara González' },
-  { id: 'eli',      name: 'Eli Moreno' },
-];
+// Team roster — read from TEAM_REGISTRY if available, fallback to static list
+const TEAM = (window.TEAM_REGISTRY && window.TEAM_REGISTRY.getSections)
+  ? window.TEAM_REGISTRY.getSections()
+  : [
+    { section: 'Store Leaders' },
+    { id: 'diego',    name: 'Diego Rivero' },
+    { id: 'jordi',    name: 'Jordi Pajares' },
+    { section: 'Senior Managers' },
+    { id: 'jorge',    name: 'Jorge Gil' },
+    { id: 'sheila',   name: 'Sheila Yubero' },
+    { id: 'itziar',   name: 'Itziar Cacho' },
+    { id: 'cris_c',   name: 'Cris Carcel' },
+    { section: 'Managers' },
+    { id: 'jesus',    name: 'Jesús Pazos' },
+    { id: 'pedro',    name: 'Pedro Borlido' },
+    { id: 'julie',    name: 'Julie Robin' },
+    { id: 'javi_s',   name: 'Javi Sánchez' },
+    { id: 'meri',     name: 'Meri Alvarez' },
+    { id: 'toni',     name: 'Toni Medina' },
+    { id: 'deborah',  name: 'Deborah Ibañez' },
+    { id: 'ane',      name: 'Ane Pazos' },
+    { id: 'ricardo',  name: 'Ricardo Sosa' },
+    { id: 'javi_q',   name: 'Javi Quiros' },
+    { id: 'cris_u',   name: 'Cris Usón' },
+    { id: 'javi_can', name: 'Javi Canfranc' },
+    { id: 'david',    name: 'David Carrillo' },
+    { section: 'Leads' },
+    { id: 'aurora',   name: 'Aurora Comesaña' },
+    { id: 'ruben',    name: 'Rubén Martínez' },
+    { id: 'eva_f',    name: 'Eva Famoso' },
+    { id: 'eva_h',    name: 'Eva Hernandez' },
+    { id: 'alberto',  name: 'Alberto Ortiz' },
+    { id: 'clara',    name: 'Clara González' },
+    { id: 'eli',      name: 'Eli Moreno' },
+  ];
 
 // ── State ────────────────────────────────────────────
 let currentYear = new Date().getFullYear();
@@ -124,7 +126,19 @@ function loadData(year) {
 }
 
 // ── Week calculation ─────────────────────────────────
-// Returns array of { week: number, monday: Date } for 52 weeks of the given year
+// Returns the number of ISO weeks in a given year (52 or 53).
+// A year has 53 ISO weeks when Jan 1 is Thursday, or equivalently when Dec 31
+// is Thursday (which only differs from Jan 1 in leap years, where Dec 31 is
+// one weekday ahead of Jan 1).  Both conditions are tested below so no
+// special leap-year branch is needed.
+function isoWeeksInYear(year) {
+  function dayOfWeek(y, m, d) { return new Date(y, m - 1, d).getDay(); }
+  const jan1  = dayOfWeek(year, 1, 1);
+  const dec31 = dayOfWeek(year, 12, 31);
+  return (jan1 === 4 || dec31 === 4) ? 53 : 52;
+}
+
+// Returns array of { week: number, monday: Date } for all ISO weeks of the given year
 function getWeeks(year) {
   // Find first Monday of the year (ISO week 1 starts on Monday)
   const jan4 = new Date(year, 0, 4); // Jan 4 is always in W1
@@ -132,8 +146,9 @@ function getWeeks(year) {
   const monday = new Date(jan4);
   monday.setDate(jan4.getDate() - (day - 1));
 
+  const totalWeeks = isoWeeksInYear(year);
   const weeks = [];
-  for (let i = 0; i < 52; i++) {
+  for (let i = 0; i < totalWeeks; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i * 7);
     weeks.push({ week: i + 1, monday: d });
@@ -566,7 +581,7 @@ function closePeriodModal() {
 }
 
 // Parse a weeks input string supporting ranges (e.g. "1-3, 10, 12-16")
-// Returns a sorted, deduplicated array of valid week numbers (1-52)
+// Returns a sorted, deduplicated array of valid week numbers (1-53)
 function parseWeeksInput(raw) {
   const nums = new Set();
   raw.split(/[,\s]+/).forEach(token => {
@@ -579,11 +594,11 @@ function parseWeeksInput(raw) {
       const start = Math.min(from, to);
       const end   = Math.max(from, to);
       for (let w = start; w <= end; w++) {
-        if (w >= 1 && w <= 52) nums.add(w);
+        if (w >= 1 && w <= 53) nums.add(w);
       }
     } else {
       const n = parseInt(token, 10);
-      if (n >= 1 && n <= 52) nums.add(n);
+      if (n >= 1 && n <= 53) nums.add(n);
     }
   });
   return [...nums].sort((a, b) => a - b);
