@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <clipPath id="round">
+      <rect width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+  <!-- Rounded rectangle background -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
+  <!-- Calendar icon background bar -->
+  <rect x="96" y="148" width="320" height="260" rx="20" ry="20" fill="rgba(255,255,255,0.15)"/>
+  <!-- Calendar header bar -->
+  <rect x="96" y="148" width="320" height="60" rx="20" ry="20" fill="rgba(255,255,255,0.25)"/>
+  <rect x="96" y="188" width="320" height="20" fill="rgba(255,255,255,0.25)"/>
+  <!-- Calendar binding pegs -->
+  <rect x="176" y="128" width="24" height="48" rx="12" ry="12" fill="rgba(255,255,255,0.6)"/>
+  <rect x="312" y="128" width="24" height="48" rx="12" ry="12" fill="rgba(255,255,255,0.6)"/>
+  <!-- LS text -->
+  <text x="256" y="330" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="140" fill="white" text-anchor="middle" dominant-baseline="middle" letter-spacing="-4">LS</text>
+</svg>

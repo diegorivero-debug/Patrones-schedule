@@ -1,0 +1,28 @@
+{
+  "name": "Leadership Schedule",
+  "short_name": "LS Schedule",
+  "description": "Planificador de horarios del equipo de liderazgo",
+  "start_url": "/Patrones-schedule/index.html",
+  "scope": "/Patrones-schedule/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
