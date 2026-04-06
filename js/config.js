@@ -59,6 +59,19 @@
         coachTransicion: true,
         lunchExtendido: true,
         aorFragmentable: true
+      },
+      staffingMinimos: {
+        normal: 14,     // Lunes, Jueves, Viernes
+        martes: 14,     // Martes (Reunión Comercial)
+        miercoles: 14,  // Miércoles (Leadership Meeting)
+        sabado: 12,     // Sábado mínimo
+        sabadoIdeal: 14 // Sábado ideal
+      },
+      morningMin: 7,    // Mínimo personas turno mañana (apertura + floor hasta mediodía)
+      afternoonMin: 7,  // Mínimo personas turno tarde (hora punta + cierre)
+      reunionFloorMin: {
+        martes: 3,      // 2 Mgr Support + 1 Lead durante reunión comercial
+        miercoles: 4    // 1 Manager + 3 Leads durante leadership meeting
       }
     },
     planificador: {
