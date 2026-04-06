@@ -60,6 +60,12 @@ if [[ "${CONFIRM,,}" != "s" ]]; then
   exit 0
 fi
 
+# ── Unregister from Launch Services (must happen BEFORE deleting the bundle) ──
+LS_REGISTER="/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister"
+if [[ -f "$LS_REGISTER" ]]; then
+  "$LS_REGISTER" -u "$APP_PATH" 2>/dev/null || true
+fi
+
 # ── Remove app bundle ─────────────────────────────────────────────────────────
 echo ""
 info "Eliminando $APP_PATH ..."
@@ -72,12 +78,6 @@ if [[ -d "$CHROME_DATA" ]]; then
   info "Limpiando datos temporales de Chrome..."
   rm -rf "$CHROME_DATA"
   success "Datos temporales eliminados"
-fi
-
-# ── Unregister from Launch Services ──────────────────────────────────────────
-LS_REGISTER="/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister"
-if [[ -f "$LS_REGISTER" ]]; then
-  "$LS_REGISTER" -u "$APP_PATH" 2>/dev/null || true
 fi
 
 echo ""

@@ -238,7 +238,7 @@
 
   function downloadInstaller() {
     var a = document.createElement('a');
-    a.href = 'install-mac.command';
+    a.href = 'https://raw.githubusercontent.com/diegorivero-debug/Patrones-schedule/main/install-mac.command';
     a.download = 'install-mac.command';
     document.body.appendChild(a);
     a.click();
@@ -255,8 +255,10 @@
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (!data || !data.sha) { throw new Error('no data'); }
-        msgEl.innerHTML = '✅ Versión actual. <a href="#" onclick="checkForUpdates();return false;" style="color:var(--accent);">Volver a comprobar</a>';
-        showToast('✅ La app está actualizada');
+        var sha = data.sha.slice(0, 7);
+        var date = data.commit && data.commit.author ? new Date(data.commit.author.date).toLocaleDateString('es-ES') : '';
+        msgEl.innerHTML = '✅ Última versión: <strong>' + sha + '</strong>' + (date ? ' (' + date + ')' : '') +
+          '. <a href="#" onclick="downloadInstaller();return false;" style="color:var(--accent);">Reinstalar para actualizar</a>';
       })
       .catch(function() {
         msgEl.innerHTML = '⚠️ Sin conexión. <a href="#" onclick="checkForUpdates();return false;" style="color:var(--accent);">Reintentar</a>';

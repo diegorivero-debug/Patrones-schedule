@@ -19,7 +19,7 @@ set -euo pipefail
 APP_NAME="Leadership Schedule"
 APP_BUNDLE="Leadership Schedule.app"
 REPO_BASE="https://raw.githubusercontent.com/diegorivero-debug/Patrones-schedule/main"
-INSTALL_VERSION="$(date +%Y%m%d)"
+APP_VERSION="1.0.0"
 
 # ── Colors ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -143,8 +143,8 @@ download "$REPO_BASE/patron_sabado.csv"               "$APP_DIR/patron_sabado.cs
 
 success "Todos los archivos descargados correctamente"
 
-# ── Write the install version marker ─────────────────────────────────────────
-echo "$INSTALL_VERSION" > "$APP_DIR/.install_version"
+# Write the app version marker
+echo "$APP_VERSION" > "$APP_DIR/.install_version"
 
 # ── Create launch.sh ─────────────────────────────────────────────────────────
 step "🚀 Paso 4/6: Creando script de lanzamiento..."
@@ -223,65 +223,11 @@ fi
 
 ICON_CREATED=false
 
-if [[ -n "$PYTHON_BIN" ]] && command -v iconutil &>/dev/null && command -v sips &>/dev/null; then
+if [[ -n "$PYTHON_BIN" ]] && command -v iconutil &>/dev/null; then
   ICONSET_TMP=$(mktemp -d)/icon.iconset
   mkdir -p "$ICONSET_TMP"
 
-  # Generate a PNG using Python (no external deps needed)
-  "$PYTHON_BIN" << 'PYTHON_ICON'
-import struct, zlib, os, sys
-
-def make_png(width, height, bg_r, bg_g, bg_b):
-    """Generate a simple gradient PNG with 'LS' text placeholder."""
-    def pack_chunk(name, data):
-        c = zlib.crc32(name + data) & 0xffffffff
-        return struct.pack('>I', len(data)) + name + data + struct.pack('>I', c)
-
-    raw = b''
-    for y in range(height):
-        raw += b'\x00'  # filter type
-        for x in range(width):
-            # Gradient background: dark blue top-left to lighter blue bottom-right
-            factor = (x / width + y / height) / 2
-            r = int(bg_r + (30 - bg_r) * factor) & 0xFF
-            g = int(bg_g + (115 - bg_g) * factor) & 0xFF
-            b_val = int(bg_b + (232 - bg_b) * factor) & 0xFF
-
-            # Rounded corner mask (approximate)
-            corner = min(width, height) * 0.2
-            cx, cy = x - width/2, y - height/2
-            # White calendar body (inner rect)
-            margin = width * 0.14
-            header_h = height * 0.22
-            if (margin < x < width - margin) and (height * 0.23 < y < height * 0.86):
-                # Header area
-                if (margin < x < width - margin) and (height * 0.23 < y < height * 0.23 + header_h):
-                    r, g, b_val = 26, 87, 176
-                else:
-                    r, g, b_val = 245, 247, 255
-            raw += bytes([r, g, b_val])
-
-    compressed = zlib.compress(raw)
-    png = b'\x89PNG\r\n\x1a\n'
-    png += pack_chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
-    png += pack_chunk(b'IDAT', compressed)
-    png += pack_chunk(b'IEND', b'')
-    return png
-
-iconset = os.environ.get('ICONSET_TMP', '/tmp/icon.iconset')
-sizes = [16, 32, 64, 128, 256, 512]
-for s in sizes:
-    data = make_png(s, s, 13, 71, 161)
-    with open(f'{iconset}/icon_{s}x{s}.png', 'wb') as f:
-        f.write(data)
-    # @2x version
-    data2x = make_png(s*2, s*2, 13, 71, 161)
-    with open(f'{iconset}/icon_{s}x{s}@2x.png', 'wb') as f:
-        f.write(data2x)
-print("Icons generated successfully")
-PYTHON_ICON
-
-  export ICONSET_TMP
+  # Generate PNG icons using only Python stdlib (no external deps needed)
   "$PYTHON_BIN" << PYTHON_ICON2
 import struct, zlib, os
 
