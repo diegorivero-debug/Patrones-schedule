@@ -1842,6 +1842,16 @@ function getVacISOWeekStart(year, week) {
   return monday;
 }
 
+function vacAbsenceTypeDotClass(t) {
+  const map = {
+    'V': 'dot-vacation', 'V25': 'dot-vacation',
+    'F': 'dot-personal', 'TGD': 'dot-training',
+    'Parental': 'dot-sick', 'Paternidad': 'dot-sick',
+    'Lactancia': 'dot-sick', 'UNPAID': 'dot-sick'
+  };
+  return map[t] || 'dot-vacation';
+}
+
 function getVacacionesAbsences(year) {
   const raw = localStorage.getItem('vacaciones_' + year);
   if (!raw) return [];
@@ -1958,7 +1968,7 @@ function renderAbsencesCalendar() {
     const isToday = today.getDate()===d && today.getMonth()===calMonth && today.getFullYear()===calYear;
     const dayAbs = absences.filter(a => dateInRange(dateStr, a.from, a.to));
     const dots = dayAbs.map(a =>
-      `<span class="abs-dot dot-vacation" title="${esc(a.memberName)} · ${esc(a.type)}">${esc((a.memberShort||a.memberName||'?').substring(0,2))}</span>`
+      `<span class="abs-dot ${vacAbsenceTypeDotClass(a.type)}" title="${esc(a.memberName)} · ${esc(a.type)}">${esc((a.memberShort||a.memberName||'?').substring(0,2))}</span>`
     ).join('');
     html += `<div class="cal-cell${isToday?' today':''}">
       <div class="day-num">${d}</div>

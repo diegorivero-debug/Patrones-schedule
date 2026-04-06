@@ -64,6 +64,7 @@ let alertsDismissed = new Set();
 
 // Status cycle order
 const STATUS_CYCLE = ['approved', 'pending', 'confirmed'];
+const STATUS_LABELS = { approved: 'Aprobada', pending: 'Pendiente', confirmed: 'Confirmada' };
 
 // ── Helpers ──────────────────────────────────────────
 function getPersonName(id) {
@@ -485,8 +486,7 @@ function onCellRightClick(e) {
   data[personId][week] = { type, status: nextStatus };
   applyCell(td, type, nextStatus);
   saveData();
-  const statusLabels = { approved: 'Aprobada', pending: 'Pendiente', confirmed: 'Confirmada' };
-  showToast(`Estado: ${statusLabels[nextStatus] || nextStatus}`);
+  showToast(`Estado: ${STATUS_LABELS[nextStatus] || nextStatus}`);
 }
 
 function updateRowTotal(personId) {
