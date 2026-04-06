@@ -159,6 +159,9 @@ a { color: var(--accent); text-decoration: none; }
 .btn-danger:hover { background: #fff5f5; }
 .btn-export  { color: var(--green); border-color: #9ae6b4; }
 .btn-export:hover { background: #f0fff4; }
+.btn-audit   { color: #2b6cb0; border-color: #90cdf4; background: #ebf8ff; font-weight: 600; }
+.btn-audit:hover:not(:disabled) { background: #bee3f8; }
+.btn-audit:disabled { opacity: .45; cursor: not-allowed; }
 .btn-warning { color: #975a16; border-color: #fefcbf; background: #fffff0; }
 .btn-warning:hover { background: #fef9c3; }
 
