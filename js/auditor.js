@@ -159,7 +159,127 @@ const PERSONAL_RULES = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AUDIT TEAM — Mapeo nombre → ID para cruce con vacaciones.js
+// PERSONAL RULES FROM STORAGE — reads peticiones_team from localStorage
+// Falls back to hardcoded PERSONAL_RULES if no data is found.
+// ═══════════════════════════════════════════════════════════════════════════
+function buildNameRegex(personName) {
+  const parts = (personName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return /(?!)/;
+  const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const first = escape(parts[0]);
+  const last  = parts.length > 1 ? escape(parts[parts.length - 1].substring(0, 4)) : '';
+  return last ? new RegExp(first + '.*' + last, 'i') : new RegExp(first, 'i');
+}
+
+function getPersonalRulesFromStorage() {
+  try {
+    const raw = localStorage.getItem('peticiones_team');
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.rules)) return null;
+
+    const rules = [];
+    for (const r of data.rules) {
+      if (!r.active) continue;
+      const severity = r.priority === 'mandatory'  ? 'critical'
+                     : r.priority === 'important'   ? 'important'
+                     : 'suggestion';
+
+      let days  = null;
+      let check = null;
+
+      switch (r.type) {
+        case 'always_morning':
+          check = (shift) => !isWorkingS(shift) || isEarlyS(shift);
+          break;
+
+        case 'always_morning_weekdays':
+          days  = ['Mon','Tue','Wed','Thu','Fri'];
+          check = (shift) => !isWorkingS(shift) || isEarlyS(shift);
+          break;
+
+        case 'no_day_off': {
+          const noDays = (r.params?.days || []);
+          days  = noDays.length ? noDays : null;
+          check = (shift) => shift !== 'Off';
+          break;
+        }
+
+        case 'preferred_schedule': {
+          const prefDays = (r.params?.days || []);
+          days  = prefDays.length ? prefDays : null;
+          check = (shift) => !isWorkingS(shift) || isEarlyS(shift);
+          break;
+        }
+
+        case 'fixed_schedule': {
+          const schedule = r.params || {};
+          check = (shift, dayKey) => {
+            const expected = schedule[dayKey];
+            if (!expected || expected === 'flexible' || !isWorkingS(shift)) return true;
+            const startH = parseInt((expected.split('-')[0] || '').replace(':',''));
+            if (startH < 1000) return isEarlyS(shift);
+            if (startH < 1300) return isMidS(shift) || isLateS(shift);
+            return isLateS(shift);
+          };
+          break;
+        }
+
+        case 'week_ab': {
+          const startDateStr = r.params?.startDate || '';
+          const startWeek    = r.params?.startWeek || 'A';
+          if (startDateStr) {
+            const startDate = new Date(startDateStr);
+            const startIW   = getISOWeekNumber(startDate);
+            check = (shift, dayKey, _person, weekDatesCtx) => {
+              if (!isWorkingS(shift)) return true;
+              // Determine week type from context (weekDates[0] label)
+              let currentIW = null;
+              if (weekDatesCtx && weekDatesCtx.length > 0) {
+                const d = parseDateFromLabel(weekDatesCtx[0].label);
+                if (d) currentIW = getISOWeekNumber(d);
+              }
+              if (!currentIW) return true;
+              const weekDiff = (currentIW.year - startIW.year) * 52 + (currentIW.week - startIW.week);
+              const currentWeekType = (weekDiff % 2 === 0) ? startWeek : (startWeek === 'A' ? 'B' : 'A');
+              // Week A: Mon-Fri early (07-16), Sat-Sun off
+              if (currentWeekType === 'A') {
+                if (['Mon','Tue','Wed','Thu','Fri'].includes(dayKey)) return isEarlyS(shift);
+              }
+              return true;
+            };
+          }
+          break;
+        }
+
+        case 'crossed_shifts':
+        case 'weekend_alternating':
+        case 'fixed_aor':
+        case 'custom':
+          // These types require multi-person or multi-week context; skip automatic check
+          break;
+      }
+
+      if (check) {
+        rules.push({
+          nameMatch:   buildNameRegex(r.personName),
+          displayName: r.personName,
+          description: r.notes || r.type,
+          severity,
+          rule: `${r.personName}: ${r.notes || r.type}`,
+          days,
+          check,
+        });
+      }
+    }
+
+    return rules.length > 0 ? rules : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+
 // ═══════════════════════════════════════════════════════════════════════════
 const AUDIT_TEAM = [
   { id: 'diego',    names: ['Diego Rivero','Diego'],                         section: 'Store Leader' },
@@ -843,24 +963,33 @@ function runAudit() {
   }
 
   // ── Check 12: Personal Rules (concreciones/peticiones aprobadas) ────────
+  // Read from localStorage (peticiones_team); fall back to hardcoded PERSONAL_RULES.
+  const personalRules = getPersonalRulesFromStorage() || PERSONAL_RULES;
+
   for (const person of persons) {
-    const rule = PERSONAL_RULES.find(r => r.nameMatch.test(person.name));
-    if (!rule) continue;
-    for (const wd of weekDates) {
-      const dk = wd.key;
-      if (rule.days && !rule.days.includes(dk)) continue;
-      const shift = person.days[dk] || '';
-      if (shift === '' || shift === 'Holidays') continue; // no data / holidays → skip
-      if (!rule.check(shift, dk)) {
-        addIssue({
-          severity: rule.severity,
-          title: `Petición incumplida — ${rule.displayName} el ${wd.label}`,
-          meta: `Petición: ${rule.description}. Asignado: "${shift}"`,
-          rule: rule.rule,
-          fix: `Revisar el turno de ${rule.displayName} el ${wd.label}. Debería respetar: ${rule.description}.`,
-          day: dk,
-          personName: person.name,
-        });
+    // A person may match more than one rule (e.g. two rules for the same person)
+    const matchingRules = personalRules.filter(r => r.nameMatch.test(person.name));
+    for (const rule of matchingRules) {
+      for (const wd of weekDates) {
+        const dk = wd.key;
+        if (rule.days && !rule.days.includes(dk)) continue;
+        const shift = person.days[dk] || '';
+        if (shift === '' || shift === 'Holidays') continue; // no data / holidays → skip
+        // week_ab rule check receives weekDates as fourth argument
+        const passes = rule.check.length >= 4
+          ? rule.check(shift, dk, person, weekDates)
+          : rule.check(shift, dk);
+        if (!passes) {
+          addIssue({
+            severity: rule.severity,
+            title: `Petición incumplida — ${rule.displayName} el ${wd.label}`,
+            meta: `Petición: ${rule.description}. Asignado: "${shift}"`,
+            rule: rule.rule,
+            fix: `Revisar el turno de ${rule.displayName} el ${wd.label}. Debería respetar: ${rule.description}.`,
+            day: dk,
+            personName: person.name,
+          });
+        }
       }
     }
   }
