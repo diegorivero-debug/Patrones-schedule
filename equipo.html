@@ -263,8 +263,12 @@ tbody tr:hover { background: var(--surface-alt); }
 }
 .role-lead { background: #c6f6d5; color: var(--green); }
 .role-manager { background: #feebc8; color: var(--orange); }
+.role-sm { background: #bee3f8; color: #2b6cb0; }
+.role-sl { background: #e9d8fd; color: #6b46c1; }
 [data-theme="dark"] .role-lead { background: #1c4532; color: #68d391; }
 [data-theme="dark"] .role-manager { background: #4a2c0a; color: #f6ad55; }
+[data-theme="dark"] .role-sm { background: #1a365d; color: #90cdf4; }
+[data-theme="dark"] .role-sl { background: #44337a; color: #d6bcfa; }
 
 .status-badge {
   display: inline-flex;
@@ -2177,27 +2181,23 @@ function renderRequests() {
 function renderConcreciones() {
   const tbody = document.getElementById('concreciones-tbody');
   if (!tbody) return;
-  const rows = [];
-  getAllMembers().forEach(m => {
-    (m.scheduleRestrictions||[]).forEach(r => {
-      rows.push({ member: m, r });
-    });
-  });
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">⏰</div><p>Sin concreciones horarias</p></div></td></tr>`;
+
+  // First try to use the concreciones system (peticiones_team) which has pre-loaded restrictions
+  ensureConcrecionesLoaded();
+  const concData = getConcreciones();
+  const rules = (concData && concData.rules) ? concData.rules.filter(r => r.active) : [];
+
+  if (rules.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">⏰</div><p>Las concreciones se cargan desde el roster. Añade personas al roster para ver sus restricciones aquí.<br><small style="color:var(--text-muted)">También puedes gestionarlas en la pestaña 🔒 Concreciones.</small></p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = rows.map(({member: m, r}) => `<tr>
-    <td>
-      <div class="flex items-center gap-1">
-        <div class="avatar ${m.defaultRole==='lead'?'avatar-lead':'avatar-manager'}" style="width:26px;height:26px;font-size:0.68rem">${esc(getInitials(m.name))}</div>
-        ${esc(m.name)}
-      </div>
-    </td>
-    <td><span class="info-chip">${restrictionTypeLabel(r.type)}</span></td>
-    <td class="text-sm">${restrictionDaysText(r.days)}</td>
-    <td class="text-sm text-muted">${esc(r.reason||'—')}</td>
-    <td><strong>${esc(r.time||'—')}</strong></td>
+
+  tbody.innerHTML = rules.map(r => `<tr>
+    <td><strong>${esc(r.personName)}</strong></td>
+    <td><span class="info-chip">${esc(concrecionTypeLabel(r.type))}</span></td>
+    <td class="text-sm">${esc(concrecionParamsDescription(r))}</td>
+    <td class="text-sm text-muted">${esc(r.notes||'—')}</td>
+    <td>${priorityBadgeHTML(r.priority)}</td>
   </tr>`).join('');
 }
 
@@ -2207,6 +2207,10 @@ function renderMatriz() {
   const tbody = document.getElementById('matriz-tbody');
   if (!tbody) return;
   const members = getAllMembers();
+  if (members.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🗓️</div><p>Genera un horario en el Planificador 13W para ver la matriz de turnos aquí.</p></div></td></tr>`;
+    return;
+  }
   // Cols: L=1,M=2,X=3,J=4,V=5,S=6,D=0
   const cols = [1,2,3,4,5,6,0];
   tbody.innerHTML = members.map(m => {
@@ -2235,6 +2239,10 @@ function renderWeekends() {
   const tbody = document.getElementById('weekends-tbody');
   if (!tbody) return;
   const members = getAllMembers();
+  if (members.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">🗓️</div><p>No hay datos de fines de semana. Añade personas al roster para ver su patrón de fines de semana aquí.</p></div></td></tr>`;
+    return;
+  }
   tbody.innerHTML = members.map(m => {
     const isLead = m.defaultRole === 'lead';
     return `<tr>
@@ -2278,50 +2286,109 @@ function renderCalendario() {
   document.getElementById('anual-year-label').textContent = `Calendario ${anualYear}`;
   const wrap = document.getElementById('anual-calendar-wrap');
   if (!wrap) return;
+
+  // Build an absence map from vacaciones.js localStorage data (primary source)
+  // Format: { personId: { weekNum: { type, status } } }
+  const vacAbsenceMap = {};
+  let hasVacData = false;
+  try {
+    const raw = localStorage.getItem('vacaciones_' + anualYear);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const vacData = parsed.data || {};
+      Object.keys(vacData).forEach(personId => {
+        vacAbsenceMap[personId] = {};
+        Object.keys(vacData[personId]).forEach(wk => {
+          const v = vacData[personId][wk];
+          const type = typeof v === 'string' ? v : (v && v.type);
+          if (type && type !== '') {
+            vacAbsenceMap[personId][parseInt(wk, 10)] = type;
+            hasVacData = true;
+          }
+        });
+      });
+    }
+  } catch(e) {}
+
+  // Also collect absences from team model (absences stored in equipo.html's teamData)
   const members = getAllMembers();
   const total = members.length;
-  const absences = getAllAbsences();
   const weeks = getWeeksInYear(anualYear);
+
+  if (total === 0 && !hasVacData) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>No hay datos de vacaciones para ${anualYear}.<br><a href="vacaciones.html" class="text-accent">→ Ve al módulo 🌴 Vacaciones para importar o crear datos.</a></p></div>`;
+    return;
+  }
+
+  // Get all member names for display (from team model or TEAM_REGISTRY)
+  const allPeopleMap = {};
+  members.forEach(m => { allPeopleMap[m.id] = m; });
+  if (window.TEAM_REGISTRY && window.TEAM_REGISTRY.getPeople) {
+    window.TEAM_REGISTRY.getPeople().forEach(p => {
+      if (!allPeopleMap[p.id]) allPeopleMap[p.id] = { id: p.id, name: p.name, shortName: p.name.split(' ')[0] };
+    });
+  }
+  const allPeople = Object.values(allPeopleMap);
+  const peopleTotal = allPeople.length || total;
+
   const fmtShort = d => {
     const m = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     return `${d.getDate()} ${m[d.getMonth()]}`;
   };
+
   wrap.innerHTML = weeks.map(w => {
     const wStart = w.start.toISOString().split('T')[0];
     const wEnd = w.end.toISOString().split('T')[0];
-    const absentMembers = members.filter(m =>
-      (m.absences||[]).some(a =>
-        (a.status === 'approved' || a.status === 'confirmed') &&
-        (dateInRange(wStart, a.from, a.to) || dateInRange(wEnd, a.from, a.to) ||
-         (new Date(a.from) >= w.start && new Date(a.from) <= w.end))
-      )
-    );
-    const absentCount = absentMembers.length;
-    const available = total - absentCount;
-    const pct = total > 0 ? available / total : 1;
+
+    // Collect absent people from both data sources
+    const absentIds = new Set();
+    const absentInfo = {}; // personId -> type
+
+    // From vacaciones.js data
+    Object.keys(vacAbsenceMap).forEach(personId => {
+      const type = vacAbsenceMap[personId][w.weekNum];
+      if (type) { absentIds.add(personId); absentInfo[personId] = type; }
+    });
+
+    // From equipo.html absences
+    members.forEach(m => {
+      if (!absentIds.has(m.id)) {
+        const isAbs = (m.absences||[]).some(a =>
+          (a.status === 'approved' || a.status === 'confirmed') &&
+          (dateInRange(wStart, a.from, a.to) || dateInRange(wEnd, a.from, a.to) ||
+           (new Date(a.from) >= w.start && new Date(a.from) <= w.end))
+        );
+        if (isAbs) { absentIds.add(m.id); absentInfo[m.id] = 'vacation'; }
+      }
+    });
+
+    const absentCount = absentIds.size;
+    const available = peopleTotal - absentCount;
+    const pct = peopleTotal > 0 ? available / peopleTotal : 1;
     const barClass = pct >= 0.85 ? 'coverage-green' : pct >= 0.70 ? 'coverage-yellow' : 'coverage-red';
     const barPct = Math.round(pct * 100);
-    const chips = absentMembers.map(m => `<span class="absent-chip">${esc(m.shortName)}</span>`).join('');
+    const chips = [...absentIds].map(id => {
+      const p = allPeopleMap[id];
+      return p ? `<span class="absent-chip">${esc(p.shortName || p.name.split(' ')[0])}</span>` : '';
+    }).join('');
+
     const detailId = `week-detail-${anualYear}-${w.weekNum}`;
     const rowId = `week-row-${anualYear}-${w.weekNum}`;
-    const presentList = members.map(m => {
-      const isAbsent = absentMembers.some(am => am.id === m.id);
-      const absInfo = isAbsent ? (m.absences||[]).find(a =>
-        (a.status==='approved'||a.status==='confirmed') &&
-        (dateInRange(wStart,a.from,a.to)||dateInRange(wEnd,a.from,a.to)||
-         (new Date(a.from)>=w.start&&new Date(a.from)<=w.end))
-      ) : null;
+    const presentList = allPeople.map(m => {
+      const isAbsent = absentIds.has(m.id);
+      const absType = absentInfo[m.id] || '';
       return `<span class="week-person-chip">
         ${isAbsent ? '❌' : '✅'}
         ${esc(m.name)}
-        ${isAbsent && absInfo ? `<span class="text-muted text-sm">· ${absenceTypeLabel(absInfo.type)}</span>` : ''}
+        ${isAbsent && absType ? `<span class="text-muted text-sm">· ${esc(absType)}</span>` : ''}
       </span>`;
     }).join('');
+
     return `
       <div class="week-row" id="${rowId}" onclick="toggleWeekDetail('${detailId}')">
         <span class="week-label">Sem ${w.weekNum} <span class="text-muted text-sm">(${fmtShort(w.start)}–${fmtShort(w.end)})</span></span>
         <div class="coverage-bar-wrap"><div class="coverage-bar ${barClass}" style="width:${barPct}%"></div></div>
-        <span class="coverage-label">${available}/${total} disponibles</span>
+        <span class="coverage-label">${available}/${peopleTotal} disponibles</span>
         <div class="absent-chips">${chips}</div>
       </div>
       <div class="week-detail" id="${detailId}">${presentList}</div>
@@ -2339,20 +2406,36 @@ function toggleWeekDetail(detailId) {
 
 function renderResumen() {
   const members = getAllMembers();
-  const leads = members.filter(m => m.defaultRole === 'lead').length;
-  const managers = members.filter(m => m.defaultRole === 'manager').length;
+
+  // Enhanced role counts using TEAM_REGISTRY if available
+  let slCount = 0, smCount = 0, mgrCount = 0, leadCount = 0;
+  if (window.TEAM_REGISTRY && window.TEAM_REGISTRY.getPeople) {
+    window.TEAM_REGISTRY.getPeople().forEach(p => {
+      if (p.role === 'SL')            slCount++;
+      else if (p.role === 'SM')       smCount++;
+      else if (p.role === 'MGR')      mgrCount++;
+      else if (['OPS_LEAD','LEAD_GENIUS','LEAD_SHOPPING'].includes(p.role)) leadCount++;
+    });
+  } else {
+    leadCount   = members.filter(m => m.defaultRole === 'lead').length;
+    mgrCount    = members.filter(m => m.defaultRole === 'manager').length;
+    smCount     = members.filter(m => m.defaultRole === 'sm').length;
+    slCount     = members.filter(m => m.defaultRole === 'sl').length;
+  }
+  const totalPeople = slCount + smCount + mgrCount + leadCount || members.length;
   const pendingReqs = getAllRequests().filter(r => r.status === 'pending').length;
   const thisWeekAbs = getCurrentWeekAbsences().length;
   const withRestrictions = members.filter(m => (m.scheduleRestrictions||[]).length > 0).length;
 
   const statsRow = document.getElementById('resumen-stats-row');
   if (statsRow) statsRow.innerHTML = [
-    ['👥','Total personas', members.length],
-    ['🟢','Leads', leads],
-    ['🟠','Managers', managers],
+    ['👥','Total personas', totalPeople],
+    ['🟡','Store Leaders (SL)', slCount],
+    ['🔵','Senior Managers (SM)', smCount],
+    ['🟠','Managers (MGR)', mgrCount],
+    ['🟢','Leads', leadCount],
     ['📋','Peticiones pendientes', pendingReqs],
-    ['🏖️','Ausencias esta semana', thisWeekAbs],
-    ['⚠️','Con restricciones', withRestrictions]
+    ['🏖️','Ausentes esta semana', thisWeekAbs],
   ].map(([icon, label, value]) => `
     <div class="stat-card">
       <div class="stat-icon">${icon}</div>
@@ -2385,8 +2468,61 @@ function renderResumen() {
 
   const tbody = document.getElementById('resumen-tbody');
   if (tbody) {
-    tbody.innerHTML = members.map(m => {
-      const isLead = m.defaultRole === 'lead';
+    // Build the list from TEAM_REGISTRY if available (more complete than teamData)
+    let displayPeople = members;
+    const registryPeopleMap = {};
+    if (window.TEAM_REGISTRY && window.TEAM_REGISTRY.getPeople) {
+      window.TEAM_REGISTRY.getPeople().forEach(p => { registryPeopleMap[p.id] = p; });
+    }
+
+    // Read vacaciones from localStorage for vacation used count
+    let vacByPerson = {};
+    try {
+      const raw = localStorage.getItem('vacaciones_' + new Date().getFullYear());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        Object.keys(parsed.data || {}).forEach(pid => {
+          let cnt = 0;
+          Object.values(parsed.data[pid]).forEach(v => {
+            const t = typeof v === 'string' ? v : (v && v.type);
+            if (t === 'V' || t === 'V25') cnt++;
+          });
+          vacByPerson[pid] = cnt;
+        });
+      }
+    } catch(e) {}
+
+    // Merge registry + teamData
+    if (Object.keys(registryPeopleMap).length > 0 && displayPeople.length === 0) {
+      displayPeople = Object.values(registryPeopleMap).map(p => ({
+        id: p.id, name: p.name, shortName: p.name.split(' ')[0],
+        defaultRole: ['OPS_LEAD','LEAD_GENIUS','LEAD_SHOPPING'].includes(p.role) ? 'lead' : 'manager',
+        _regRole: p.role,
+        preferMorning: p.role === 'SM' || ['OPS_LEAD','LEAD_GENIUS','LEAD_SHOPPING'].includes(p.role),
+        stats: { vacationDaysUsed: 0, vacationDaysTotal: 22 }
+      }));
+    }
+
+    if (displayPeople.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📊</div><p>No hay datos de equipo. Ve a la pestaña 👥 Roster para añadir personas.</p></div></td></tr>`;
+      return;
+    }
+
+    const ROLE_LABELS = { sl:'SL', sm:'SM', manager:'MGR', lead:'Lead' };
+    const ROLE_CLASSES = { sl:'role-sl', sm:'role-sm', manager:'role-manager', lead:'role-lead' };
+
+    tbody.innerHTML = displayPeople.map(m => {
+      const regP = registryPeopleMap[m.id];
+      const roleKey = regP ? (
+        regP.role === 'SL' ? 'sl' :
+        regP.role === 'SM' ? 'sm' :
+        ['OPS_LEAD','LEAD_GENIUS','LEAD_SHOPPING'].includes(regP.role) ? 'lead' : 'manager'
+      ) : (m.defaultRole || 'manager');
+      const roleLabel = ROLE_LABELS[roleKey] || roleKey;
+      const roleClass = ROLE_CLASSES[roleKey] || 'role-manager';
+      const isLead = roleKey === 'lead';
+      const vacUsed = vacByPerson[m.id] ?? (m.stats?.vacationDaysUsed ?? 0);
+      const vacTotal = m.stats?.vacationDaysTotal ?? 22;
       return `<tr>
         <td>
           <div class="flex items-center gap-1">
@@ -2394,12 +2530,12 @@ function renderResumen() {
             ${esc(m.name)}
           </div>
         </td>
-        <td><span class="role-badge ${isLead?'role-lead':'role-manager'}">${isLead?'Lead':'Manager'}</span></td>
+        <td><span class="role-badge ${roleClass}">${esc(roleLabel)}</span></td>
         <td style="text-align:center">${m.maxClosings??'—'}</td>
         <td style="text-align:center">${m.maxOpenings??'—'}</td>
         <td style="text-align:center">${m.preferMorning ? '✅' : '—'}</td>
-        <td style="text-align:center">${m.stats?.vacationDaysUsed??0}</td>
-        <td style="text-align:center">${m.stats?.vacationDaysTotal??22}</td>
+        <td style="text-align:center">${vacUsed}</td>
+        <td style="text-align:center">${vacTotal}</td>
       </tr>`;
     }).join('');
   }

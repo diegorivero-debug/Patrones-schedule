@@ -79,6 +79,7 @@ const BUSINESS_RULES = (function() {
       normal:     { support: cob.managersFloorMinimo || 2, coach: cob.coachMinimo || 2, totalFloor: cob.floorMinimo || 4 },
       lunchTrans: { support: Math.max((cob.managersFloorMinimo || 2) - 1, 1), coach: 1, totalFloor: Math.max((cob.floorMinimo || 4) - 2, 2) },
       minMgrsOnFloor: cob.managersFloorMinimo || 2,
+      peakFloor:  cob.floorHoraPunta || 6,
       peakHours: (cob.horasPunta || ['12:00-14:00', '17:00-21:00']).map(function(range) {
         var parts = typeof range === 'string' ? range.split('-') : [];
         return { start: parts[0] || '', end: parts[1] || '' };
@@ -1959,6 +1960,15 @@ function generatePattern() {
     const mgmtSlots = (isLead ? roleRules.ldopsHours : roleRules.aorHours) * 2;
     const edgeLen   = Math.floor(mgmtSlots / 2);
 
+    // Determine shift type based on when it ends:
+    // Afternoon (tarde): ends at 21:00, 21:30 or 22:00 (ei >= 29)
+    // Morning  (mañana): ends at 16:00 or 17:00 (ei <= 21)
+    // Mid: anything else
+    const AFTERNOON_THRESHOLD = TIME_SLOTS.indexOf('21:00'); // 29
+    const MORNING_THRESHOLD   = TIME_SLOTS.indexOf('17:00'); // 21
+    const isAfternoonShift = ei >= AFTERNOON_THRESHOLD;
+    const isMorningShift   = ei <= MORNING_THRESHOLD;
+
     // Reset all
     for (let c = 0; c < n; c++) row.acts[c] = '';
 
@@ -1988,19 +1998,35 @@ function generatePattern() {
       lunchAssigned[bestLunch + 1]++;
     }
 
-    // Pass 1: fill shift edges with management activity (AOR/LDOPS) for better
-    // floor coverage during core hours — edges = first/last edgeLen slots.
-    // EXCEPTION: for afternoon/close shifts, cap the trailing AOR edge so it
-    // does NOT start before store closing — this ensures floor coverage during
-    // peak hours (17:00-21:00) for Close shifts (13:00-22:00 / 12:30-21:30).
+    // Pass 1: fill shift edges with management activity (AOR/LDOPS).
+    // Strategy:
+    //   - Afternoon shifts (ending 21:00+): AOR at the START so the last hours
+    //     (17:00-close) are floor. This maximises peak-hour coverage.
+    //   - Morning shifts (ending ≤17:00): AOR at the END so core morning hours
+    //     have maximum floor coverage.
+    //   - Mid shifts: AOR at start (default, same as before).
     const storeCloseIdx = getOpenEnd(); // e.g. 30 for 21:30, 29 for 21:00
-    const trailEdgeStart = Math.max(si + edgeLen + 1, storeCloseIdx);
+    const peakStartIdx  = TIME_SLOTS.indexOf('17:00'); // 21
+
     for (let c = si; c < ei && c < n; c++) {
       if (row.acts[c] !== '') continue;
       const fromStart = c - si;
-      const isLeadingEdge  = fromStart < edgeLen;
-      const isTrailingEdge = c >= trailEdgeStart;
-      if (isLeadingEdge || isTrailingEdge) {
+      const fromEnd   = ei - 1 - c;  // 0 = last slot before ei
+      let assignMgmt  = false;
+
+      if (isAfternoonShift) {
+        // AOR/LDOPS at the very START so 17:00+ is floor
+        assignMgmt = fromStart < edgeLen;
+      } else if (isMorningShift) {
+        // AOR/LDOPS at the very END so morning floor hours are maximised
+        assignMgmt = fromEnd < edgeLen;
+      } else {
+        // Mid shifts: AOR at start; cap trailing edge after store closes
+        const trailEdgeStart = Math.max(si + edgeLen + 1, storeCloseIdx);
+        assignMgmt = (fromStart < edgeLen) || (c >= trailEdgeStart);
+      }
+
+      if (assignMgmt) {
         row.acts[c] = isLead ? 'LDOPS' : 'AOR';
       }
     }
@@ -2015,6 +2041,41 @@ function generatePattern() {
       }
     }
   });
+
+  // ── Repair pass: ensure peak-hour (17:00-close) floor coverage ──────────────
+  // Count floor per slot. If below peakFloor target, convert AOR→floor for
+  // afternoon-shift people who still have AOR in those slots.
+  const peakFloorTarget = BR.coverage.peakFloor;
+  const peakStartSlot   = TIME_SLOTS.indexOf('17:00'); // 21
+  const peakEndSlot     = getOpenEnd();                // 29 or 30
+
+  // Build per-slot floor counts
+  const floorCount = new Array(n).fill(0);
+  for (const row of rows) {
+    const [, ei] = shiftIndices(row.shift);
+    for (let c = peakStartSlot; c <= peakEndSlot && c < ei; c++) {
+      const a = row.acts[c];
+      if (a === 'LDSup' || a === 'Coach' || a === 'Support') floorCount[c]++;
+    }
+  }
+
+  // For any slot below target, look for afternoon-shift people with AOR there
+  for (let c = peakStartSlot; c <= peakEndSlot; c++) {
+    if (floorCount[c] >= peakFloorTarget) continue;
+    for (let ri = 0; ri < rows.length; ri++) {
+      if (floorCount[c] >= peakFloorTarget) break;
+      const row = rows[ri];
+      const [si, ei] = shiftIndices(row.shift);
+      if (c < si || c >= ei) continue;          // not working this slot
+      if (row.acts[c] !== 'AOR' && row.acts[c] !== 'LDOPS') continue; // not AOR
+      // Convert to appropriate floor activity
+      const floorAct = row.role === 'Lead'
+        ? 'LDSup'
+        : (mgrDailyRoles.get(ri) || 'Support');
+      row.acts[c] = floorAct;
+      floorCount[c]++;
+    }
+  }
 
   saveState();
   closeModal('modal-gen');

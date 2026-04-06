@@ -141,6 +141,8 @@ function saveData() {
   const payload = { data, periods };
   try {
     localStorage.setItem(lsKey(currentYear), JSON.stringify(payload));
+    // Notify other modules (planificador, equipo) that vacation data has changed
+    window.dispatchEvent(new CustomEvent('vacaciones-updated', { detail: { year: currentYear } }));
   } catch(e) {
     showToast('⚠️ Error al guardar: ' + e.message);
   }
@@ -551,18 +553,23 @@ function onCellDragOver(e) {
   if (!vacDragSource) return;
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
-  e.currentTarget.classList.add('vac-drag-over');
+  const td = e.currentTarget;
+  const dstPersonId = td.dataset.personId;
+  const dstWeek = parseInt(td.dataset.week, 10);
+  const isValid = !(dstPersonId === vacDragSource.personId && dstWeek === vacDragSource.week);
+  td.classList.remove('vac-drag-over', 'vac-drag-invalid');
+  td.classList.add(isValid ? 'vac-drag-over' : 'vac-drag-invalid');
 }
 
 function onCellDragLeave(e) {
-  e.currentTarget.classList.remove('vac-drag-over');
+  e.currentTarget.classList.remove('vac-drag-over', 'vac-drag-invalid');
 }
 
 function onCellDrop(e) {
   e.preventDefault();
   if (!vacDragSource) return;
   const td = e.currentTarget;
-  td.classList.remove('vac-drag-over');
+  td.classList.remove('vac-drag-over', 'vac-drag-invalid');
   document.querySelectorAll('.vac-dragging').forEach(el => el.classList.remove('vac-dragging'));
 
   const dstPersonId = td.dataset.personId;
