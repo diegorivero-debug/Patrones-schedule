@@ -217,7 +217,12 @@ function getPersonalRulesFromStorage() {
           check = (shift, dayKey) => {
             const expected = schedule[dayKey];
             if (!expected || expected === 'flexible' || !isWorkingS(shift)) return true;
-            const startH = parseInt((expected.split('-')[0] || '').replace(':',''));
+            // Parse HH:MM from format like "07:00-16:00" or "7:00-16:00"
+            const startPart = (expected.split('-')[0] || '').trim();
+            const timeParts = startPart.split(':');
+            if (timeParts.length < 2) return true; // malformed — skip check
+            const startH = parseInt(timeParts[0], 10) * 100 + parseInt(timeParts[1], 10);
+            if (isNaN(startH)) return true;
             if (startH < 1000) return isEarlyS(shift);
             if (startH < 1300) return isMidS(shift) || isLateS(shift);
             return isLateS(shift);
@@ -229,7 +234,9 @@ function getPersonalRulesFromStorage() {
           const startDateStr = r.params?.startDate || '';
           const startWeek    = r.params?.startWeek || 'A';
           if (startDateStr) {
-            const startDate = new Date(startDateStr);
+            // Parse date components explicitly to avoid timezone issues
+            const [sy, sm, sd] = startDateStr.split('-').map(Number);
+            const startDate = new Date(sy, sm - 1, sd);
             const startIW   = getISOWeekNumber(startDate);
             check = (shift, dayKey, _person, weekDatesCtx) => {
               if (!isWorkingS(shift)) return true;
@@ -240,7 +247,10 @@ function getPersonalRulesFromStorage() {
                 if (d) currentIW = getISOWeekNumber(d);
               }
               if (!currentIW) return true;
-              const weekDiff = (currentIW.year - startIW.year) * 52 + (currentIW.week - startIW.week);
+              // Compute week diff using actual date arithmetic to handle 53-week years
+              const startMonday = getISOWeekMonday(startIW.year, startIW.week);
+              const currentMonday = getISOWeekMonday(currentIW.year, currentIW.week);
+              const weekDiff = Math.round((currentMonday - startMonday) / (7 * 86400000));
               const currentWeekType = (weekDiff % 2 === 0) ? startWeek : (startWeek === 'A' ? 'B' : 'A');
               // Week A: Mon-Fri early (07-16), Sat-Sun off
               if (currentWeekType === 'A') {
@@ -325,6 +335,18 @@ function getISOWeekNumber(date) {
   d.setUTCDate(d.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return { week: Math.ceil((((d - yearStart) / 86400000) + 1) / 7), year: d.getUTCFullYear() };
+}
+
+// Returns the UTC timestamp of the Monday (start) of a given ISO year+week
+function getISOWeekMonday(isoYear, isoWeek) {
+  // Jan 4 is always in week 1
+  const jan4 = new Date(Date.UTC(isoYear, 0, 4));
+  const day  = jan4.getUTCDay() || 7;
+  const week1Monday = new Date(jan4);
+  week1Monday.setUTCDate(jan4.getUTCDate() - day + 1);
+  const monday = new Date(week1Monday);
+  monday.setUTCDate(week1Monday.getUTCDate() + (isoWeek - 1) * 7);
+  return monday.getTime();
 }
 
 // Try to parse a real date from a day-label string (e.g. "Lunes 30/03", "Mon 30 mar", "30/3")
