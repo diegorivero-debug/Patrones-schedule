@@ -85,6 +85,38 @@
 
   </div>
 
+  <!-- ── macOS Install card (only shown on macOS) ── -->
+  <div id="mac-install-section" style="display:none;">
+    <p class="section-title" style="margin-top:2rem;">Instalación</p>
+    <div class="mac-install-card" id="mac-install-card">
+      <div class="mac-install-header">
+        <span class="mac-install-icon">📥</span>
+        <div>
+          <div class="mac-install-title">Instalar en Mac</div>
+          <div class="mac-install-subtitle">Crea una app nativa en tu Dock</div>
+        </div>
+      </div>
+      <p class="mac-install-desc">
+        Instala <strong>Leadership Schedule</strong> como una app real en tu Mac.
+        Sin navegador, sin pestañas — abre directamente desde el Dock o Launchpad.
+      </p>
+      <button class="btn-mac-install" id="btn-mac-install" onclick="downloadInstaller()">
+        📥 Instalar en Mac
+      </button>
+      <div class="mac-install-steps">
+        <div class="install-step"><span class="step-num">1</span> Abre el archivo descargado (<code>install-mac.command</code>)</div>
+        <div class="install-step"><span class="step-num">2</span> Si macOS bloquea el archivo: Ajustes del Sistema → Privacidad y Seguridad → "Abrir igualmente"</div>
+        <div class="install-step"><span class="step-num">3</span> ¡Listo! La app aparece en tu Dock y Launchpad</div>
+      </div>
+      <div class="mac-install-footer">
+        <span>🔄</span>
+        <span id="update-check-msg">
+          <a href="#" onclick="checkForUpdates(); return false;" style="color:var(--accent);">Buscar actualizaciones</a>
+        </span>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Status bar ── -->
   <div class="status-bar" id="status-bar">
     <div class="status-item">
@@ -198,11 +230,50 @@
     toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2800);
   }
 
+  /* ── macOS Detection & Installer ────────────────── */
+  function isMacOS() {
+    return /Mac/.test(navigator.platform) ||
+           navigator.userAgent.indexOf('Mac OS X') !== -1;
+  }
+
+  function downloadInstaller() {
+    var a = document.createElement('a');
+    a.href = 'https://raw.githubusercontent.com/diegorivero-debug/Patrones-schedule/main/install-mac.command';
+    a.download = 'install-mac.command';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('📥 Descargando instalador...');
+  }
+
+  function checkForUpdates() {
+    var msgEl = document.getElementById('update-check-msg');
+    if (!msgEl) return;
+    msgEl.textContent = '🔄 Comprobando...';
+    var apiUrl = 'https://api.github.com/repos/diegorivero-debug/Patrones-schedule/commits/main';
+    fetch(apiUrl)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data || !data.sha) { throw new Error('no data'); }
+        var sha = data.sha.slice(0, 7);
+        var date = data.commit && data.commit.author ? new Date(data.commit.author.date).toLocaleDateString('es-ES') : '';
+        msgEl.innerHTML = '✅ Última versión: <strong>' + sha + '</strong>' + (date ? ' (' + date + ')' : '') +
+          '. <a href="#" onclick="downloadInstaller();return false;" style="color:var(--accent);">Reinstalar para actualizar</a>';
+      })
+      .catch(function() {
+        msgEl.innerHTML = '⚠️ Sin conexión. <a href="#" onclick="checkForUpdates();return false;" style="color:var(--accent);">Reintentar</a>';
+      });
+  }
+
   /* ── Init ───────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', function () {
     loadTheme();
     renderStatus();
     document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    if (isMacOS()) {
+      var sec = document.getElementById('mac-install-section');
+      if (sec) { sec.style.display = ''; }
+    }
   });
 
 })();
