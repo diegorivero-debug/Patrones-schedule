@@ -567,6 +567,88 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
   margin: 1px;
 }
 
+/* ===== CONCRECIONES ===== */
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.priority-mandatory { background: #fed7d7; color: #c53030; }
+.priority-important { background: #feebc8; color: #c05621; }
+.priority-preference { background: #fefcbf; color: #b7791f; }
+[data-theme="dark"] .priority-mandatory  { background: #4a1010; color: #fc8181; }
+[data-theme="dark"] .priority-important  { background: #4a2c0a; color: #f6ad55; }
+[data-theme="dark"] .priority-preference { background: #3d2f00; color: #f6e05e; }
+
+.type-badge {
+  display: inline-block;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  padding: 1px 7px;
+  color: var(--text-muted);
+}
+
+/* Toggle switch */
+.toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  user-select: none;
+}
+.toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+.toggle-track.on { background: var(--accent); }
+.toggle-thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-track.on .toggle-thumb { left: 18px; }
+
+/* Dynamic form rows inside modal */
+.conc-dynamic-fields { margin-top: 0.75rem; }
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+.day-grid-label {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 0.2rem 0;
+}
+.day-grid-input {
+  padding: 0.3rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  font-size: 0.78rem;
+  text-align: center;
+}
+.day-grid-input:focus { outline: none; border-color: var(--accent); }
+
 /* ===== TOAST ===== */
 #eq-toast {
   position: fixed;
@@ -617,6 +699,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
   <button class="tab-btn active" onclick="showTab('roster')">👥 Roster</button>
   <button class="tab-btn" onclick="showTab('vacaciones')">🏖️ Vacaciones <span class="badge badge-blue" id="badge-vacaciones" style="display:none">0</span></button>
   <button class="tab-btn" onclick="showTab('peticiones')">📋 Peticiones <span class="badge" id="badge-peticiones" style="display:none">0</span></button>
+  <button class="tab-btn" onclick="showTab('concreciones')">🔒 Concreciones <span class="badge badge-blue" id="badge-concreciones" style="display:none">0</span></button>
   <button class="tab-btn" onclick="showTab('horarios')">⏰ Horarios</button>
   <button class="tab-btn" onclick="showTab('calendario')">📅 Calendario</button>
   <button class="tab-btn" onclick="showTab('resumen')">📊 Resumen</button>
@@ -739,6 +822,41 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
           </tr>
         </thead>
         <tbody id="requests-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== TAB: CONCRECIONES ===== -->
+  <section id="tab-concreciones" class="tab-panel">
+    <div class="stats-row" id="conc-stats-row"></div>
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="openAddConcrecionModal()">➕ Añadir Concreción</button>
+      <select class="select-filter" id="conc-filter-priority" onchange="renderConcrecionesTab()">
+        <option value="all">Todas las prioridades</option>
+        <option value="mandatory">🔴 Obligatorio</option>
+        <option value="important">🟠 Importante</option>
+        <option value="preference">🟡 Preferencia</option>
+      </select>
+      <select class="select-filter" id="conc-filter-active" onchange="renderConcrecionesTab()">
+        <option value="all">Activas e inactivas</option>
+        <option value="active">Solo activas</option>
+        <option value="inactive">Solo inactivas</option>
+      </select>
+      <button class="btn btn-secondary ml-auto" onclick="resetConcrecionesDatos()">🔄 Restaurar por defecto</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Estado</th>
+            <th>Persona</th>
+            <th>Tipo</th>
+            <th>Descripción</th>
+            <th>Prioridad</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="concreciones-team-tbody"></tbody>
       </table>
     </div>
   </section>
@@ -1051,6 +1169,12 @@ function updateBadges() {
     badgeVac.textContent = thisWeekAbs;
     badgeVac.style.display = thisWeekAbs > 0 ? 'inline-block' : 'none';
   }
+  const activeConcreciones = getConcreciones().rules.filter(r => r.active).length;
+  const badgeConc = document.getElementById('badge-concreciones');
+  if (badgeConc) {
+    badgeConc.textContent = activeConcreciones;
+    badgeConc.style.display = activeConcreciones > 0 ? 'inline-block' : 'none';
+  }
 }
 
 function updateHeaderCount() {
@@ -1078,7 +1202,7 @@ function applyTheme() {
 
 // ===== TAB NAVIGATION =====
 
-const TAB_NAMES = ['roster','vacaciones','peticiones','horarios','calendario','resumen'];
+const TAB_NAMES = ['roster','vacaciones','peticiones','concreciones','horarios','calendario','resumen'];
 
 function showTab(name) {
   TAB_NAMES.forEach(t => {
@@ -1090,6 +1214,7 @@ function showTab(name) {
   });
   if (name === 'vacaciones') renderAbsencesList();
   if (name === 'peticiones') renderRequests();
+  if (name === 'concreciones') renderConcrecionesTab();
   if (name === 'horarios') { renderConcreciones(); renderMatriz(); renderWeekends(); }
   if (name === 'calendario') renderCalendario();
   if (name === 'resumen') renderResumen();
@@ -2104,6 +2229,611 @@ function renderResumen() {
   }
 }
 
+// ===== CONCRECIONES (peticiones_team) =====
+
+const STORAGE_CONCRECIONES = 'peticiones_team';
+
+const CONC_TYPES = {
+  always_morning:          'Siempre mañana',
+  always_morning_weekdays: 'Mañana L-V',
+  fixed_schedule:          'Horario fijo',
+  week_ab:                 'Semana A/B',
+  no_day_off:              'No libra día',
+  preferred_schedule:      'Horario preferido',
+  fixed_aor:               'AOR fijo',
+  crossed_shifts:          'Turnos cruzados',
+  weekend_alternating:     'Finde alternante',
+  custom:                  'Personalizado',
+};
+
+const CONC_PRIORITY_LABELS = {
+  mandatory:  '🔴 Obligatorio',
+  important:  '🟠 Importante',
+  preference: '🟡 Preferencia',
+};
+
+const DAY_KEYS_ABBR = { Mon:'L', Tue:'M', Wed:'X', Thu:'J', Fri:'V', Sat:'S', Sun:'D' };
+const DAY_KEYS_FULL = { Mon:'Lunes', Tue:'Martes', Wed:'Miércoles', Thu:'Jueves', Fri:'Viernes', Sat:'Sábado', Sun:'Domingo' };
+
+function getConcreciones() {
+  const raw = localStorage.getItem(STORAGE_CONCRECIONES);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.rules)) return parsed;
+    } catch(e) {}
+  }
+  return null; // not initialized yet
+}
+
+function saveConcreciones(data) {
+  localStorage.setItem(STORAGE_CONCRECIONES, JSON.stringify(data));
+  updateBadges();
+}
+
+function ensureConcrecionesLoaded() {
+  if (getConcreciones() === null) {
+    saveConcreciones(getDefaultConcreciones());
+  }
+}
+
+function getDefaultConcreciones() {
+  const today = new Date().toISOString().split('T')[0];
+  return {
+    version: 1,
+    rules: [
+      {
+        id: 'rule_eva_h_morning',
+        personName: 'Eva Hernandez',
+        type: 'always_morning',
+        priority: 'mandatory',
+        active: true,
+        params: {},
+        notes: 'Inquebrantable — concreción personal siempre mañana',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_eva_h_weekend',
+        personName: 'Eva Hernandez',
+        type: 'weekend_alternating',
+        priority: 'mandatory',
+        active: true,
+        params: {},
+        notes: 'Finde sí / finde no alternante',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_eli_morning',
+        personName: 'Eli Moreno',
+        type: 'always_morning',
+        priority: 'mandatory',
+        active: true,
+        params: {},
+        notes: 'Inquebrantable — concreción personal siempre mañana',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_eli_weekend',
+        personName: 'Eli Moreno',
+        type: 'weekend_alternating',
+        priority: 'mandatory',
+        active: true,
+        params: {},
+        notes: 'Finde sí / finde no alternante',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_cris_c',
+        personName: 'Cris Carcel',
+        type: 'always_morning_weekdays',
+        priority: 'mandatory',
+        active: true,
+        params: {},
+        notes: 'L-V entre 7:00-17:00, inquebrantable',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_meri',
+        personName: 'Meri Alvarez',
+        type: 'fixed_schedule',
+        priority: 'mandatory',
+        active: true,
+        params: {
+          Mon: '10:00-22:00',
+          Tue: '10:00-19:00',
+          Wed: '07:00-16:00',
+          Thu: '07:00-16:00',
+          Fri: '07:00-16:00',
+          Sat: 'flexible',
+          Sun: 'flexible',
+        },
+        notes: 'Lun: 10-cierre (Mid/tarde), Mar: 10-19, Mié-Vie: 7-16 (mañana). Horarios fijos por concreción personal.',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_ane',
+        personName: 'Ane Pazos',
+        type: 'week_ab',
+        priority: 'mandatory',
+        active: true,
+        params: {
+          weekA: 'L-V 7-16, Sáb-Dom descanso',
+          weekB: 'Libre disposición',
+          startDate: '2026-03-30',
+          startWeek: 'A',
+        },
+        notes: 'Semana A: L-V 7-16. Semana B: flexible. Semana del 30 mar = Semana A.',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_clara',
+        personName: 'Clara González',
+        type: 'no_day_off',
+        priority: 'important',
+        active: true,
+        params: { days: ['Thu'] },
+        notes: 'Horas sindicales Jueves 9:00-13:00 — no puede tener Off el jueves',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_jorge',
+        personName: 'Jorge Gil',
+        type: 'preferred_schedule',
+        priority: 'important',
+        active: true,
+        params: { days: ['Mon','Wed'], shift: 'early' },
+        notes: 'Lunes y Miércoles: turno de mañana (8:00-17:00)',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_javi_s',
+        personName: 'Javi Sánchez',
+        type: 'fixed_aor',
+        priority: 'important',
+        active: true,
+        params: { days: ['Mon','Fri'] },
+        notes: 'AOR Lunes y Viernes',
+        createdAt: today, updatedAt: today,
+      },
+      {
+        id: 'rule_aurora_ruben',
+        personName: 'Aurora Comesaña',
+        type: 'crossed_shifts',
+        priority: 'mandatory',
+        active: true,
+        params: { otherPerson: 'Rubén Martínez' },
+        notes: 'Aurora ↔ Rubén siempre cruzados: uno mañana, otro tarde',
+        createdAt: today, updatedAt: today,
+      },
+    ],
+  };
+}
+
+function concrecionTypeLabel(type) {
+  return CONC_TYPES[type] || type;
+}
+
+function concrecionParamsDescription(rule) {
+  switch (rule.type) {
+    case 'always_morning':         return 'Todos los días trabajados';
+    case 'always_morning_weekdays': return 'Lunes a Viernes';
+    case 'weekend_alternating':    return 'Finde sí / finde no';
+    case 'fixed_aor': {
+      const days = (rule.params?.days || []).map(d => DAY_KEYS_ABBR[d] || d).join(', ');
+      return days ? `AOR: ${days}` : '—';
+    }
+    case 'no_day_off': {
+      const days = (rule.params?.days || []).map(d => DAY_KEYS_ABBR[d] || d).join(', ');
+      return days ? `No Off: ${days}` : '—';
+    }
+    case 'preferred_schedule': {
+      const days = (rule.params?.days || []).map(d => DAY_KEYS_ABBR[d] || d).join(', ');
+      return days ? `Mañana: ${days}` : '—';
+    }
+    case 'fixed_schedule': {
+      const p = rule.params || {};
+      const entries = Object.entries(p).filter(([,v]) => v && v !== 'flexible')
+        .map(([k,v]) => `${DAY_KEYS_ABBR[k]||k}: ${v}`);
+      return entries.length ? entries.join(', ') : 'Flexible';
+    }
+    case 'week_ab':
+      return `Sem A: ${rule.params?.weekA || '—'} / Sem B: ${rule.params?.weekB || '—'}`;
+    case 'crossed_shifts':
+      return `↔ ${rule.params?.otherPerson || '—'}`;
+    case 'custom':
+      return rule.notes || '—';
+    default:
+      return '—';
+  }
+}
+
+function priorityBadgeHTML(priority) {
+  const cls = { mandatory: 'priority-mandatory', important: 'priority-important', preference: 'priority-preference' };
+  const label = CONC_PRIORITY_LABELS[priority] || priority;
+  return `<span class="priority-badge ${cls[priority] || ''}">${label}</span>`;
+}
+
+function renderConcrecionesTab() {
+  const data = getConcreciones();
+  if (!data) { ensureConcrecionesLoaded(); return renderConcrecionesTab(); }
+
+  // Stats row
+  const statsRow = document.getElementById('conc-stats-row');
+  if (statsRow) {
+    const total    = data.rules.length;
+    const active   = data.rules.filter(r => r.active).length;
+    const mandatory = data.rules.filter(r => r.priority === 'mandatory').length;
+    const important = data.rules.filter(r => r.priority === 'important').length;
+    statsRow.innerHTML = [
+      ['🔒','Total concreciones', total],
+      ['✅','Activas', active],
+      ['🔴','Obligatorias', mandatory],
+      ['🟠','Importantes', important],
+    ].map(([icon, label, value]) => `
+      <div class="stat-card">
+        <div class="stat-icon">${icon}</div>
+        <div class="stat-value">${value}</div>
+        <div class="stat-label">${label}</div>
+      </div>
+    `).join('');
+  }
+
+  const filterPriority = document.getElementById('conc-filter-priority')?.value || 'all';
+  const filterActive   = document.getElementById('conc-filter-active')?.value || 'all';
+
+  let rules = data.rules;
+  if (filterPriority !== 'all') rules = rules.filter(r => r.priority === filterPriority);
+  if (filterActive === 'active')   rules = rules.filter(r => r.active);
+  if (filterActive === 'inactive') rules = rules.filter(r => !r.active);
+
+  const tbody = document.getElementById('concreciones-team-tbody');
+  if (!tbody) return;
+
+  if (rules.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🔒</div><p>No hay concreciones que coincidan con el filtro</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rules.map(r => {
+    const isActive = r.active;
+    const trackClass = isActive ? 'toggle-track on' : 'toggle-track';
+    return `<tr style="${isActive ? '' : 'opacity:0.6'}">
+      <td>
+        <span class="toggle-wrap" onclick="toggleConcrecion('${esc(r.id)}')">
+          <span class="${trackClass}" id="toggle-${esc(r.id)}"><span class="toggle-thumb"></span></span>
+          <span class="text-sm text-muted">${isActive ? 'Activa' : 'Inactiva'}</span>
+        </span>
+      </td>
+      <td><strong>${esc(r.personName)}</strong></td>
+      <td><span class="type-badge">${esc(concrecionTypeLabel(r.type))}</span></td>
+      <td class="text-sm" style="max-width:280px">
+        <div>${esc(concrecionParamsDescription(r))}</div>
+        ${r.notes ? `<div class="text-muted" style="font-size:0.75rem;margin-top:2px">${esc(r.notes)}</div>` : ''}
+      </td>
+      <td>${priorityBadgeHTML(r.priority)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditConcrecionModal('${esc(r.id)}')" title="Editar">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteConcrecion('${esc(r.id)}')" title="Eliminar">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleConcrecion(id) {
+  const data = getConcreciones();
+  if (!data) return;
+  const rule = data.rules.find(r => r.id === id);
+  if (!rule) return;
+  rule.active = !rule.active;
+  rule.updatedAt = new Date().toISOString().split('T')[0];
+  saveConcreciones(data);
+  renderConcrecionesTab();
+}
+
+function deleteConcrecion(id) {
+  if (!confirm('¿Eliminar esta concreción? Esta acción no se puede deshacer.')) return;
+  const data = getConcreciones();
+  if (!data) return;
+  data.rules = data.rules.filter(r => r.id !== id);
+  saveConcreciones(data);
+  renderConcrecionesTab();
+  showToast('Concreción eliminada', 'info');
+}
+
+function resetConcrecionesDatos() {
+  if (!confirm('¿Restaurar todas las concreciones a los datos por defecto? Se perderán las concreciones personalizadas.')) return;
+  saveConcreciones(getDefaultConcreciones());
+  renderConcrecionesTab();
+  showToast('Concreciones restauradas a los valores por defecto', 'ok');
+}
+
+// ===== CONCRECIONES MODAL =====
+
+function buildDayCheckboxes(fieldName, selectedDays) {
+  const days = [
+    {key:'Mon', label:'L'}, {key:'Tue', label:'M'}, {key:'Wed', label:'X'},
+    {key:'Thu', label:'J'}, {key:'Fri', label:'V'}, {key:'Sat', label:'S'}, {key:'Sun', label:'D'},
+  ];
+  return days.map(d => {
+    const checked = (selectedDays || []).includes(d.key) ? 'checked' : '';
+    return `<label class="checkbox-item">
+      <input type="checkbox" name="${fieldName}" value="${d.key}" ${checked}> ${d.label}
+    </label>`;
+  }).join('');
+}
+
+function buildDynamicFields(type, params) {
+  params = params || {};
+  switch (type) {
+    case 'always_morning':
+    case 'always_morning_weekdays':
+    case 'weekend_alternating':
+      return ''; // no extra params
+    case 'no_day_off':
+    case 'fixed_aor':
+      return `<div class="form-group" style="flex:1 1 100%">
+        <label>Días afectados</label>
+        <div class="checkbox-group">${buildDayCheckboxes('conc-days', params.days || [])}</div>
+      </div>`;
+    case 'preferred_schedule':
+      return `<div class="form-group" style="flex:1 1 100%">
+        <label>Días en los que aplica</label>
+        <div class="checkbox-group">${buildDayCheckboxes('conc-days', params.days || [])}</div>
+      </div>`;
+    case 'crossed_shifts': {
+      const memberOptions = getAllMembers().map(m =>
+        `<option value="${esc(m.name)}" ${(params.otherPerson||'')===m.name?'selected':''}>${esc(m.name)}</option>`
+      ).join('');
+      return `<div class="form-group" style="flex:1 1 100%">
+        <label>Otra persona (cruzada)</label>
+        <select id="conc-other-person">${memberOptions}</select>
+      </div>`;
+    }
+    case 'fixed_schedule': {
+      const dayKeys = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      const dayNames = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+      const headers = dayNames.map(n => `<div class="day-grid-label">${n}</div>`).join('');
+      const inputs  = dayKeys.map(k => `<input class="day-grid-input" data-day="${k}" type="text" placeholder="flexible" value="${esc(params[k]||'')}">` ).join('');
+      return `<div class="form-group" style="flex:1 1 100%">
+        <label>Turno por día (ej: 07:00-16:00 o "flexible")</label>
+        <div class="day-grid" id="conc-fixed-schedule-grid">
+          ${headers}${inputs}
+        </div>
+      </div>`;
+    }
+    case 'week_ab':
+      return `<div class="form-row">
+        <div class="form-group"><label>Semana A</label>
+          <input type="text" id="conc-week-a" value="${esc(params.weekA||'')}" placeholder="L-V 7-16, Sáb-Dom descanso">
+        </div>
+        <div class="form-group"><label>Semana B</label>
+          <input type="text" id="conc-week-b" value="${esc(params.weekB||'')}" placeholder="Libre disposición">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Fecha inicio ciclo</label>
+          <input type="date" id="conc-week-start-date" value="${esc(params.startDate||'')}">
+        </div>
+        <div class="form-group"><label>Primera semana del ciclo</label>
+          <select id="conc-week-start-week">
+            <option value="A" ${(params.startWeek||'A')==='A'?'selected':''}>Semana A</option>
+            <option value="B" ${(params.startWeek||'A')==='B'?'selected':''}>Semana B</option>
+          </select>
+        </div>
+      </div>`;
+    case 'custom':
+      return ''; // notes field handles this
+    default:
+      return '';
+  }
+}
+
+function getConcrecionParamsFromModal(type) {
+  const params = {};
+  switch (type) {
+    case 'no_day_off':
+    case 'fixed_aor':
+    case 'preferred_schedule': {
+      const checked = Array.from(document.querySelectorAll('[name="conc-days"]:checked')).map(c => c.value);
+      params.days = checked;
+      break;
+    }
+    case 'crossed_shifts':
+      params.otherPerson = document.getElementById('conc-other-person')?.value || '';
+      break;
+    case 'fixed_schedule': {
+      const inputs = document.querySelectorAll('#conc-fixed-schedule-grid input.day-grid-input');
+      inputs.forEach(inp => { params[inp.dataset.day] = inp.value.trim() || 'flexible'; });
+      break;
+    }
+    case 'week_ab':
+      params.weekA       = document.getElementById('conc-week-a')?.value || '';
+      params.weekB       = document.getElementById('conc-week-b')?.value || '';
+      params.startDate   = document.getElementById('conc-week-start-date')?.value || '';
+      params.startWeek   = document.getElementById('conc-week-start-week')?.value || 'A';
+      break;
+  }
+  return params;
+}
+
+function openAddConcrecionModal() {
+  const memberOptions = getAllMembers().map(m =>
+    `<option value="${esc(m.name)}">${esc(m.name)}</option>`
+  ).join('');
+  const typeOptions = Object.entries(CONC_TYPES).map(([k,v]) =>
+    `<option value="${k}">${esc(v)}</option>`
+  ).join('');
+
+  openModal(`
+    <div class="modal-header">
+      <h2>➕ Añadir Concreción</h2>${closeBtn()}
+    </div>
+    <div style="max-height:72vh;overflow-y:auto;padding-right:4px">
+      <div class="form-row">
+        <div class="form-group" style="flex:1 1 100%">
+          <label>Persona</label>
+          <select id="conc-person">${memberOptions}</select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="conc-type" onchange="updateConcrecionDynamicFields()">${typeOptions}</select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="conc-priority">
+            <option value="mandatory">🔴 Obligatorio</option>
+            <option value="important">🟠 Importante</option>
+            <option value="preference">🟡 Preferencia</option>
+          </select>
+        </div>
+      </div>
+      <div class="conc-dynamic-fields form-row" id="conc-dynamic-wrap"></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1 1 100%">
+          <label>Notas / descripción</label>
+          <textarea id="conc-notes" rows="2" placeholder="Describe la concreción o motivo"></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Estado</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" id="conc-active" checked> Activa</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNewConcrecion()">💾 Guardar</button>
+    </div>
+  `);
+  updateConcrecionDynamicFields();
+}
+
+function openEditConcrecionModal(id) {
+  const data = getConcreciones();
+  if (!data) return;
+  const rule = data.rules.find(r => r.id === id);
+  if (!rule) return;
+
+  const memberOptions = getAllMembers().map(m =>
+    `<option value="${esc(m.name)}" ${m.name === rule.personName ? 'selected' : ''}>${esc(m.name)}</option>`
+  ).join('');
+  const typeOptions = Object.entries(CONC_TYPES).map(([k,v]) =>
+    `<option value="${k}" ${k===rule.type?'selected':''}>${esc(v)}</option>`
+  ).join('');
+
+  const dynamicHtml = buildDynamicFields(rule.type, rule.params);
+
+  openModal(`
+    <div class="modal-header">
+      <h2>✏️ Editar Concreción — ${esc(rule.personName)}</h2>${closeBtn()}
+    </div>
+    <div style="max-height:72vh;overflow-y:auto;padding-right:4px">
+      <div class="form-row">
+        <div class="form-group" style="flex:1 1 100%">
+          <label>Persona</label>
+          <select id="conc-person">${memberOptions}</select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="conc-type" onchange="updateConcrecionDynamicFields(true,'${esc(id)}')">${typeOptions}</select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="conc-priority">
+            <option value="mandatory" ${rule.priority==='mandatory'?'selected':''}>🔴 Obligatorio</option>
+            <option value="important" ${rule.priority==='important'?'selected':''}>🟠 Importante</option>
+            <option value="preference" ${rule.priority==='preference'?'selected':''}>🟡 Preferencia</option>
+          </select>
+        </div>
+      </div>
+      <div class="conc-dynamic-fields form-row" id="conc-dynamic-wrap">${dynamicHtml}</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1 1 100%">
+          <label>Notas / descripción</label>
+          <textarea id="conc-notes" rows="2">${esc(rule.notes||'')}</textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Estado</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" id="conc-active" ${rule.active?'checked':''}> Activa</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditConcrecion('${esc(id)}')">💾 Guardar</button>
+    </div>
+  `);
+}
+
+function updateConcrecionDynamicFields(preserveValues, editId) {
+  const type = document.getElementById('conc-type')?.value;
+  if (!type) return;
+  let params = {};
+  if (preserveValues && editId) {
+    const data = getConcreciones();
+    const rule = data?.rules.find(r => r.id === editId);
+    if (rule && rule.type === type) params = rule.params || {};
+  }
+  const wrap = document.getElementById('conc-dynamic-wrap');
+  if (wrap) wrap.innerHTML = buildDynamicFields(type, params);
+}
+
+function saveNewConcrecion() {
+  const personName = document.getElementById('conc-person')?.value;
+  const type       = document.getElementById('conc-type')?.value;
+  const priority   = document.getElementById('conc-priority')?.value;
+  const notes      = document.getElementById('conc-notes')?.value || '';
+  const active     = document.getElementById('conc-active')?.checked ?? true;
+
+  if (!personName || !type) { showToast('Selecciona persona y tipo', 'err'); return; }
+
+  const params  = getConcrecionParamsFromModal(type);
+  const today   = new Date().toISOString().split('T')[0];
+  const data    = getConcreciones() || { version: 1, rules: [] };
+
+  data.rules.push({
+    id: 'rule_' + Date.now(),
+    personName, type, priority, active, params, notes,
+    createdAt: today, updatedAt: today,
+  });
+
+  saveConcreciones(data);
+  closeModal();
+  renderConcrecionesTab();
+  showToast('Concreción guardada correctamente', 'ok');
+}
+
+function saveEditConcrecion(id) {
+  const data = getConcreciones();
+  if (!data) return;
+  const rule = data.rules.find(r => r.id === id);
+  if (!rule) return;
+
+  rule.personName = document.getElementById('conc-person')?.value || rule.personName;
+  rule.type       = document.getElementById('conc-type')?.value || rule.type;
+  rule.priority   = document.getElementById('conc-priority')?.value || rule.priority;
+  rule.notes      = document.getElementById('conc-notes')?.value || '';
+  rule.active     = document.getElementById('conc-active')?.checked ?? rule.active;
+  rule.params     = getConcrecionParamsFromModal(rule.type);
+  rule.updatedAt  = new Date().toISOString().split('T')[0];
+
+  saveConcreciones(data);
+  closeModal();
+  renderConcrecionesTab();
+  showToast('Concreción actualizada correctamente', 'ok');
+}
+
 // ===== SAMPLE DATA =====
 
 function getSampleData() {
@@ -2201,6 +2931,7 @@ function getSampleData() {
 (function init() {
   applyTheme();
   loadTeam();
+  ensureConcrecionesLoaded();
   updateHeaderCount();
   updateBadges();
   renderRoster();
