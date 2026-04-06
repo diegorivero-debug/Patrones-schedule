@@ -481,7 +481,18 @@ class ScheduleGenerator {
         if (isVacation(this.get(p.id, w, MON))) continue; // vacation week
 
         const block = this._mgrWeekBlock[p.id]?.[w] || 'morning';
-        const shift = block === 'morning' ? 'Early S' : 'Mid';
+        let shift;
+        if (block === 'morning') {
+          shift = 'Early S';
+        } else {
+          // Distribute afternoon shifts: mix Mid, Late, Close for variety
+          // Use person index and week to rotate between afternoon shift types
+          const pIdx = managers.findIndex(m => m.id === p.id);
+          const afIndex = (pIdx + w) % 3;
+          if (afIndex === 0) shift = 'Close';
+          else if (afIndex === 1) shift = 'Late';
+          else shift = 'Mid';
+        }
         // Assign Mon-Fri
         for (let d = MON; d <= FRI; d++) {
           this.set(p.id, w, d, shift);
@@ -1804,7 +1815,7 @@ function toggleTheme() {
   html.setAttribute('data-theme', isDark ? 'light' : 'dark');
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.textContent = isDark ? '🌙 Oscuro' : '☀️ Claro';
-  localStorage.setItem('planificador_theme', isDark ? 'light' : 'dark');
+  localStorage.setItem('app_theme', isDark ? 'light' : 'dark');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1872,7 +1883,7 @@ document.addEventListener('click', (e) => {
 // ─────────────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Restore theme
-  const savedTheme = localStorage.getItem('planificador_theme') || 'light';
+  const savedTheme = localStorage.getItem('app_theme') || 'light';
   document.documentElement.setAttribute('data-theme', savedTheme);
   const themeBtn = document.getElementById('theme-toggle');
   if (themeBtn) themeBtn.textContent = savedTheme === 'dark' ? '☀️ Claro' : '🌙 Oscuro';

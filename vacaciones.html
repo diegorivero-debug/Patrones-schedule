@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌴 Vacaciones · Patrones de Schedule</title>
+<title>🌴 Vacaciones · Leadership Schedule</title>
 <link rel="stylesheet" href="css/vacaciones.css">
 </head>
 <body>
@@ -64,7 +64,10 @@
   </div>
 
   <!-- Alerts -->
-  <div class="alerts-panel" id="alerts-container"></div>
+  <details id="alerts-details" open>
+    <summary class="alerts-toggle">⚠️ Alertas <span id="alerts-count-badge" class="alerts-count-badge">0</span> <span class="toggle-hint">(clic para contraer)</span></summary>
+    <div class="alerts-panel" id="alerts-container"></div>
+  </details>
 
   <!-- Calendar table -->
   <div class="table-wrapper">

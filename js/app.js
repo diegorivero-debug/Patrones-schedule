@@ -256,7 +256,7 @@ const ORIGINAL_WINTER_PATTERNS = deriveWinterPatterns(ORIGINAL_PATTERNS);
 const LS_KEY_PATTERNS  = 'schedule_patterns_v2';
 const LS_KEY_RULES     = 'schedule_rules';
 const LS_KEY_SEASON    = 'schedule_season';
-const LS_KEY_THEME     = 'schedule_theme';
+const LS_KEY_THEME     = 'app_theme';
 const LS_KEY_TEAM      = 'schedule_team';
 
 function deepClone(patterns) {

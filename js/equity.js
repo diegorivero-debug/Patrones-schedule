@@ -569,13 +569,13 @@ function toggleTheme() {
   const isDark = html.getAttribute('data-theme') === 'dark';
   const newTheme = isDark ? 'light' : 'dark';
   html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('equity_theme', newTheme);
+  localStorage.setItem('app_theme', newTheme);
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.textContent = newTheme === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
 }
 
 function applyTheme() {
-  const saved = localStorage.getItem('equity_theme') || 'light';
+  const saved = localStorage.getItem('app_theme') || 'light';
   document.documentElement.setAttribute('data-theme', saved);
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.textContent = saved === 'dark' ? '☀️ Claro' : '🌙 Oscuro';

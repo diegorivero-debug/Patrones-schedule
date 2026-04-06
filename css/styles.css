@@ -39,6 +39,13 @@
   .btn-home { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.12); color: #fff; font-size: .8rem; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background .15s; flex-shrink: 0; }
   .btn-home:hover { background: rgba(255,255,255,.22); }
 
+  /* ── Site nav (shared navbar) ────────────────────── */
+  .site-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 1rem; display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none; }
+  .site-nav::-webkit-scrollbar { display: none; }
+  .nav-btn { display: inline-flex; align-items: center; padding: 0.5rem 0.9rem; font-size: 0.82rem; color: var(--text-muted); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
   /* ── Tabs bar ───────────────────────────────────────── */
   .tabs-bar { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; flex-wrap: wrap; gap: 6px; }
   .tabs { display: flex; gap: 0; }
@@ -297,13 +304,15 @@
   body.dark .equity-item.eq-warning { border-color: #6e5a08; background: #1c1800; }
 
   /* ── Coverage Chart ─────────────────────────────────── */
-  .coverage-chart { margin-top: 16px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; }
+  .coverage-chart { margin-top: 16px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; width: 100%; }
+  .coverage-chart-wrap { width: 100%; }
+  .coverage-chart-wrap canvas { width: 100% !important; }
   .coverage-chart h3 { font-size: .86rem; font-weight: 700; color: var(--text); margin-bottom: 12px; }
-  .chart-wrap { display: flex; gap: 0; align-items: flex-start; }
+  .chart-wrap { display: flex; gap: 0; align-items: flex-start; width: 100%; }
   .chart-y-axis { position: relative; width: 28px; flex-shrink: 0; }
   .chart-y-tick { position: absolute; right: 4px; font-size: 9px; color: var(--text-muted); transform: translateY(50%); line-height: 1; white-space: nowrap; }
-  .chart-scroll { overflow-x: auto; flex: 1; min-width: 0; }
-  .chart-area { min-width: max-content; position: relative; }
+  .chart-scroll { overflow-x: auto; flex: 1; min-width: 0; width: 100%; }
+  .chart-area { min-width: max-content; position: relative; width: 100%; }
   .chart-bars { display: flex; gap: 2px; position: relative; border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); }
   .chart-bar { width: 24px; flex-shrink: 0; position: relative; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; }
   .chart-bar.outside-hours { opacity: .3; background: var(--surface-alt); }

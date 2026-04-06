@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión del Equipo · Patrones de Schedule</title>
+<title>Gestión del Equipo · Leadership Schedule</title>
 <style>
 /* ===== CSS VARIABLES ===== */
 :root {
@@ -82,6 +82,13 @@ a { color: var(--accent); text-decoration: none; }
   transition: background 0.15s;
 }
 .btn-header:hover { background: rgba(255,255,255,0.22); }
+
+/* ===== SITE NAV ===== */
+.site-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 1rem; display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none; }
+.site-nav::-webkit-scrollbar { display: none; }
+.nav-btn { display: inline-flex; align-items: center; padding: 0.5rem 0.9rem; font-size: 0.82rem; color: var(--text-muted); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 
 /* ===== TABS ===== */
 .tab-nav {
@@ -697,7 +704,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
 <!-- ===== HEADER ===== -->
 <header class="site-header">
   <h1>👥 Gestión del Equipo</h1>
-  <span class="subtitle" id="header-subtitle">Patrones de Schedule · 0 personas</span>
+  <span class="subtitle" id="header-subtitle">Leadership Schedule · 0 personas</span>
   <div class="header-actions">
     <button class="btn-header" id="theme-toggle" onclick="toggleTheme()">🌙 Oscuro</button>
     <a href="index.html" class="btn-header">🏠 Inicio</a>
@@ -709,6 +716,18 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
     <a href="ajustes.html" class="btn-header">⚙️ Ajustes ↗</a>
   </div>
 </header>
+
+<!-- ===== SITE NAV ===== -->
+<nav class="site-nav">
+  <a class="nav-btn" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
+  <a class="nav-btn active" href="equipo.html">👥 Equipo</a>
+  <a class="nav-btn" href="vacaciones.html">🌴 Vacaciones</a>
+  <a class="nav-btn" href="planificador-13w.html">📅 Planificador</a>
+  <a class="nav-btn" href="equity.html">⚖️ Equidad</a>
+  <a class="nav-btn" href="ajustes.html">⚙️ Ajustes</a>
+  <a class="nav-btn" href="index.html">🏠 Inicio</a>
+</nav>
 
 <!-- ===== TAB NAVIGATION ===== -->
 <nav class="tab-nav">
@@ -976,6 +995,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
 </div>
 
 <!-- ===== JAVASCRIPT ===== -->
+<script src="js/team-registry.js"></script>
 <script>
 // ===== UTILITY FUNCTIONS =====
 
@@ -1125,7 +1145,7 @@ function contractTypeLabel(t) {
 const STORAGE_TEAM = 'schedule_team';
 const STORAGE_ABSENCES = 'schedule_absences';
 const STORAGE_REQUESTS = 'schedule_requests';
-const STORAGE_THEME = 'schedule_theme';
+const STORAGE_THEME = 'app_theme';
 
 let teamData = { leads: [], managers: [] };
 
@@ -1171,6 +1191,44 @@ function loadTeam() {
     try { teamData = JSON.parse(raw); } catch(e) { teamData = { leads: [], managers: [] }; }
   } else {
     teamData = getSampleData();
+    // If TEAM_REGISTRY is available, seed from it instead of sample data
+    if (window.TEAM_REGISTRY && window.TEAM_REGISTRY.getPeople) {
+      const people = window.TEAM_REGISTRY.getPeople();
+      const leads = [];
+      const managers = [];
+      people.forEach(function(p) {
+        const isLead = p.role === 'OPS_LEAD' || p.role === 'LEAD_GENIUS' || p.role === 'LEAD_SHOPPING';
+        const isManager = p.role === 'MGR';
+        const isSM = p.role === 'SM';
+        const isSL = p.role === 'SL';
+        if (isLead) {
+          leads.push({
+            id: p.id, name: p.name, shortName: p.name.split(' ')[0],
+            defaultShift: '08:00-17:00', defaultRole: 'lead',
+            contract: { hoursPerWeek: 40, type: 'full-time', startDate: '', endDate: '' },
+            daysOff: [0, 6], maxClosings: 2, maxOpenings: 3, preferMorning: true,
+            weekendPattern: 'alternate', weekendNotes: '',
+            scheduleRestrictions: [], absences: [], requests: [],
+            notes: p.area || '', stats: { vacationDaysUsed: 0, vacationDaysTotal: 22, sickDaysThisYear: 0 },
+            area: p.area, dept: p.dept, section: p.section
+          });
+        } else if (isManager || isSM || isSL) {
+          managers.push({
+            id: p.id, name: p.name, shortName: p.name.split(' ')[0],
+            defaultShift: '09:00-18:00', defaultRole: isManager ? 'manager' : (isSM ? 'sm' : 'sl'),
+            contract: { hoursPerWeek: 40, type: 'full-time', startDate: '', endDate: '' },
+            daysOff: [0, 6], maxClosings: 2, maxOpenings: 3, preferMorning: false,
+            weekendPattern: 'alternate', weekendNotes: '',
+            scheduleRestrictions: [], absences: [], requests: [],
+            notes: p.area || '', stats: { vacationDaysUsed: 0, vacationDaysTotal: 22, sickDaysThisYear: 0 },
+            area: p.area, dept: p.dept, section: p.section
+          });
+        }
+      });
+      if (leads.length > 0 || managers.length > 0) {
+        teamData = { leads, managers };
+      }
+    }
     saveTeam();
   }
 }
@@ -1198,7 +1256,7 @@ function updateBadges() {
 
 function updateHeaderCount() {
   const el = document.getElementById('header-subtitle');
-  if (el) el.textContent = `Patrones de Schedule · ${getAllMembers().length} personas`;
+  if (el) el.textContent = `Leadership Schedule · ${getAllMembers().length} personas`;
 }
 
 // ===== THEME =====

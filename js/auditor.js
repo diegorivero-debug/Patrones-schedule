@@ -410,7 +410,7 @@ let state = {
   acceptedFixes: new Set(),
   rejectedFixes: new Set(),
   activeTab: 'schedule',
-  theme: localStorage.getItem('auditor_theme') || 'light',
+  theme: localStorage.getItem('app_theme') || 'light',
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -449,7 +449,7 @@ function applyTheme(theme) {
 
 function toggleTheme() {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('auditor_theme', state.theme);
+  localStorage.setItem('app_theme', state.theme);
   applyTheme(state.theme);
 }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚙️ Ajustes · Patrones de Schedule</title>
+<title>⚙️ Ajustes · Leadership Schedule</title>
 <link rel="stylesheet" href="css/ajustes.css">
 </head>
 <body>
@@ -40,6 +40,7 @@
     <button class="page-tab-btn" data-tab="patrones">📊 Patrones</button>
     <button class="page-tab-btn" data-tab="planificador">📅 13 Semanas</button>
     <button class="page-tab-btn" data-tab="personas">👤 Personas</button>
+    <button class="page-tab-btn" data-tab="backup">🗄️ Backup</button>
   </div>
 
   <!-- ═══════════════════════════════════════ TAB: TIENDA ═══ -->
@@ -301,6 +302,24 @@
 
   </div>
 
+  <!-- ═══════════════════════════════════════ TAB: BACKUP ═══ -->
+  <div class="tab-panel" id="tab-backup">
+
+    <div class="settings-card">
+      <h2>🗄️ Backup y Restauración</h2>
+      <p class="help-text">Exporta o importa todos los datos del dashboard (configuración, equipo, vacaciones, patrones guardados).</p>
+      <div class="form-row" style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem;">
+        <button class="btn-save" id="btn-export-backup">⬇️ Exportar configuración completa</button>
+        <label class="btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 1.1rem;border:1px solid var(--border);border-radius:var(--radius);font-size:0.9rem;">
+          📂 Importar configuración
+          <input type="file" id="file-import-backup" accept=".json" style="display:none">
+        </label>
+      </div>
+      <p id="backup-status" style="font-size:0.82rem;color:var(--text-muted);margin-top:0.75rem;"></p>
+    </div>
+
+  </div>
+
 </main>
 
 <!-- ===== ACTION BAR ===== -->
@@ -319,7 +338,7 @@
   'use strict';
 
   /* ── Theme ──────────────────────────────────────── */
-  var LS_THEME = 'ajustes_theme';
+  var LS_THEME = 'app_theme';
 
   function loadTheme() {
     try {
@@ -625,6 +644,50 @@
     showToast('🔄 Valores restaurados');
   }
 
+  /* ── Backup / Restore ──────────────────────────── */
+  function exportBackup() {
+    var backup = {};
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        backup[key] = localStorage.getItem(key);
+      }
+      var json = JSON.stringify(backup, null, 2);
+      var blob = new Blob([json], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      var date = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = 'leadership-schedule-backup-' + date + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      var st = document.getElementById('backup-status');
+      if (st) st.textContent = '✅ Exportado ' + Object.keys(backup).length + ' claves — ' + new Date().toLocaleTimeString('es-ES');
+    } catch(e) {
+      showToast('⚠️ Error al exportar: ' + e.message);
+    }
+  }
+
+  function importBackup(file) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var backup = JSON.parse(ev.target.result);
+        var count = 0;
+        Object.keys(backup).forEach(function(key) {
+          localStorage.setItem(key, backup[key]);
+          count++;
+        });
+        var st = document.getElementById('backup-status');
+        if (st) st.textContent = '✅ Importadas ' + count + ' claves. Recarga la página para aplicar.';
+        showToast('✅ Configuración importada');
+      } catch(e) {
+        showToast('⚠️ Error al importar: ' + e.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
   /* ── Init ───────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', function () {
     loadTheme();
@@ -647,6 +710,13 @@
     document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
     document.getElementById('btn-save').addEventListener('click', saveSettings);
     document.getElementById('btn-reset').addEventListener('click', resetSettings);
+
+    var btnExport = document.getElementById('btn-export-backup');
+    if (btnExport) btnExport.addEventListener('click', exportBackup);
+    var fileImport = document.getElementById('file-import-backup');
+    if (fileImport) fileImport.addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) importBackup(e.target.files[0]);
+    });
   });
 
 })();
