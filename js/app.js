@@ -2,11 +2,17 @@
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════════
 const TIME_SLOTS = ['07:00','07:30','08:00','08:30','09:00','09:15','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
-const OPEN_START = 6;  // 09:30
+const OPEN_START = TIME_SLOTS.indexOf(
+  (window.CONFIG && CONFIG.tienda && CONFIG.tienda.apertura) || '09:30'
+);
 
 // Season-dependent closing: Verano 21:30 (idx 30), Invierno 21:00 (idx 29)
-const OPEN_END_VERANO   = 30; // 21:30
-const OPEN_END_INVIERNO = 29; // 21:00
+const OPEN_END_VERANO = TIME_SLOTS.indexOf(
+  (window.CONFIG && CONFIG.tienda && CONFIG.tienda.cierreVerano) || '21:30'
+);
+const OPEN_END_INVIERNO = TIME_SLOTS.indexOf(
+  (window.CONFIG && CONFIG.tienda && CONFIG.tienda.cierreInvierno) || '21:00'
+);
 
 const ACTIVITY_OPTIONS = ['','LDSup','LDOPS','Coach','Support','AOR','Lunch','DD','MEETING'];
 
@@ -33,102 +39,116 @@ const SHIFT_OPTIONS_INVIERNO = ['07:00-16:00','08:00-17:00','09:00-18:00','10:00
 // ═══════════════════════════════════════════════════════════════════════════════
 // BUSINESS RULES  (single source of truth for all scheduling constraints)
 // ═══════════════════════════════════════════════════════════════════════════════
-const BUSINESS_RULES = {
-  store: {
-    openTime: '09:30',
-    closeVerano: '21:30',
-    closeInvierno: '21:00',
-    firstLeadEntry: '07:00',
-    lastLeadExit: '22:00',
-    firstMgrEntry: '08:00',
-    lastMgrExit: '22:00',
-  },
-  shifts: {
-    totalHours: 9,
-    workHours: 8,
-    lunchHours: 1,
-    lunchSlots: 2,
-  },
-  weekday: {
-    manager: { floorHours: 4, aorHours: 4, lunchHours: 1, floorActivities: ['Coach','Support'] },
-    lead:    { floorHours: 5, ldopsHours: 3, lunchHours: 1, floorActivities: ['LDSup'] },
-  },
-  saturday: {
-    manager: { floorHours: 6, aorHours: 2, lunchHours: 1, floorActivities: ['Coach','Support'] },
-    lead:    { floorHours: 6, ldopsHours: 2, lunchHours: 1, floorActivities: ['LDSup'] },
-  },
-  coverage: {
-    normal:    { support: 4, coach: 2, totalFloor: 6 },
-    lunchTrans:{ support: 3, coach: 1, totalFloor: 4 },
-    minMgrsOnFloor: 2,
-    peakHours: [
-      { start: '12:00', end: '14:00' },
-      { start: '17:00', end: '21:00' },
+const BUSINESS_RULES = (function() {
+  var C = window.CONFIG || {};
+  var t = C.tienda || {};
+  var p = C.patrones || {};
+  var lunch = p.lunch || {};
+  var cob = p.cobertura || {};
+  var blq = p.bloques || {};
+  var reu = p.reuniones || {};
+  var ap = p.apertura || {};
+  var ci = p.cierre || {};
+  var mr = p.managerRol || {};
+
+  return {
+    store: {
+      openTime:       t.apertura || '09:30',
+      closeVerano:    t.cierreVerano || '21:30',
+      closeInvierno:  t.cierreInvierno || '21:00',
+      firstLeadEntry: t.entradaLeadMin || '07:00',
+      lastLeadExit:   '22:00',
+      firstMgrEntry:  t.entradaManagerMin || '08:00',
+      lastMgrExit:    '22:00',
+    },
+    shifts: {
+      totalHours: 9,
+      workHours: 8,
+      lunchHours: 1,
+      lunchSlots: lunch.duracionSlots || 2,
+    },
+    weekday: {
+      manager: { floorHours: 4, aorHours: 4, lunchHours: 1, floorActivities: ['Coach','Support'] },
+      lead:    { floorHours: 5, ldopsHours: 3, lunchHours: 1, floorActivities: ['LDSup'] },
+    },
+    saturday: {
+      manager: { floorHours: 6, aorHours: 2, lunchHours: 1, floorActivities: ['Coach','Support'] },
+      lead:    { floorHours: 6, ldopsHours: 2, lunchHours: 1, floorActivities: ['LDSup'] },
+    },
+    coverage: {
+      normal:     { support: cob.managersFloorMinimo || 2, coach: cob.coachMinimo || 2, totalFloor: cob.floorMinimo || 4 },
+      lunchTrans: { support: Math.max((cob.managersFloorMinimo || 2) - 1, 1), coach: 1, totalFloor: Math.max((cob.floorMinimo || 4) - 2, 2) },
+      minMgrsOnFloor: cob.managersFloorMinimo || 2,
+      peakHours: (cob.horasPunta || ['12:00-14:00', '17:00-21:00']).map(function(range) {
+        var parts = typeof range === 'string' ? range.split('-') : [];
+        return { start: parts[0] || '', end: parts[1] || '' };
+      }),
+    },
+    lunch: {
+      windowStart:     lunch.ventanaDesde || '11:00',
+      windowEnd:       lunch.ventanaHasta || '17:00',
+      durationSlots:   lunch.duracionSlots || 2,
+      maxSimultaneous: lunch.maxSimultaneo || 3,
+      rule: 'Quien entra primero come primero (escalonado)',
+    },
+    dd: {
+      time: '09:15',
+      durationMin: 15,
+      onlyMorningShifts: false,
+    },
+    blocks: {
+      minFloorBlockSlots: blq.floorMinimoSlots || 4,
+      maxAorBlocks:       blq.aorMaxBloques || 2,
+    },
+    // staffing stays hardcoded (depends on team size, not a simple config)
+    staffing: {
+      0: { leads: 4, managers: 10, name: 'Día Normal' },
+      1: { leads: 4, managers: 10, name: 'Martes' },
+      2: { leads: 5, managers: 10, name: 'Miércoles' },
+      3: { leads: 3, managers: 7, minTotal: 12, name: 'Sábado', firstShift: '08:00' },
+    },
+    meetings: {
+      martes: {
+        name: (reu.martes && reu.martes.nombre) || 'Reunión Comercial',
+        start: (reu.martes && reu.martes.hora) ? reu.martes.hora.split('-')[0] : '14:00',
+        end:   (reu.martes && reu.martes.hora) ? reu.martes.hora.split('-')[1] : '16:00',
+        attendees: 'all',
+        exceptions: { mgrSupport: 2, leadFloor: 1 },
+        coachSuspended: true,
+        countsAs: { manager: 'AOR', lead: 'LDOPS' },
+      },
+      miercoles: {
+        name: (reu.miercoles && reu.miercoles.nombre) || 'Leadership Meeting',
+        start: (reu.miercoles && reu.miercoles.hora) ? reu.miercoles.hora.split('-')[0] : '14:00',
+        end:   (reu.miercoles && reu.miercoles.hora) ? reu.miercoles.hora.split('-')[1] : '16:00',
+        attendees: 'managers',
+        exceptions: { mgrFloor: 1 },
+        leadsCoverFloor: 3,
+        coachSuspended: true,
+        countsAs: { manager: 'AOR' },
+      },
+    },
+    opening: {
+      minPeople:  ap.minimoPersonas || 2,
+      idealRoles: 'Lead',
+      activity:   'LDOPS',
+    },
+    closing: {
+      minLeads:    ci.minimoLeads || 2,
+      minManagers: ci.minimoManagers || 1,
+      activity:    'AOR/LDOPS',
+    },
+    quietHours: [
+      { start: '09:30', end: '11:00' },
+      { start: '15:00', end: '16:00' },
     ],
-  },
-  lunch: {
-    windowStart: '11:00',
-    windowEnd: '17:00',
-    durationSlots: 2,
-    maxSimultaneous: 3,
-    rule: 'Quien entra primero come primero (escalonado)',
-  },
-  dd: {
-    time: '09:15',
-    durationMin: 15,
-    onlyMorningShifts: false,
-  },
-  blocks: {
-    minFloorBlockSlots: 4,
-    maxAorBlocks: 2,
-  },
-  staffing: {
-    0: { leads: 4, managers: 10, name: 'Día Normal' },
-    1: { leads: 4, managers: 10, name: 'Martes' },
-    2: { leads: 5, managers: 10, name: 'Miércoles' },
-    3: { leads: 3, managers: 7, minTotal: 12, name: 'Sábado', firstShift: '08:00' },
-  },
-  meetings: {
-    martes: {
-      name: 'Reunión Comercial',
-      start: '14:00',
-      end: '16:00',
-      attendees: 'all',
-      exceptions: { mgrSupport: 2, leadFloor: 1 },
-      coachSuspended: true,
-      countsAs: { manager: 'AOR', lead: 'LDOPS' },
+    managerDailyRole: {
+      rule: 'Un Manager es Coach O Support todo el día, nunca mezcla',
+      coachPerWeek:   mr.coachDiasPorSemana || [2, 3],
+      supportPerWeek: mr.supportDiasPorSemana || [2, 3],
     },
-    miercoles: {
-      name: 'Leadership Meeting',
-      start: '14:00',
-      end: '16:00',
-      attendees: 'managers',
-      exceptions: { mgrFloor: 1 },
-      leadsCoverFloor: 3,
-      coachSuspended: true,
-      countsAs: { manager: 'AOR' },
-    },
-  },
-  opening: {
-    minPeople: 2,
-    idealRoles: 'Lead',
-    activity: 'LDOPS',
-  },
-  closing: {
-    minLeads: 2,
-    minManagers: 1,
-    activity: 'AOR/LDOPS',
-  },
-  quietHours: [
-    { start: '09:30', end: '11:00' },
-    { start: '15:00', end: '16:00' },
-  ],
-  managerDailyRole: {
-    rule: 'Un Manager es Coach O Support todo el día, nunca mezcla',
-    coachPerWeek: [2, 3],
-    supportPerWeek: [2, 3],
-  },
-};
+  };
+})();
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ORIGINAL PATTERN DATA  (4 Leads + 10 Managers = 14 personas)
@@ -418,7 +438,11 @@ let activeAssignDropdown = null;
 function getOpenEnd() { return activeSeason === 'invierno' ? OPEN_END_INVIERNO : OPEN_END_VERANO; }
 function getOpenStart(patIdx) { return (patIdx === 3) ? TIME_SLOTS.indexOf('08:00') : OPEN_START; }
 function getSeasonLabel() { return activeSeason === 'invierno' ? '❄️ Invierno' : '☀️ Verano'; }
-function getCloseTime() { return activeSeason === 'invierno' ? '21:00' : '21:30'; }
+function getCloseTime() {
+  return activeSeason === 'invierno'
+    ? BUSINESS_RULES.store.closeInvierno
+    : BUSINESS_RULES.store.closeVerano;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UTILITY
