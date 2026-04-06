@@ -120,11 +120,11 @@ function getCurrentFYInfo() {
   // FY: Aug(7)-Oct(9)=Q1, Nov(10)-Jan(0)=Q2, Feb(1)-Apr(3)=Q3, May(4)-Jul(6)=Q4
   let fy = now.getFullYear();
   let qn;
-  if (m >= 7 && m <= 9)       { qn = 1; fy = fy + 1; }
-  else if (m >= 10)            { qn = 2; fy = fy + 1; }
-  else if (m >= 0 && m <= 0)   { qn = 2; }
-  else if (m >= 1 && m <= 3)   { qn = 3; }
-  else                         { qn = 4; }
+  if (m >= 7 && m <= 9)  { qn = 1; fy = fy + 1; }      // Aug-Oct → Q1 of next FY
+  else if (m >= 10)      { qn = 2; fy = fy + 1; }      // Nov-Dec → Q2 of next FY
+  else if (m === 0)      { qn = 2; }                    // Jan → Q2 of current FY
+  else if (m >= 1 && m <= 3) { qn = 3; }               // Feb-Apr → Q3
+  else                   { qn = 4; }                    // May-Jul → Q4
   return { q: qn, fy: fy % 100 };
 }
 
