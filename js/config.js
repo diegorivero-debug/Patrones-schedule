@@ -24,6 +24,8 @@
         maxSimultaneo: 3
       },
       cobertura: {
+        // DEPRECATED: usar coberturaFranja para valores por franja horaria
+        // Se mantiene como fallback para código que aún no use coberturaFranja
         floorMinimo: 4,
         managersFloorMinimo: 2,
         coachMinimo: 2,
@@ -45,7 +47,24 @@
       franjasTranquilas: ['09:30-11:00', '15:00-16:00'],
       libranzas: { maxDiasLaborables: 5, equidadFindeQ: true, maxFindesConsecutivos: 2 },
       mixDepartamental: { enabled: true, departamentos: ['Shopping+Biz', 'People', 'Support', 'Ops'] },
+      // Mínimos de cobertura por franja horaria — fuente de verdad para el auditor
+      // Basado en SPECS_13W.md sección 4
       coberturaFranja: {
+        // 09:30-11:00 apertura
+        apertura:    { support: 2, coach: 1, total: 3, max: 4 },
+        // 11:00-13:00 mediodía
+        mediodia:    { support: 3, coach: 2, total: 5 },
+        // 13:00-15:00 hora punta mediodía
+        horaPunta1:  { support: 4, coach: 2, total: 6 },
+        // 15:00-17:00 transición tarde
+        transicion:  { support: 3, coach: 2, total: 5 },
+        // 17:00-21:00 hora punta tarde
+        horaPunta2:  { support: 4, coach: 2, total: 6 },
+        // 21:00-21:30 cierre (invierno) / 21:00-22:00 cierre (verano)
+        cierre:      { support: 3, coach: 2, total: 5 },
+        // Sábado — todas las franjas
+        sabado:      { support: 4, coach: 2, total: 6 },
+        // Valores legacy para compatibilidad con código existente
         aperturaMin: 3,
         aperturaMax: 4,
         normalSupportMin: 6,
@@ -210,6 +229,28 @@
    */
   config.getDefaults = function () {
     return deepClone(DEFAULTS);
+  };
+
+  /**
+   * Devuelve el mínimo de floor (total) para una hora dada (formato 'HH:MM').
+   * Usa coberturaFranja como fuente de verdad.
+   * @param {string} time — e.g. '10:00', '17:30'
+   * @param {boolean} isSaturday — si es sábado
+   * @returns {number} mínimo de personas en floor
+   */
+  config.getFloorMinForTime = function (time, isSaturday) {
+    if (isSaturday) return this.patrones.coberturaFranja.sabado.total;
+    var cf = this.patrones.coberturaFranja;
+    var t = time.replace(':', '');
+    var n = parseInt(t, 10);
+    if (n < 930) return 0;                   // antes de apertura
+    if (n < 1100) return cf.apertura.total;  // 09:30-11:00
+    if (n < 1300) return cf.mediodia.total;  // 11:00-13:00
+    if (n < 1500) return cf.horaPunta1.total; // 13:00-15:00
+    if (n < 1700) return cf.transicion.total; // 15:00-17:00
+    if (n < 2100) return cf.horaPunta2.total; // 17:00-21:00
+    if (n < 2200) return cf.cierre.total;    // 21:00-22:00
+    return 0;                                // tienda cerrada
   };
 
   /* ── Expose globally ──────────────────────────────────────────────── */
