@@ -94,7 +94,15 @@
         itziar: { neverOffDays: ['MON', 'TUE', 'WED'] },
         cris_c: { morningOnlyWeekdays: true, neverOffDays: ['MON', 'TUE', 'WED'] },
         javi_s: { aorFixedDays: ['MON', 'FRI'], avoidOffDays: ['TUE', 'WED'] },
-        ane:    { weekAB: true, avoidOffDays: ['TUE', 'WED'] },
+        // Semana A: L-V 7:00-16:00, finde descanso. Semana B: libre disposición.
+        // Ancla: semana del 2026-03-30 (lunes) = Semana A. Alterna A,B,A,B...
+        ane:    {
+          weekAB: true,
+          weekABAnchor: '2026-03-30', // lunes de la semana ancla
+          weekABAnchorType: 'A',      // esa semana es tipo A
+          weekASchedule: { start: '07:00', end: '16:00', weekendOff: true },
+          avoidOffDays: ['TUE', 'WED']
+        },
         // SPECS_13W: concreción semanal fija de Meri Alvarez (L-V)
         meri:   {
           fixedSchedule: {
