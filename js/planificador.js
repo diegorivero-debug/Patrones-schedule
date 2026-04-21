@@ -1091,8 +1091,8 @@ class ScheduleGenerator {
 
       // Rotate: pick ~half of each group, targeting 3 Leads + 7 Managers.
       // Use (personIndex + week + seed) % 2 to stagger who works which Sundays.
-      const sunLeads = availLeads.filter((p, i) => ((i + w + this.seed) % 2 === 0)).slice(0, 4);
-      const sunMgrs  = availMgrs.filter((p, i)  => ((i + w + this.seed) % 2 === 0)).slice(0, 8);
+      const sunLeads = availLeads.filter((p, i) => ((i + w + this.seed) % 2 === 0)).slice(0, 3);
+      const sunMgrs  = availMgrs.filter((p, i)  => ((i + w + this.seed) % 2 === 0)).slice(0, 7);
 
       // Ensure minimum staffing: if too few, add from the other half
       if (sunLeads.length < 2 && availLeads.length > 0) {
@@ -1504,7 +1504,7 @@ function validateSchedule(sched, qStartStr, sundaySched) {
         const offDays = [];
         for (let d = MON; d <= SAT; d++) {
           const s = sched[p.id]?.[w * DAYS_PER_WEEK + d];
-          if (!isWorking(s) && !isVacation(s) && s !== null && s !== undefined) offDays.push(d);
+          if (!isWorking(s) && !isVacation(s) && s != null) offDays.push(d);
         }
         // They should have exactly 2 off days
         if (offDays.length !== 2) {

@@ -6,7 +6,7 @@
   'use strict';
 
   function d(month, day) {
-    return '2026-' + (month < 10 ? '0' + month : '' + month) + '-' + (day < 10 ? '0' + day : '' + day);
+    return '2026-' + (month < 10 ? '0' + month : String(month)) + '-' + (day < 10 ? '0' + day : String(day));
   }
 
   /* ── Domingos de apertura ───────────────────────────────────────────────── */
