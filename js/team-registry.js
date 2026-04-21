@@ -35,7 +35,8 @@
     { id: 'ruben',    name: 'Rubén Martínez',  role: 'OPS_LEAD',     area: 'Ops',          dept: 'Ops',          section: 'Leads'           },
     { id: 'eva_f',    name: 'Eva Famoso',      role: 'LEAD_GENIUS',  area: 'Genius',       dept: 'Genius',       section: 'Leads'           },
     { id: 'eva_h',    name: 'Eva Hernandez',   role: 'LEAD_GENIUS',  area: 'Genius',       dept: 'Genius',       section: 'Leads'           },
-    { id: 'alberto',  name: 'Alberto Ortiz',   role: 'LEAD_SHOPPING',area: 'Shopping',     dept: 'Shopping',     section: 'Leads'           },
+    // SPECS_13W: Alberto pertenece al grupo Lead Genius
+    { id: 'alberto',  name: 'Alberto Ortiz',   role: 'LEAD_GENIUS',  area: 'Genius',       dept: 'Genius',       section: 'Leads'           },
     { id: 'clara',    name: 'Clara González',  role: 'LEAD_SHOPPING',area: 'Shopping',     dept: 'Shopping',     section: 'Leads'           },
     { id: 'eli',      name: 'Eli Moreno',      role: 'LEAD_SHOPPING',area: 'Shopping',     dept: 'Shopping',     section: 'Leads'           },
   ];

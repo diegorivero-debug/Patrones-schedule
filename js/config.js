@@ -95,9 +95,25 @@
         cris_c: { morningOnlyWeekdays: true, neverOffDays: ['MON', 'TUE', 'WED'] },
         javi_s: { aorFixedDays: ['MON', 'FRI'], avoidOffDays: ['TUE', 'WED'] },
         ane:    { weekAB: true, avoidOffDays: ['TUE', 'WED'] },
+        // SPECS_13W: concreción semanal fija de Meri Alvarez (L-V)
+        meri:   {
+          fixedSchedule: {
+            MON: { start: '10:00', end: '22:00' },
+            TUE: { start: '10:00', end: '19:00' },
+            WED: { start: '07:00', end: '16:00' },
+            THU: { start: '07:00', end: '16:00' },
+            FRI: { start: '07:00', end: '16:00' }
+          },
+          availableWeekends: true
+        },
         eva_h:  { morningOnly: true, altWeekend: true, hours32: true },
         eli:    { morningOnly: true, altWeekend: true },
-        clara:  { neverOffThursday: true },
+        clara:  {
+          neverOffThursday: true,
+          juevesHorasSindicales: { start: '09:00', end: '13:00' },
+          // Los jueves Clara no está disponible para floor hasta las 13:00
+          thursdayFloorAvailableFrom: '13:00'
+        },
         aurora: { crossedWith: 'ruben' },
         ruben:  { crossedWith: 'aurora' }
       }
