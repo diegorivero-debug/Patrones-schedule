@@ -232,8 +232,12 @@
 
   /* ── macOS Detection & Installer ────────────────── */
   function isMacOS() {
-    return /Mac/.test(navigator.platform) ||
-           navigator.userAgent.indexOf('Mac OS X') !== -1;
+    // navigator.userAgentData is the modern API (Chrome 90+)
+    // Fallback to userAgent for Firefox and Safari
+    if (navigator.userAgentData && navigator.userAgentData.platform) {
+      return /mac/i.test(navigator.userAgentData.platform);
+    }
+    return /Mac OS X/.test(navigator.userAgent);
   }
 
   function downloadInstaller() {
