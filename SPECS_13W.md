@@ -337,10 +337,10 @@ Los fines de semana de trabajo de cada lead están definidos en un CSV aparte. E
 
 ## 📝 14. Pendientes (por confirmar)
 
-- [ ] Calendario de aperturas de domingos y festivos
-- [ ] Nombre del nuevo lead de Shopping
-- [ ] Calendario de aperturas especiales (domingos verano/invierno)
-- [ ] Festivos nacionales/locales 2026 con horario especial
+- [x] Calendario de aperturas de domingos y festivos — implementado en `js/calendar-2026.js`
+- [ ] Nombre del nuevo lead de Shopping — se añadirá manualmente cuando se contrate
+- [x] Calendario de aperturas especiales (domingos verano/invierno) — implementado en `js/calendar-2026.js`
+- [x] Festivos nacionales/locales 2026 con horario especial — implementado en `js/calendar-2026.js`
 
 ---
 
