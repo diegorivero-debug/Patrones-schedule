@@ -25,7 +25,8 @@ const PATTERN_NAMES = [
   'Día Normal (Lun, Jue, Vie)',
   'Martes (Reunión Comercial 14:00-16:00)',
   'Miércoles (Leadership Meeting 14:00-16:00)',
-  'Sábado'
+  'Sábado',
+  'Domingo (apertura)',
 ];
 
 // Weekly view mapping: [Lunes, Martes, Miércoles, Jueves, Viernes, Sábado] → pattern indices
@@ -75,6 +76,10 @@ const BUSINESS_RULES = (function() {
       manager: { floorHours: 6, aorHours: 2, lunchHours: 1, floorActivities: ['Coach','Support'] },
       lead:    { floorHours: 6, ldopsHours: 2, lunchHours: 1, floorActivities: ['LDSup'] },
     },
+    sunday: {
+      manager: { floorHours: 5, aorHours: 3, lunchHours: 1, floorActivities: ['Coach','Support'] },
+      lead:    { floorHours: 5, ldopsHours: 3, lunchHours: 1, floorActivities: ['LDSup'] },
+    },
     coverage: {
       normal:     { support: cob.managersFloorMinimo || 2, coach: cob.coachMinimo || 2, totalFloor: cob.floorMinimo || 4 },
       lunchTrans: { support: Math.max((cob.managersFloorMinimo || 2) - 1, 1), coach: 1, totalFloor: Math.max((cob.floorMinimo || 4) - 2, 2) },
@@ -107,6 +112,7 @@ const BUSINESS_RULES = (function() {
       1: { leads: 4, managers: 10, name: 'Martes' },
       2: { leads: 5, managers: 10, name: 'Miércoles' },
       3: { leads: 3, managers: 7, minTotal: 12, name: 'Sábado', firstShift: '08:00' },
+      4: { leads: 3, managers: 7, minTotal: 10, name: 'Domingo', firstShift: '09:00' },
     },
     meetings: {
       martes: {
@@ -222,6 +228,22 @@ const ORIGINAL_PATTERNS = [
     {role:'Manager',shift:'13:00-22:00',acts:['','','','','','','','','','','','','','Support','Support','Support','Support','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','']},
     {role:'Manager',shift:'13:00-22:00',acts:['','','','','','','','','','','','','','AOR','Support','Support','Support','Support','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','AOR','AOR','']},
     {role:'Manager',shift:'13:00-22:00',acts:['','','','','','','','','','','','','','AOR','AOR','AOR','AOR','Lunch','Lunch','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','AOR','']}
+  ],
+  // ── Pattern 4: Domingo (apertura) ─────────────────────────────────────────
+  // Tienda 11:00-21:00 (verano: 12:00-20:00). Primera persona 09:00 (verano: 10:00).
+  // 3 Leads + 7 Managers. Los días libres de quien trabaja este domingo
+  // DEBEN ser consecutivos en la semana (regla sagrada).
+  [
+    {role:'Lead',    shift:'09:00-18:00',acts:['','','','','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','','','','','','','','','']},
+    {role:'Lead',    shift:'11:00-20:00',acts:['','','','','','','','','','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','','','','','']},
+    {role:'Lead',    shift:'12:00-21:00',acts:['','','','','','','','','','','','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','','','']},
+    {role:'Manager', shift:'09:00-18:00',acts:['','','','','AOR','AOR','AOR','AOR','AOR','Coach','Coach','Coach','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','AOR','AOR','AOR','AOR','','','','','','','','','']},
+    {role:'Manager', shift:'09:00-18:00',acts:['','','','','AOR','AOR','AOR','AOR','AOR','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','','','','','','','','','']},
+    {role:'Manager', shift:'11:00-20:00',acts:['','','','','','','','','','AOR','AOR','Coach','Coach','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','AOR','AOR','','','','','']},
+    {role:'Manager', shift:'11:00-20:00',acts:['','','','','','','','','','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','','','','','']},
+    {role:'Manager', shift:'12:00-21:00',acts:['','','','','','','','','','','','AOR','Coach','Coach','Coach','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','AOR','AOR','AOR','','','']},
+    {role:'Manager', shift:'12:00-21:00',acts:['','','','','','','','','','','','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','AOR','','','']},
+    {role:'Manager', shift:'12:00-21:00',acts:['','','','','','','','','','','','AOR','AOR','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','','','']}
   ]
 ];
 
@@ -273,7 +295,12 @@ function loadAllState() {
     const saved = localStorage.getItem(LS_KEY_PATTERNS);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed && parsed.verano && parsed.invierno) return parsed;
+      if (parsed && parsed.verano && parsed.invierno) {
+        // Ensure Sunday pattern (index 4) exists — migrate if first time loading new version
+        if (!parsed.verano[4])   parsed.verano[4]   = deepClone([ORIGINAL_PATTERNS[4]])[0];
+        if (!parsed.invierno[4]) parsed.invierno[4] = deepClone([ORIGINAL_WINTER_PATTERNS[4]])[0];
+        return parsed;
+      }
     }
     // Migrate from old format (v1 stored flat array as 'schedule_patterns')
     const oldSaved = localStorage.getItem('schedule_patterns');
@@ -315,6 +342,8 @@ function loadRules() {
     {day:'Miércoles', text:'Leadership Meeting ' + BUSINESS_RULES.meetings.miercoles.start + '-' + BUSINESS_RULES.meetings.miercoles.end + '. Solo Managers a reunión. ' + BUSINESS_RULES.meetings.miercoles.exceptions.mgrFloor + ' Manager se queda en floor. ' + BUSINESS_RULES.meetings.miercoles.leadsCoverFloor + '+ Leads cubren floor. Coach suspendido.', highlight:true},
     {day:'Sábado', text:'Tienda abre a las 08:00 — NO hay turno de 07:00. Primer turno: 08:00. Mín 12 personas (3-4 Leads + 7-8 Managers).', highlight:true},
     {day:'Sábado', text:'Más tiempo en floor: ' + BUSINESS_RULES.saturday.manager.floorHours + 'h floor + ' + BUSINESS_RULES.saturday.manager.aorHours + 'h AOR por Manager, ' + BUSINESS_RULES.saturday.lead.floorHours + 'h floor + ' + BUSINESS_RULES.saturday.lead.ldopsHours + 'h LDOPS por Lead.', highlight:false},
+    {day:'Domingo', text:'Solo en fechas indicadas en el calendario. Primera persona 09:00 (verano: 10:00). Tienda 11:00-21:00 (verano: 12:00-20:00). Mín 10 personas (3 Leads + 7 Managers).', highlight:true},
+    {day:'Domingo', text:'🔑 REGLA: Los días libres de Managers y Leads que trabajan en domingo SIEMPRE deben ser consecutivos (paquete). Ej: Lun+Mar, Jue+Vie, o Vie+Sáb libres.', highlight:true},
     {day:'L-V', text:'Manager: ' + BUSINESS_RULES.weekday.manager.floorHours + 'h floor + ' + BUSINESS_RULES.weekday.manager.aorHours + 'h AOR. Lead: ' + BUSINESS_RULES.weekday.lead.floorHours + 'h floor + ' + BUSINESS_RULES.weekday.lead.ldopsHours + 'h LDOPS.', highlight:false},
   ];
 }
@@ -341,8 +370,8 @@ let cellDragData = null; // {patIdx, rowIdx, colIdx, activity}
 
 // ── Undo / Redo state ────────────────────────────────────────────────────────
 const MAX_UNDO = 50;
-const undoHistory = { 0: [], 1: [], 2: [], 3: [] };
-const redoHistory = { 0: [], 1: [], 2: [], 3: [] };
+const undoHistory = { 0: [], 1: [], 2: [], 3: [], 4: [] };
+const redoHistory = { 0: [], 1: [], 2: [], 3: [], 4: [] };
 
 // ── AI Advisor state ─────────────────────────────────────────────────────────
 let aiSuggestions   = [];
@@ -437,7 +466,11 @@ let teamDraft = null;
 let activeAssignDropdown = null;
 
 function getOpenEnd() { return activeSeason === 'invierno' ? OPEN_END_INVIERNO : OPEN_END_VERANO; }
-function getOpenStart(patIdx) { return (patIdx === 3) ? TIME_SLOTS.indexOf('08:00') : OPEN_START; }
+function getOpenStart(patIdx) {
+  if (patIdx === 3) return TIME_SLOTS.indexOf('08:00');
+  if (patIdx === 4) return TIME_SLOTS.indexOf('09:00');
+  return OPEN_START;
+}
 function getSeasonLabel() { return activeSeason === 'invierno' ? '❄️ Invierno' : '☀️ Verano'; }
 function getCloseTime() {
   return activeSeason === 'invierno'
@@ -763,7 +796,7 @@ function validatePattern(patIdx) {
   }
 
   // ── Opening: min 2 people at first shift slot ─────────
-  const openingCheckSlot = patIdx === 3 ? TIME_SLOTS.indexOf('08:00') : TIME_SLOTS.indexOf('07:00');
+  const openingCheckSlot = patIdx === 3 ? TIME_SLOTS.indexOf('08:00') : (patIdx === 4 ? TIME_SLOTS.indexOf('09:00') : TIME_SLOTS.indexOf('07:00'));
   const peopleAtOpening  = rows.filter(r => r.acts[openingCheckSlot] !== '').length;
   if (peopleAtOpening < BR.opening.minPeople) {
     alerts.push({type:'red', msg:`🔴 Apertura (${TIME_SLOTS[openingCheckSlot]}): solo ${peopleAtOpening} personas — mín ${BR.opening.minPeople}`});
@@ -1361,7 +1394,7 @@ function calculateScoreForRows(rows, patIdx) {
 
   // Bonuses
   let bonusPoints = 0;
-  const openingCheckSlot = patIdx === 3 ? TIME_SLOTS.indexOf('08:00') : TIME_SLOTS.indexOf('07:00');
+  const openingCheckSlot = patIdx === 3 ? TIME_SLOTS.indexOf('08:00') : (patIdx === 4 ? TIME_SLOTS.indexOf('09:00') : TIME_SLOTS.indexOf('07:00'));
   const peopleAtOpening  = rows.filter(r => r.acts[openingCheckSlot] !== '').length;
   const openingOk = peopleAtOpening >= BR.opening.minPeople;
   if (openingOk) bonusPoints += 5;
@@ -1953,9 +1986,10 @@ function generatePattern() {
     const isLead   = row.role === 'Lead';
     const hasMtg   = meetingMap[ri].length > 0;
     const isSat    = activePattern === 3;
+    const isSun    = activePattern === 4;
 
     // Target hours per role/day from BUSINESS_RULES
-    const dayRules  = isSat ? BR.saturday : BR.weekday;
+    const dayRules  = isSat ? BR.saturday : (isSun ? BR.sunday : BR.weekday);
     const roleRules = isLead ? dayRules.lead : dayRules.manager;
     const mgmtSlots = (isLead ? roleRules.ldopsHours : roleRules.aorHours) * 2;
     const edgeLen   = Math.floor(mgmtSlots / 2);
@@ -3274,8 +3308,9 @@ function analyzePersonEfficiency(patIdx) {
   const suggestions = [];
   const BR = BUSINESS_RULES;
   const isSat = patIdx === 3;
-  const expectedFloorH = isSat ? BR.saturday.manager.floorHours : BR.weekday.manager.floorHours;
-  const expectedAorH   = isSat ? BR.saturday.manager.aorHours   : BR.weekday.manager.aorHours;
+  const isSun = patIdx === 4;
+  const expectedFloorH = isSat ? BR.saturday.manager.floorHours : (isSun ? BR.sunday.manager.floorHours : BR.weekday.manager.floorHours);
+  const expectedAorH   = isSat ? BR.saturday.manager.aorHours   : (isSun ? BR.sunday.manager.aorHours   : BR.weekday.manager.aorHours);
 
   rows.forEach((row, rowIdx) => {
     if (row.role !== 'Manager') return;
@@ -3610,12 +3645,14 @@ function questionRoleHours() {
   const BR = BUSINESS_RULES;
 
   // Check if increasing manager floor time would help
-  for (let patIdx=0; patIdx<4; patIdx++) {
+  for (let patIdx=0; patIdx<5; patIdx++) {
     const rows = currentState[patIdx];
+    if (!rows) continue;
     const openStart = getOpenStart(patIdx);
     const openEnd   = getOpenEnd();
     const counts    = buildCounts(rows);
     const isSat = patIdx === 3;
+    const isSun = patIdx === 4;
 
     let underFloorSlots = 0;
     for (let c=openStart; c<=openEnd; c++) {
@@ -3623,8 +3660,8 @@ function questionRoleHours() {
     }
     if (underFloorSlots < 3) continue;
 
-    const floorH  = isSat ? BR.saturday.manager.floorHours  : BR.weekday.manager.floorHours;
-    const aorH    = isSat ? BR.saturday.manager.aorHours    : BR.weekday.manager.aorHours;
+    const floorH  = isSat ? BR.saturday.manager.floorHours  : (isSun ? BR.sunday.manager.floorHours  : BR.weekday.manager.floorHours);
+    const aorH    = isSat ? BR.saturday.manager.aorHours    : (isSun ? BR.sunday.manager.aorHours    : BR.weekday.manager.aorHours);
 
     if (aorH >= 3) {
       suggestions.push({
