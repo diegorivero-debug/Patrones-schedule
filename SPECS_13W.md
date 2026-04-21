@@ -46,7 +46,7 @@
 | Meri Alvarez | People | People Manager | 40h | Lun: 10-cierre (22:00). Mar: 10-19. Mié-Vie: 7-16. Sáb/Dom/Festivos: disponible |
 | Toni Medina | People | People Manager | 40h | — |
 | Deborah Ibañez | Support | Support Manager | 40h | — |
-| Ane Pazos | Support | Support Manager | 40h | Semana A: L-V 7-16, Sáb-Dom descanso. Semana B: libre disposición. W1 Q actual (30 marzo) = Semana A. Alterna: A, B, A, B... |
+| Ane Pazos | Support | Support Manager | 40h | Semana A: L-V 7-16, Sáb-Dom descanso. Semana B: libre disposición. Ancla: semana 2026-03-30 = Semana A. Alterna A,B,A,B… Implementado en `config.js` (`weekABAnchor`). |
 | Ricardo Sosa | Support | Support Manager | 40h | — |
 | Javi Quiros | Support | Support Manager | 40h | — |
 | Cris Usón | Ops & T@A | Ops Manager | 40h | — |
