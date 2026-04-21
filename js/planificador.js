@@ -207,8 +207,42 @@ function isQBRDay(qStartStr, weekIdx, dayIdx) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCHEDULE GENERATOR CLASS
+// CALENDAR HELPERS (uses calendar-2026.js when loaded)
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Returns the ISO date string (YYYY-MM-DD) of the Sunday for a given week
+// (Monday-anchored week: weekMon + 6 days = Sunday).
+function getSundayISODate(weekMonDate) {
+  const sun = addDays(weekMonDate, 6);
+  const y   = sun.getFullYear();
+  const m   = String(sun.getMonth() + 1).padStart(2, '0');
+  const d   = String(sun.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// Returns true if the Sunday of the given week (0-based) is an open Sunday
+// according to CALENDAR_2026. Falls back to false if the calendar is not loaded.
+function isOpenSundayWeek(weekIdx, qStartStr) {
+  if (typeof CALENDAR_2026 === 'undefined') return false;
+  const weekDates  = computeWeekDates(qStartStr);
+  const isoDate    = getSundayISODate(weekDates[weekIdx]);
+  return CALENDAR_2026.sundaysOpen.indexOf(isoDate) !== -1;
+}
+
+// Returns the opening hours object for a given week's Sunday (or null if closed)
+function getSundayOpeningHours(weekIdx, qStartStr) {
+  if (typeof CALENDAR_2026 === 'undefined') return null;
+  const weekDates = computeWeekDates(qStartStr);
+  const isoDate   = getSundayISODate(weekDates[weekIdx]);
+  return CALENDAR_2026.getOpeningHours(isoDate);
+}
+
+// Shift to assign to staff working on an open Sunday.
+// Summer Sunday (12-20): 'Mid S' (11-20); Regular Sunday (11-21): 'Mid S' (11-20) or 'Late' (12-21)
+const SUNDAY_SHIFT_MORNING = 'Mid S';   // first wave: 09:00/10:00 entry → 11:00-20:00 range
+const SUNDAY_SHIFT_LATE    = 'Late';    // second wave: 12:00-21:00
+
+
 class ScheduleGenerator {
   constructor(config, seed) {
     this.config  = config;
@@ -221,6 +255,13 @@ class ScheduleGenerator {
     this.sched = {};
     for (const p of TEAM_DATA) {
       this.sched[p.id] = new Array(TOTAL_DAYS).fill(null);
+    }
+
+    // Sunday schedule: { personId: [WEEKS strings|null] }
+    // null = not working this Sunday; shift string = working that Sunday.
+    this.sundaySched = {};
+    for (const p of TEAM_DATA) {
+      this.sundaySched[p.id] = new Array(WEEKS).fill(null);
     }
 
     // Load vacation data from localStorage
@@ -787,6 +828,28 @@ class ScheduleGenerator {
         }
         if (vacDays >= 4) continue; // mostly on vacation
 
+        // ── Sunday workers: enforce 2 CONSECUTIVE days off from Mon-Sat ───────
+        // "cuando se abre un domingo, los días libres de managers y leads SIEMPRE
+        //  deben ir juntos" (grouped / consecutive days off rule).
+        const worksSunday = this.sundaySched[p.id]?.[w] != null;
+        if (worksSunday) {
+          const pair = this._pickConsecutiveDaysOff(p, w);
+          this.set(p.id, w, pair[0], 'OFF', true);
+          this.set(p.id, w, pair[1], 'OFF', true);
+          // Update Sat pattern: they work Sat only if Sat is NOT in the off pair
+          const satOff = pair.includes(SAT);
+          pattern[w] = !satOff;
+          if (satOff) {
+            this.set(p.id, w, SAT, 'OFF', true);
+          }
+          // Fill remaining Mon-Fri weekday cells with shift
+          this._fillWeekdayShift(p, w);
+          if (!satOff && !isWorking(this.get(p.id, w, SAT))) {
+            this.set(p.id, w, SAT, this._getSatShift(p.id, w));
+          }
+          continue; // skip the standard days-off logic below
+        }
+
         let workSat = pattern[w];
 
         // Before giving Saturday off, verify minimum Saturday coverage won't be breached.
@@ -998,9 +1061,102 @@ class ScheduleGenerator {
     this._assignOpsLeads();
     this._assignLeadGenius();
     this._assignLeadShopping();
+    this._assignSundayShifts();   // must be called after all role shifts, before days-off
     this._assignDaysOff();
     this._fillRemaining();
     return this.sched;
+  }
+
+  // ── Assign Sunday shifts for open-Sunday weeks ─────────────────────────────
+  // For each open-Sunday week (from CALENDAR_2026), assigns a rotating subset of
+  // Managers and Leads to work Sunday. Results stored in this.sundaySched.
+  // Sunday workers are then given 2 CONSECUTIVE days off from Mon-Sat in
+  // _assignDaysOff() (the key "días libres juntos" rule).
+  _assignSundayShifts() {
+    if (typeof CALENDAR_2026 === 'undefined') return; // calendar not loaded
+
+    const eligibleRoles = ['SM','MGR','OPS_LEAD','LEAD_GENIUS','LEAD_SHOPPING'];
+    const eligible = TEAM_DATA.filter(p => eligibleRoles.includes(p.role));
+    const leads    = eligible.filter(p => ['OPS_LEAD','LEAD_GENIUS','LEAD_SHOPPING'].includes(p.role));
+    const mgrs     = eligible.filter(p => ['SM','MGR'].includes(p.role));
+
+    for (let w = 0; w < WEEKS; w++) {
+      if (!isOpenSundayWeek(w, this.qStart)) continue;
+
+      const onVac = (id) => isVacation(this.get(id, w, MON)) || isVacation(this.get(id, w, SAT));
+
+      // Available staff: not on vacation this week
+      const availLeads = leads.filter(p => !onVac(p.id));
+      const availMgrs  = mgrs.filter(p => !onVac(p.id));
+
+      // Rotate: pick ~half of each group, targeting 3 Leads + 7 Managers.
+      // Use (personIndex + week + seed) % 2 to stagger who works which Sundays.
+      const sunLeads = availLeads.filter((p, i) => ((i + w + this.seed) % 2 === 0)).slice(0, 4);
+      const sunMgrs  = availMgrs.filter((p, i)  => ((i + w + this.seed) % 2 === 0)).slice(0, 8);
+
+      // Ensure minimum staffing: if too few, add from the other half
+      if (sunLeads.length < 2 && availLeads.length > 0) {
+        for (const p of availLeads) {
+          if (!sunLeads.includes(p)) sunLeads.push(p);
+          if (sunLeads.length >= 3) break;
+        }
+      }
+      if (sunMgrs.length < 5 && availMgrs.length > 0) {
+        for (const p of availMgrs) {
+          if (!sunMgrs.includes(p)) sunMgrs.push(p);
+          if (sunMgrs.length >= 7) break;
+        }
+      }
+
+      const isSummerSun = (typeof CALENDAR_2026 !== 'undefined') && CALENDAR_2026.isSummerSunday(
+        getSundayISODate(computeWeekDates(this.qStart)[w])
+      );
+
+      for (const p of [...sunLeads, ...sunMgrs]) {
+        // Assign morning or late Sunday shift based on rotation
+        const pIdx = eligible.findIndex(t => t.id === p.id);
+        const shift = ((pIdx + w + this.seed) % 2 === 0) ? SUNDAY_SHIFT_MORNING : SUNDAY_SHIFT_LATE;
+        // Summer Sunday opens at 12:00 → use Late for everyone to simplify
+        this.sundaySched[p.id][w] = isSummerSun ? SUNDAY_SHIFT_LATE : shift;
+      }
+    }
+  }
+
+  // ── Pick 2 consecutive days off from Mon-Sat (for Sunday workers) ───────────
+  _pickConsecutiveDaysOff(p, w) {
+    const c = p.c || {};
+    const neverOff = [...(c.neverOffDays || [])];
+    if (p.id === 'clara') neverOff.push(THU);
+
+    // All consecutive pairs within Mon-Sat
+    const allPairs = [[MON,TUE],[TUE,WED],[WED,THU],[THU,FRI],[FRI,SAT]];
+
+    // Filter out pairs containing neverOff days
+    const valid = allPairs.filter(([a, b]) => !neverOff.includes(a) && !neverOff.includes(b));
+    if (valid.length === 0) return [MON, TUE]; // absolute fallback
+
+    // Prefer pairs not containing avoidOff days
+    const avoidOff = c.avoidOffDays || [];
+    const preferred = valid.filter(([a, b]) => !avoidOff.includes(a) && !avoidOff.includes(b));
+    const pool = preferred.length > 0 ? preferred : valid;
+
+    // Prefer pairs where both days have enough coverage from others
+    const countWorking = (dayIdx) => {
+      let count = 0;
+      for (const t of TEAM_DATA) {
+        if (t.role === 'SL' || t.id === p.id) continue;
+        const s = this.get(t.id, w, dayIdx);
+        if (isWorking(s) && !isVacation(s)) count++;
+      }
+      return count;
+    };
+    const safePairs = pool.filter(([a, b]) =>
+      countWorking(a) >= getMinStaffByDay(a) && countWorking(b) >= getMinStaffByDay(b)
+    );
+    const finalPool = safePairs.length > 0 ? safePairs : pool;
+
+    const idx = (w + TEAM_DATA.findIndex(t => t.id === p.id) + this.seed) % finalPool.length;
+    return finalPool[idx];
   }
 }
 
@@ -1197,7 +1353,7 @@ function scoreSchedule(sched, qStartStr) {
 // ─────────────────────────────────────────────────────────────────────────────
 // VALIDATION
 // ─────────────────────────────────────────────────────────────────────────────
-function validateSchedule(sched, qStartStr) {
+function validateSchedule(sched, qStartStr, sundaySched) {
   const violations = [];
 
   for (let w = 0; w < WEEKS; w++) {
@@ -1336,6 +1492,34 @@ function validateSchedule(sched, qStartStr) {
         }
       }
     }
+
+    // Rule: Grouped days off for Sunday workers
+    // When the store opens on Sunday, every Manager/Lead working that Sunday
+    // MUST have their 2 days off from Mon-Sat consecutive.
+    if (sundaySched && isOpenSundayWeek(w, qStartStr)) {
+      for (const p of TEAM_DATA) {
+        if (!['SM','MGR','OPS_LEAD','LEAD_GENIUS','LEAD_SHOPPING'].includes(p.role)) continue;
+        if (!sundaySched[p.id]?.[w]) continue; // not working Sunday this week
+        // Find their OFF days within Mon-Sat
+        const offDays = [];
+        for (let d = MON; d <= SAT; d++) {
+          const s = sched[p.id]?.[w * DAYS_PER_WEEK + d];
+          if (!isWorking(s) && !isVacation(s) && s !== null && s !== undefined) offDays.push(d);
+        }
+        // They should have exactly 2 off days
+        if (offDays.length !== 2) {
+          violations.push({ week: wLabel, level: 'error',
+            msg: `${p.name}: trabaja el domingo de S${w+1} pero tiene ${offDays.length} día(s) libre en L-S (deben ser exactamente 2 consecutivos)` });
+          continue;
+        }
+        // The 2 off days must be consecutive
+        if (offDays[1] - offDays[0] !== 1) {
+          const dNames = offDays.map(d => DAY_NAMES[d]).join(' + ');
+          violations.push({ week: wLabel, level: 'error',
+            msg: `${p.name}: trabaja el domingo S${w+1} — días libres (${dNames}) no son consecutivos (regla: libranzas juntas)` });
+        }
+      }
+    }
   }
 
   return violations;
@@ -1347,9 +1531,10 @@ function validateSchedule(sched, qStartStr) {
 let state = {
   qStartDate:      '2026-03-30',
   season:          'verano',
-  variants:        [],   // [{ sched, score, details }]
+  variants:        [],   // [{ sched, sundaySched, score, details }]
   selectedVariant: -1,
   activeSchedule:  null, // editable copy
+  activeSundaySched: null, // { personId: [WEEKS strings|null] }
   violations:      [],
   editMode:        false,
   generating:      false,
@@ -1363,10 +1548,11 @@ const LS_KEY = 'planificador_13w_v1';
 function saveState() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
-      qStartDate:      state.qStartDate,
-      season:          state.season,
-      selectedVariant: state.selectedVariant,
-      activeSchedule:  state.activeSchedule,
+      qStartDate:        state.qStartDate,
+      season:            state.season,
+      selectedVariant:   state.selectedVariant,
+      activeSchedule:    state.activeSchedule,
+      activeSundaySched: state.activeSundaySched,
     }));
   } catch(e) { /* ignore */ }
 }
@@ -1376,9 +1562,10 @@ function loadPersistedState() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw);
-    if (parsed.qStartDate)     state.qStartDate     = parsed.qStartDate;
-    if (parsed.season)         state.season          = parsed.season;
-    if (parsed.activeSchedule) state.activeSchedule  = parsed.activeSchedule;
+    if (parsed.qStartDate)     state.qStartDate       = parsed.qStartDate;
+    if (parsed.season)         state.season            = parsed.season;
+    if (parsed.activeSchedule) state.activeSchedule    = parsed.activeSchedule;
+    if (parsed.activeSundaySched) state.activeSundaySched = parsed.activeSundaySched;
     if (typeof parsed.selectedVariant === 'number') state.selectedVariant = parsed.selectedVariant;
   } catch(e) { /* ignore */ }
 }
@@ -1400,17 +1587,19 @@ function generateVariants() {
       // by which people work morning vs afternoon on any given week (where rotation is free),
       // resulting in meaningfully different schedules for the user to compare and choose from.
       for (let seed = 0; seed < 3; seed++) {
-        const gen   = new ScheduleGenerator({ qStartDate: state.qStartDate, season: state.season }, seed);
-        const sched = gen.generate();
-        const score = scoreSchedule(sched, state.qStartDate);
-        variants.push({ sched, score, seed });
+        const gen        = new ScheduleGenerator({ qStartDate: state.qStartDate, season: state.season }, seed);
+        const sched      = gen.generate();
+        const sundaySched = gen.sundaySched;
+        const score      = scoreSchedule(sched, state.qStartDate);
+        variants.push({ sched, sundaySched, score, seed });
       }
       // Sort by score descending
       variants.sort((a,b) => b.score.total - a.score.total);
       state.variants = variants;
       state.selectedVariant = 0;
-      state.activeSchedule  = deepCopy(variants[0].sched);
-      state.violations = validateSchedule(state.activeSchedule, state.qStartDate);
+      state.activeSchedule    = deepCopy(variants[0].sched);
+      state.activeSundaySched = deepCopy(variants[0].sundaySched);
+      state.violations = validateSchedule(state.activeSchedule, state.qStartDate, state.activeSundaySched);
       saveState();
     } catch(e) {
       console.error('Error generando horario:', e);
@@ -1426,9 +1615,10 @@ function generateVariants() {
 
 function selectVariant(idx) {
   if (idx < 0 || idx >= state.variants.length) return;
-  state.selectedVariant = idx;
-  state.activeSchedule  = deepCopy(state.variants[idx].sched);
-  state.violations = validateSchedule(state.activeSchedule, state.qStartDate);
+  state.selectedVariant   = idx;
+  state.activeSchedule    = deepCopy(state.variants[idx].sched);
+  state.activeSundaySched = deepCopy(state.variants[idx].sundaySched);
+  state.violations = validateSchedule(state.activeSchedule, state.qStartDate, state.activeSundaySched);
   saveState();
   renderVariantsPanel();
   renderScheduleTable();
@@ -1488,7 +1678,7 @@ function closeDropdown() {
 function applyEdit(personId, weekIdx, dayIdx, shift) {
   if (!state.activeSchedule[personId]) return;
   state.activeSchedule[personId][weekIdx * DAYS_PER_WEEK + dayIdx] = shift;
-  state.violations = validateSchedule(state.activeSchedule, state.qStartDate);
+  state.violations = validateSchedule(state.activeSchedule, state.qStartDate, state.activeSundaySched);
   saveState();
   // Re-render just the cell
   const cellId = `cell-${personId}-${weekIdx}-${dayIdx}`;
@@ -1527,9 +1717,11 @@ function exportCSV() {
   // Header row 1: Week labels
   const hdr1 = ['Persona', 'Rol'];
   weekDates.forEach((wd, wi) => {
-    const end = addDays(wd, 5);
-    const label = `S${wi+1} (${formatDate(wd)}-${formatDate(end)})`;
+    const hasSun = isOpenSundayWeek(wi, state.qStartDate);
+    const end = addDays(wd, hasSun ? 6 : 5);
+    const label = `S${wi+1} (${formatDate(wd)}-${formatDate(end)})${hasSun ? ' 🏪' : ''}`;
     for (let d = 0; d < DAYS_PER_WEEK; d++) hdr1.push(d === 0 ? label : '');
+    if (hasSun) hdr1.push('');
   });
   rows.push(hdr1);
 
@@ -1537,6 +1729,7 @@ function exportCSV() {
   const hdr2 = ['', ''];
   for (let w = 0; w < WEEKS; w++) {
     DAY_LABELS.forEach(dl => hdr2.push(dl));
+    if (isOpenSundayWeek(w, state.qStartDate)) hdr2.push('D');
   }
   rows.push(hdr2);
 
@@ -1549,15 +1742,21 @@ function exportCSV() {
     'LEAD_GENIUS': 'Lead Genius',
     'LEAD_SHOPPING': 'Lead Shopping',
   };
+  const totalExportCols = TOTAL_DAYS + weekDates.reduce((acc, _, wi) => acc + (isOpenSundayWeek(wi, state.qStartDate) ? 1 : 0), 0);
   let lastRole = '';
   for (const p of TEAM_DATA) {
     if (p.role !== lastRole) {
-      rows.push([sections[p.role] || p.role, '', ...new Array(TOTAL_DAYS).fill('')]);
+      rows.push([sections[p.role] || p.role, '', ...new Array(totalExportCols).fill('')]);
       lastRole = p.role;
     }
     const row = [p.name, p.role];
-    for (let i = 0; i < TOTAL_DAYS; i++) {
-      row.push(state.activeSchedule[p.id]?.[i] || '');
+    for (let w = 0; w < WEEKS; w++) {
+      for (let d = 0; d < DAYS_PER_WEEK; d++) {
+        row.push(state.activeSchedule[p.id]?.[w * DAYS_PER_WEEK + d] || '');
+      }
+      if (isOpenSundayWeek(w, state.qStartDate)) {
+        row.push(state.activeSundaySched?.[p.id]?.[w] || '');
+      }
     }
     rows.push(row);
   }
@@ -1583,16 +1782,23 @@ function exportExcel() {
   // Header
   const hdr1 = ['Persona', 'Rol'];
   weekDates.forEach((wd, wi) => {
+    const hasSun = isOpenSundayWeek(wi, state.qStartDate);
     for (let d = 0; d < DAYS_PER_WEEK; d++) {
       hdr1.push(d === 0 ? `S${wi+1} ${formatDate(wd)}` : DAY_LABELS[d]);
     }
+    if (hasSun) hdr1.push('D🏪');
   });
   aoa.push(hdr1);
 
   for (const p of TEAM_DATA) {
     const row = [p.name, p.role];
-    for (let i = 0; i < TOTAL_DAYS; i++) {
-      row.push(state.activeSchedule[p.id]?.[i] || '');
+    for (let w = 0; w < WEEKS; w++) {
+      for (let d = 0; d < DAYS_PER_WEEK; d++) {
+        row.push(state.activeSchedule[p.id]?.[w * DAYS_PER_WEEK + d] || '');
+      }
+      if (isOpenSundayWeek(w, state.qStartDate)) {
+        row.push(state.activeSundaySched?.[p.id]?.[w] || '');
+      }
     }
     aoa.push(row);
   }
@@ -1760,8 +1966,10 @@ function buildWeekAuditData(weekIdx) {
         const rawShift = state.activeSchedule[p.id]?.[baseIdx + d] || '';
         days[key] = plannerShiftToAuditor(rawShift);
       }
-      // Sunday is not tracked by the planificador — everyone is Off
-      days['Sun'] = 'Off';
+      // Sunday: use sundaySched if available and this is an open-Sunday week
+      const isSunOpen = isOpenSundayWeek(weekIdx, state.qStartDate);
+      const sunRawShift = isSunOpen ? (state.activeSundaySched?.[p.id]?.[weekIdx] || '') : '';
+      days['Sun'] = sunRawShift ? plannerShiftToAuditor(sunRawShift) : 'Off';
 
       // Hours plan: Eva H has 32h, everyone else defaults to 40h
       const plan = p.hours === 32 ? 32 : 40;
@@ -1878,8 +2086,10 @@ function renderWeekNav() {
   weekDates.forEach((wd, wi) => {
     const btn = document.createElement('button');
     btn.className = 'week-chip';
-    btn.textContent = `S${wi+1}`;
-    btn.title = formatDate(wd);
+    const hasSun = isOpenSundayWeek(wi, state.qStartDate);
+    btn.textContent = `S${wi+1}${hasSun ? ' 🏪' : ''}`;
+    btn.title = formatDate(wd) + (hasSun ? ' (Domingo apertura)' : '');
+    if (hasSun) btn.classList.add('week-chip-sunday');
     btn.onclick = () => {
       const colId = `week-col-${wi}`;
       const el = document.getElementById(colId);
@@ -1911,15 +2121,18 @@ function renderScheduleTable() {
   th0.textContent = 'Persona';
   tr1.appendChild(th0);
   weekDates.forEach((wd, wi) => {
+    const hasSun  = isOpenSundayWeek(wi, state.qStartDate);
+    const colSpan = DAYS_PER_WEEK + (hasSun ? 1 : 0);
     const th = document.createElement('th');
-    th.className = 'week-header';
-    th.colSpan = DAYS_PER_WEEK;
+    th.className = 'week-header' + (hasSun ? ' sunday-week' : '');
+    th.colSpan = colSpan;
     th.id = `week-col-${wi}`;
-    const endDate = addDays(wd, 5);
-    th.textContent = `S${wi+1} ${formatDate(wd)}–${formatDate(endDate)}`;
+    const endDate = addDays(wd, hasSun ? 6 : 5);
+    th.textContent = `S${wi+1} ${formatDate(wd)}–${formatDate(endDate)}${hasSun ? ' 🏪' : ''}`;
     // Check if QBR week
     const qbrInWeek = Array.from({length:6},(_,d)=>isQBRDay(state.qStartDate,wi,d)).some(Boolean);
     if (qbrInWeek) { th.classList.add('qbr-week'); th.title = 'Semana QBR'; }
+    if (hasSun) th.title = (th.title ? th.title + ' | ' : '') + 'Domingo apertura';
     tr1.appendChild(th);
   });
   thead.appendChild(tr1);
@@ -1927,12 +2140,20 @@ function renderScheduleTable() {
   // Row 2: Day headers
   const tr2 = document.createElement('tr');
   for (let w = 0; w < WEEKS; w++) {
+    const hasSun = isOpenSundayWeek(w, state.qStartDate);
     DAY_LABELS.forEach((dl, d) => {
       const th = document.createElement('th');
       th.className = 'day-header' + (d === SAT ? ' sat' : '');
       th.textContent = dl;
       tr2.appendChild(th);
     });
+    if (hasSun) {
+      const thSun = document.createElement('th');
+      thSun.className = 'day-header sunday-header';
+      thSun.textContent = 'D';
+      thSun.title = 'Domingo apertura';
+      tr2.appendChild(thSun);
+    }
   }
   thead.appendChild(tr2);
   table.appendChild(thead);
@@ -1950,6 +2171,9 @@ function renderScheduleTable() {
   };
   const roleBadge = { SL:'sl', SM:'sm', MGR:'mgr', OPS_LEAD:'lead', LEAD_GENIUS:'lead', LEAD_SHOPPING:'lead' };
 
+  // Total columns = TOTAL_DAYS + number of open-Sunday weeks
+  const totalCols = TOTAL_DAYS + weekDates.reduce((acc, _, wi) => acc + (isOpenSundayWeek(wi, state.qStartDate) ? 1 : 0), 0);
+
   let lastRole = '';
   for (const p of TEAM_DATA) {
     // Section header row
@@ -1961,7 +2185,7 @@ function renderScheduleTable() {
       secTd.textContent = roleSectionLabels[p.role] || p.role;
       secTr.appendChild(secTd);
       const restTd = document.createElement('td');
-      restTd.colSpan = TOTAL_DAYS;
+      restTd.colSpan = totalCols;
       secTr.appendChild(restTd);
       tbody.appendChild(secTr);
       lastRole = p.role;
@@ -1999,6 +2223,25 @@ function renderScheduleTable() {
         if (isQBRDay(state.qStartDate, w, d)) td.classList.add('qbr-day');
 
         tr.appendChild(td);
+      }
+
+      // Sunday cell for open-Sunday weeks
+      if (isOpenSundayWeek(w, state.qStartDate)) {
+        const sunShift = state.activeSundaySched?.[p.id]?.[w] || '';
+        const def = SHIFT_DEFS[sunShift];
+        const tdSun = document.createElement('td');
+        tdSun.className = 'shift-cell sunday-cell';
+        tdSun.title = 'Domingo apertura';
+        if (sunShift) {
+          tdSun.textContent = sunShift;
+          tdSun.style.background = def?.bg   || '#fff';
+          tdSun.style.color      = def?.text || '#000';
+        } else {
+          tdSun.textContent = p.role === 'SL' ? '' : '—';
+          tdSun.style.background = '#f5f3f0';
+          tdSun.style.color = '#bbb';
+        }
+        tr.appendChild(tdSun);
       }
     }
     tbody.appendChild(tr);
@@ -2112,7 +2355,8 @@ function onReset() {
   if (!confirm('¿Seguro que quieres resetear el horario activo? Se perderán los cambios.')) return;
   if (state.selectedVariant >= 0 && state.variants[state.selectedVariant]) {
     state.activeSchedule = deepCopy(state.variants[state.selectedVariant].sched);
-    state.violations = validateSchedule(state.activeSchedule, state.qStartDate);
+    state.activeSundaySched = deepCopy(state.variants[state.selectedVariant].sundaySched);
+    state.violations = validateSchedule(state.activeSchedule, state.qStartDate, state.activeSundaySched);
     saveState();
     renderScheduleSection();
     renderValidation();
@@ -2156,7 +2400,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // If we have a persisted active schedule, validate and render it
   if (state.activeSchedule) {
-    state.violations = validateSchedule(state.activeSchedule, state.qStartDate);
+    state.violations = validateSchedule(state.activeSchedule, state.qStartDate, state.activeSundaySched);
   }
 
   renderAll();
