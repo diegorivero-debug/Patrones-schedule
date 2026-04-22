@@ -94,7 +94,7 @@ const TEAM_DATA = (function () {
     if (!Array.isArray(value)) return value;
     return value.map(function (d) {
       if (typeof d === 'number') return d;
-      if (typeof d === 'string' && DAY_CODE_TO_IDX[d] != null) return DAY_CODE_TO_IDX[d];
+      if (typeof d === 'string' && DAY_CODE_TO_IDX[d] !== undefined) return DAY_CODE_TO_IDX[d];
       return d;
     }).filter(function (d) { return typeof d === 'number'; });
   }
