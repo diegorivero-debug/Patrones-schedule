@@ -85,6 +85,11 @@ const BUSINESS_RULES = (function() {
       lunchTrans: { support: Math.max((cob.managersFloorMinimo || 2) - 1, 1), coach: 1, totalFloor: Math.max((cob.floorMinimo || 4) - 2, 2) },
       minMgrsOnFloor: cob.managersFloorMinimo || 2,
       peakFloor:  cob.floorHoraPunta || 6,
+      cierreInvierno: cob.cierreInvierno || '21:00',
+      cierreVerano: cob.cierreVerano || '21:30',
+      ldopsAorMinStartInvierno: cob.ldopsAorMinStartInvierno || '21:00',
+      ldopsAorMinStartVerano: cob.ldopsAorMinStartVerano || '21:30',
+      excedenteParaLDOPS: cob.excedenteParaLDOPS || { minSupport: 4, minCoach: 1 },
       peakHours: (cob.horasPunta || ['12:00-14:00', '17:00-21:00']).map(function(range) {
         var parts = typeof range === 'string' ? range.split('-') : [];
         return { start: parts[0] || '', end: parts[1] || '' };
@@ -1947,6 +1952,7 @@ function generatePattern() {
   const rows = currentState[activePattern];
   const n = TIME_SLOTS.length;
   const BR = BUSINESS_RULES;
+  const openStart = getOpenStart(activePattern);
 
   // Collect existing meetings to preserve
   const meetingMap = rows.map(row => {
@@ -2107,6 +2113,38 @@ function generatePattern() {
         : (mgrDailyRoles.get(ri) || 'Support');
       row.acts[c] = floorAct;
       floorCount[c]++;
+    }
+  }
+
+  // ── Regla: no AOR/LDOPS antes del cierre salvo excedente ───────────────────
+  const minStart = activeSeason === 'invierno'
+    ? BR.coverage.ldopsAorMinStartInvierno
+    : BR.coverage.ldopsAorMinStartVerano;
+  const minStartIdx = TIME_SLOTS.indexOf(minStart);
+  const excedente = BR.coverage.excedenteParaLDOPS || { minSupport: 4, minCoach: 1 };
+  const minSupEx = Number(excedente.minSupport || 4);
+  const minCoachEx = Number(excedente.minCoach || 1);
+  if (minStartIdx >= 0) {
+    for (let c = openStart; c < minStartIdx; c++) {
+      let supportLike = 0, coachCnt = 0;
+      for (const row of rows) {
+        if (row.acts[c] === 'LDSup' || row.acts[c] === 'Support') supportLike++;
+        if (row.acts[c] === 'Coach') coachCnt++;
+      }
+      for (let ri = 0; ri < rows.length; ri++) {
+        const row = rows[ri];
+        const a = row.acts[c];
+        if (a !== 'AOR' && a !== 'LDOPS') continue;
+        const hasBaseCoverage = supportLike >= minSupEx && coachCnt >= minCoachEx;
+        const hasExtra = (supportLike + coachCnt) > (minSupEx + minCoachEx);
+        if (hasBaseCoverage && hasExtra) continue;
+        const floorAct = row.role === 'Lead'
+          ? 'LDSup'
+          : (mgrDailyRoles.get(ri) || 'Support');
+        row.acts[c] = floorAct;
+        if (floorAct === 'LDSup' || floorAct === 'Support') supportLike++;
+        if (floorAct === 'Coach') coachCnt++;
+      }
     }
   }
 

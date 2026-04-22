@@ -12,6 +12,7 @@ const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S'];
 const DAY_NAMES  = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
 const MON=0, TUE=1, WED=2, THU=3, FRI=4, SAT=5;
+const DAY_CODE_TO_IDX = { MON, TUE, WED, THU, FRI, SAT };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TEAM DATA  (IDs match vacaciones.js)
@@ -89,18 +90,35 @@ const TEAM_DATA = (function () {
 
 // Merge CONFIG overrides into TEAM_DATA constraints
 (function mergeConfigConstraints() {
+  function normalizeDayList(value) {
+    if (!Array.isArray(value)) return value;
+    return value.map(function (d) {
+      if (typeof d === 'number') return d;
+      if (typeof d === 'string' && DAY_CODE_TO_IDX[d] != null) return DAY_CODE_TO_IDX[d];
+      return d;
+    }).filter(function (d) { return typeof d === 'number'; });
+  }
+
   var C = window.CONFIG;
   if (!C || !C.planificador || !C.planificador.restriccionesPersonales) return;
   var overrides = C.planificador.restriccionesPersonales;
+  var dayListFields = ['fixedMorningDays', 'neverOffDays', 'avoidOffDays', 'aorFixedDays', 'ownDays', 'ownNeverOn'];
   TEAM_DATA.forEach(function(p) {
     if (overrides[p.id]) {
       if (!p.c) p.c = {};
       Object.keys(overrides[p.id]).forEach(function(k) {
-        p.c[k] = overrides[p.id][k];
+        var v = overrides[p.id][k];
+        if (dayListFields.indexOf(k) !== -1) v = normalizeDayList(v);
+        p.c[k] = v;
       });
     }
   });
 })();
+
+const TEAM_BY_ID = TEAM_DATA.reduce(function (acc, p) {
+  acc[p.id] = p;
+  return acc;
+}, {});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SHIFT DEFINITIONS
@@ -118,6 +136,8 @@ const SHIFT_DEFS = {
   'Close':    { block:'afternoon', bg:'#fee2e2', text:'#991b1b', labelSummer:'Close 13-22',    labelWinter:'Close 12:30-21:30' },
   'Close C1': { block:'afternoon', bg:'#fecaca', text:'#991b1b', labelSummer:'Close C1 13-22', labelWinter:'Close C1 12:30-21:30' },
   'Close C2': { block:'afternoon', bg:'#fca5a5', text:'#7f1d1d', labelSummer:'Close C2 13-22', labelWinter:'Close C2 12:30-21:30' },
+  'Own':      { block:'own',       bg:'#ede9fe', text:'#5b21b6', label:'Own'                 },
+  'LDOPS':    { block:'ldops',     bg:'#dbeafe', text:'#1e3a8a', label:'LDOPS'               },
   'OFF':      { block:'off',       bg:'#f3f4f6', text:'#6b7280', label:'Libre'               },
   'V':        { block:'vacation',  bg:'#bbf7d0', text:'#166534', label:'Vacaciones'          },
   'V25':      { block:'vacation',  bg:'#fbcfe8', text:'#9d174d', label:'Vac. ant.'           },
@@ -142,7 +162,7 @@ function getShiftLabel(shift, season) {
 }
 
 const ALL_SHIFT_OPTIONS = ['Open','Early','Early S','Early C1','Early C2','Mid','Mid S','Late',
-                           'Close','Close C1','Close C2','OFF','V','V25','TGD','F','Parental',
+                           'Close','Close C1','Close C2','Own','LDOPS','OFF','V','V25','TGD','F','Parental',
                            'Paternidad','Lactancia','UNPAID'];
 
 function shiftBlock(s)   { return (s && SHIFT_DEFS[s]) ? SHIFT_DEFS[s].block : 'off'; }
@@ -151,6 +171,14 @@ function isAfternoon(s)  { return shiftBlock(s) === 'afternoon'; }
 function isOff(s)        { const b = shiftBlock(s); return b === 'off' || b === 'vacation'; }
 function isWorking(s)    { return !isOff(s) && s !== null && s !== undefined; }
 function isVacation(s)   { return shiftBlock(s) === 'vacation'; }
+function countsForCoverage(id, s) {
+  if (!isWorking(s) || isVacation(s)) return false;
+  const p = TEAM_BY_ID[id];
+  if (!p) return false;
+  if (s === 'LDOPS') return false;
+  if (s === 'Own' && p.c && p.c.ownCountsForCoverage === false) return false;
+  return true;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEEDED PSEUDO-RANDOM NUMBER GENERATOR (Mulberry32)
@@ -861,7 +889,7 @@ class ScheduleGenerator {
             if (t.role === 'SL' || t.id === p.id) continue;
             const tSat = this.get(t.id, w, SAT);
             // Counts as working if already has a shift or their pattern says they work Sat
-            if (isWorking(tSat) && !isVacation(tSat)) satWorkers++;
+            if (countsForCoverage(t.id, tSat)) satWorkers++;
             else if (workSatPattern[t.id] && workSatPattern[t.id][w] && !isVacation(tSat)) satWorkers++;
           }
           // If adding this person's OFF would leave Saturday below the minimum, override
@@ -891,6 +919,144 @@ class ScheduleGenerator {
             this.set(p.id, w, SAT, satShift);
           }
         }
+      }
+    }
+  }
+
+  // ── Reglas Own (SM + People Manager) ────────────────────────────────────────
+  _applyOwnDaysRules() {
+    for (const p of TEAM_DATA) {
+      if (p.role === 'SL') continue;
+      const c = p.c || {};
+
+      // Own fijo por día (SM: L/M)
+      const ownDays = Array.isArray(c.ownDays) ? c.ownDays : [];
+      if (ownDays.length > 0) {
+        for (let w = 0; w < WEEKS; w++) {
+          ownDays.forEach((d) => {
+            const cur = this.get(p.id, w, d);
+            if (!isVacation(cur)) this.set(p.id, w, d, 'Own', true);
+          });
+        }
+      }
+
+      // Own variable por semana (People Manager)
+      const ownPerWeek = Number(c.ownPerWeek || 0);
+      if (ownPerWeek <= 0) continue;
+      const ownNeverOn = new Set(Array.isArray(c.ownNeverOn) ? c.ownNeverOn : []);
+      const personIdx = TEAM_DATA.findIndex(t => t.id === p.id);
+
+      for (let w = 0; w < WEEKS; w++) {
+        const candidates = [];
+        for (let d = MON; d <= FRI; d++) {
+          if (ownNeverOn.has(d)) continue;
+          const cur = this.get(p.id, w, d);
+          if (isVacation(cur) || cur === 'OFF') continue;
+          candidates.push(d);
+        }
+        if (candidates.length === 0) continue;
+        const ownCount = Math.min(ownPerWeek, candidates.length);
+        let start = (w + personIdx + this.seed) % candidates.length;
+        for (let i = 0; i < ownCount; i++) {
+          const d = candidates[(start + i) % candidates.length];
+          this.set(p.id, w, d, 'Own', true);
+        }
+      }
+    }
+  }
+
+  // ── Reglas LDOPS Ops Lead (3 días; si no, 2) ────────────────────────────────
+  _applyOpsLeadLdopsRules() {
+    const maxOverlap = (window.CONFIG && window.CONFIG.planificador &&
+      window.CONFIG.planificador.opsLeadMaxSimultaneousLDOPS != null)
+      ? window.CONFIG.planificador.opsLeadMaxSimultaneousLDOPS
+      : 1;
+    const aurora = TEAM_BY_ID['aurora'];
+    const ruben  = TEAM_BY_ID['ruben'];
+    if (!aurora || !ruben) return;
+
+    function combinations(arr, k) {
+      if (k <= 0) return [[]];
+      if (k > arr.length) return [];
+      const out = [];
+      function rec(start, curr) {
+        if (curr.length === k) { out.push(curr.slice()); return; }
+        for (let i = start; i < arr.length; i++) {
+          curr.push(arr[i]);
+          rec(i + 1, curr);
+          curr.pop();
+        }
+      }
+      rec(0, []);
+      return out;
+    }
+
+    for (let w = 0; w < WEEKS; w++) {
+      const aCfg = aurora.c || {};
+      const rCfg = ruben.c || {};
+      const targetA = Number(aCfg.ldopsPerWeek || 0);
+      const targetR = Number(rCfg.ldopsPerWeek || 0);
+      const minA = Number(aCfg.ldopsMinPerWeek || targetA || 0);
+      const minR = Number(rCfg.ldopsMinPerWeek || targetR || 0);
+      const targetBoth = Math.min(targetA || 0, targetR || 0);
+      const minBoth = Math.min(minA || 0, minR || 0);
+      if (targetBoth <= 0) continue;
+
+      const baseCoverage = new Array(DAYS_PER_WEEK).fill(0);
+      for (let d = MON; d <= SAT; d++) {
+        for (const t of TEAM_DATA) {
+          if (t.role === 'SL') continue;
+          const s = this.get(t.id, w, d);
+          if (countsForCoverage(t.id, s)) baseCoverage[d]++;
+        }
+      }
+
+      const aWorkDays = [];
+      const rWorkDays = [];
+      for (let d = MON; d <= SAT; d++) {
+        const aShift = this.get('aurora', w, d);
+        const rShift = this.get('ruben',  w, d);
+        if (isWorking(aShift) && !isVacation(aShift) && aShift !== 'OFF') aWorkDays.push(d);
+        if (isWorking(rShift) && !isVacation(rShift) && rShift !== 'OFF') rWorkDays.push(d);
+      }
+
+      let chosen = null;
+      const desiredBoth = [targetBoth, minBoth].filter((v, i, arr) => v > 0 && arr.indexOf(v) === i);
+
+      for (const wantBoth of desiredBoth) {
+        if (chosen) break;
+        const wantA = wantBoth;
+        const wantR = wantBoth;
+        const kA = Math.min(wantA, aWorkDays.length);
+        const aCombos = combinations(aWorkDays, kA);
+        const kR = Math.min(wantR, rWorkDays.length);
+        const rCombos = combinations(rWorkDays, kR);
+        for (const aDays of aCombos) {
+          if (chosen) break;
+          const aSet = new Set(aDays);
+          for (const rDays of rCombos) {
+            const overlap = rDays.filter(d => aSet.has(d)).length;
+            if (overlap > maxOverlap) continue;
+
+            let ok = true;
+            const rSet = new Set(rDays);
+            for (let d = MON; d <= SAT; d++) {
+              let cnt = baseCoverage[d];
+              if (aSet.has(d) && countsForCoverage('aurora', this.get('aurora', w, d))) cnt--;
+              if (rSet.has(d) && countsForCoverage('ruben',  this.get('ruben',  w, d))) cnt--;
+              if (cnt < getMinStaffByDay(d)) { ok = false; break; }
+            }
+            if (!ok) continue;
+            chosen = { aDays: aSet, rDays: rSet };
+            break;
+          }
+        }
+      }
+
+      if (!chosen) continue;
+      for (let d = MON; d <= SAT; d++) {
+        if (chosen.aDays.has(d) && !isVacation(this.get('aurora', w, d))) this.set('aurora', w, d, 'LDOPS', true);
+        if (chosen.rDays.has(d) && !isVacation(this.get('ruben',  w, d))) this.set('ruben',  w, d, 'LDOPS', true);
       }
     }
   }
@@ -948,7 +1114,7 @@ class ScheduleGenerator {
       for (const t of TEAM_DATA) {
         if (t.role === 'SL' || t.id === p.id) continue;
         const s = this.get(t.id, w, dayIdx);
-        if (isWorking(s) && !isVacation(s)) count++;
+        if (countsForCoverage(t.id, s)) count++;
       }
       return count;
     };
@@ -1063,6 +1229,8 @@ class ScheduleGenerator {
     this._assignLeadShopping();
     this._assignSundayShifts();   // must be called after all role shifts, before days-off
     this._assignDaysOff();
+    this._applyOwnDaysRules();
+    this._applyOpsLeadLdopsRules();
     this._fillRemaining();
     return this.sched;
   }
@@ -1146,7 +1314,7 @@ class ScheduleGenerator {
       for (const t of TEAM_DATA) {
         if (t.role === 'SL' || t.id === p.id) continue;
         const s = this.get(t.id, w, dayIdx);
-        if (isWorking(s) && !isVacation(s)) count++;
+        if (countsForCoverage(t.id, s)) count++;
       }
       return count;
     };
@@ -1235,7 +1403,8 @@ function scoreSchedule(sched, qStartStr) {
       let working = 0;
       for (const p of TEAM_DATA) {
         if (p.role === 'SL') continue;
-        if (isWorking(sched[p.id]?.[w * DAYS_PER_WEEK + d])) working++;
+        const s = sched[p.id]?.[w * DAYS_PER_WEEK + d];
+        if (countsForCoverage(p.id, s)) working++;
       }
       totalDayChecks++;
       if (working >= minRequired) coveragePassed++;
@@ -1261,7 +1430,7 @@ function scoreSchedule(sched, qStartStr) {
     let morningDays = 0, totalWorkDays = 0;
     for (let i = 0; i < TOTAL_DAYS; i++) {
       const s = sched[p.id]?.[i];
-      if (isWorking(s) && !isVacation(s)) {
+      if (countsForCoverage(p.id, s)) {
         totalWorkDays++;
         if (isMorning(s)) morningDays++;
       }
@@ -1285,8 +1454,10 @@ function scoreSchedule(sched, qStartStr) {
   for (let w = 0; w < WEEKS; w++) {
     for (const [dept, ids] of Object.entries(deptGroups)) {
       if (ids.length < 2) continue;
-      const shifts = ids.map(id => sched[id]?.[w * DAYS_PER_WEEK + MON])
-        .filter(s => isWorking(s) && !isVacation(s));
+      const shifts = ids
+        .map(id => ({ id, shift: sched[id]?.[w * DAYS_PER_WEEK + MON] }))
+        .filter(item => countsForCoverage(item.id, item.shift))
+        .map(item => item.shift);
       if (shifts.length < 2) continue;
       deptChecks++;
       const allMorning = shifts.every(isMorning);
@@ -1303,13 +1474,13 @@ function scoreSchedule(sched, qStartStr) {
     for (let d = MON; d <= FRI; d++) {
       const s = sched['cris_c']?.[w * DAYS_PER_WEEK + d];
       prefChecks++;
-      if (!isWorking(s) || isMorning(s)) prefPassed++;
+      if (!countsForCoverage('cris_c', s) || isMorning(s)) prefPassed++;
     }
   }
   // Eva H: always morning when working
   for (let i = 0; i < TOTAL_DAYS; i++) {
     const s = sched['eva_h']?.[i];
-    if (isWorking(s) && !isVacation(s)) {
+    if (countsForCoverage('eva_h', s)) {
       prefChecks++;
       if (isMorning(s)) prefPassed++;
     }
@@ -1317,7 +1488,7 @@ function scoreSchedule(sched, qStartStr) {
   // Eli: always morning when working
   for (let i = 0; i < TOTAL_DAYS; i++) {
     const s = sched['eli']?.[i];
-    if (isWorking(s) && !isVacation(s)) {
+    if (countsForCoverage('eli', s)) {
       prefChecks++;
       if (isMorning(s)) prefPassed++;
     }
@@ -1381,7 +1552,7 @@ function validateSchedule(sched, qStartStr, sundaySched) {
       for (const p of TEAM_DATA) {
         if (p.role === 'SL') continue;
         const s = sched[p.id]?.[w * DAYS_PER_WEEK + d];
-        if (isWorking(s) && !isVacation(s)) {
+        if (countsForCoverage(p.id, s)) {
           working++;
           if (isMorning(s)) morningCount++;
           if (isAfternoon(s)) afternoonCount++;
@@ -1428,7 +1599,7 @@ function validateSchedule(sched, qStartStr, sundaySched) {
     // Rule: Cris Carcel Mon-Fri must be morning
     for (let d = MON; d <= FRI; d++) {
       const s = sched['cris_c']?.[w * DAYS_PER_WEEK + d];
-      if (isWorking(s) && !isVacation(s) && !isMorning(s)) {
+      if (countsForCoverage('cris_c', s) && !isMorning(s)) {
         violations.push({ week: wLabel, level: 'error',
           msg: `Cris Carcel: tarde el ${DAY_NAMES[d]} S${w+1} (solo mañana L-V)` });
       }
@@ -1437,7 +1608,7 @@ function validateSchedule(sched, qStartStr, sundaySched) {
     // Rule: Eva Hernandez always morning when working
     for (let d = 0; d < DAYS_PER_WEEK; d++) {
       const s = sched['eva_h']?.[w * DAYS_PER_WEEK + d];
-      if (isWorking(s) && !isVacation(s) && !isMorning(s)) {
+      if (countsForCoverage('eva_h', s) && !isMorning(s)) {
         violations.push({ week: wLabel, level: 'error',
           msg: `Eva Hernandez: tarde el ${DAY_NAMES[d]} S${w+1} (siempre mañana)` });
       }
@@ -1446,7 +1617,7 @@ function validateSchedule(sched, qStartStr, sundaySched) {
     // Rule: Eli Moreno always morning when working
     for (let d = 0; d < DAYS_PER_WEEK; d++) {
       const s = sched['eli']?.[w * DAYS_PER_WEEK + d];
-      if (isWorking(s) && !isVacation(s) && !isMorning(s)) {
+      if (countsForCoverage('eli', s) && !isMorning(s)) {
         violations.push({ week: wLabel, level: 'error',
           msg: `Eli Moreno: tarde el ${DAY_NAMES[d]} S${w+1} (siempre mañana)` });
       }
@@ -1459,27 +1630,37 @@ function validateSchedule(sched, qStartStr, sundaySched) {
         msg: `Clara González: libre el Jueves S${w+1} (nunca puede librar jueves)` });
     }
 
-    // Rule: All 4 SM must work Mon+Tue (morning)
+    // Rule: All 4 SM must have Own on Mon+Tue (never OFF)
     const smIds = ['jorge','sheila','itziar','cris_c'];
     for (const id of smIds) {
       for (const d of [MON, TUE]) {
         const s = sched[id]?.[w * DAYS_PER_WEEK + d];
-        if (s === 'OFF') {
+        if (!isVacation(s) && s !== 'Own') {
           const name = TEAM_DATA.find(p => p.id === id)?.name || id;
           violations.push({ week: wLabel, level: 'warning',
-            msg: `${name}: libre el ${DAY_NAMES[d]} S${w+1} (SM deben trabajar L+M de mañana)` });
+            msg: `${name}: ${DAY_NAMES[d]} S${w+1} debería ser Own` });
         }
       }
     }
 
-    // Rule: Ops Leads always crossed (one morning, one afternoon)
-    const auroraSh = sched['aurora']?.[w * DAYS_PER_WEEK + MON];
-    const rubenSh  = sched['ruben']?.[w * DAYS_PER_WEEK + MON];
-    if (isWorking(auroraSh) && isWorking(rubenSh) && !isVacation(auroraSh) && !isVacation(rubenSh)) {
-      if (isMorning(auroraSh) === isMorning(rubenSh)) {
-        violations.push({ week: wLabel, level: 'error',
-          msg: `Aurora y Rubén: mismo turno en S${w+1} (deben estar cruzados)` });
-      }
+    // Rule: Ops Leads LDOPS 3/2 por semana, máximo 1 coincidencia
+    const ldopsDays = [];
+    for (let d = MON; d <= SAT; d++) {
+      const a = sched['aurora']?.[w * DAYS_PER_WEEK + d];
+      const r = sched['ruben']?.[w * DAYS_PER_WEEK + d];
+      if (a === 'LDOPS' && r === 'LDOPS') ldopsDays.push(d);
+    }
+    if (ldopsDays.length > 1) {
+      violations.push({ week: wLabel, level: 'warning',
+        msg: `Aurora y Rubén coinciden en LDOPS ${ldopsDays.length} días en S${w+1} (máx 1)` });
+    }
+    const auroraLdops = Array.from({ length: DAYS_PER_WEEK }, (_, d) => d)
+      .filter(d => sched['aurora']?.[w * DAYS_PER_WEEK + d] === 'LDOPS').length;
+    const rubenLdops = Array.from({ length: DAYS_PER_WEEK }, (_, d) => d)
+      .filter(d => sched['ruben']?.[w * DAYS_PER_WEEK + d] === 'LDOPS').length;
+    if (auroraLdops < 2 || rubenLdops < 2) {
+      violations.push({ week: wLabel, level: 'warning',
+        msg: `Ops Leads con LDOPS bajo en S${w+1} (Aurora ${auroraLdops}, Rubén ${rubenLdops}; mínimo 2)` });
     }
 
     // Rule: Ane Pazos Week A = always morning Mon-Fri
