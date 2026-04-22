@@ -1021,7 +1021,7 @@ class ScheduleGenerator {
       }
 
       let chosen = null;
-      const desiredBoth = [targetBoth, minBoth].filter((v, i, arr) => v > 0 && arr.indexOf(v) === i);
+      const desiredBoth = Array.from(new Set([targetBoth, minBoth])).filter(v => v > 0);
 
       for (const wantBoth of desiredBoth) {
         if (chosen) break;

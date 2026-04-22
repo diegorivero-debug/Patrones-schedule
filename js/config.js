@@ -114,7 +114,7 @@
         jueSabRotacion2x2: true
       },
       restriccionesPersonales: {
-        jorge:  { fixedMorningDays: ['MON', 'WED'], ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
+        jorge:  { fixedMorningDays: ['WED'], ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
         sheila: { ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
         itziar: { ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
         cris_c: { morningOnlyWeekdays: true, ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
