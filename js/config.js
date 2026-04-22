@@ -30,7 +30,12 @@
         managersFloorMinimo: 2,
         coachMinimo: 2,
         floorHoraPunta: 6,
-        horasPunta: ['12:00-14:00', '17:00-21:00']
+        horasPunta: ['12:00-14:00', '17:00-21:00'],
+        cierreInvierno: '21:00',
+        cierreVerano: '21:30',
+        ldopsAorMinStartInvierno: '21:00',
+        ldopsAorMinStartVerano: '21:30',
+        excedenteParaLDOPS: { minSupport: 4, minCoach: 1 }
       },
       bloques: {
         floorMinimoSlots: 4,
@@ -98,6 +103,7 @@
       smMañanaObligatoria: ['LUN', 'MAR'],
       opsLeadsCruzados: true,
       equidadMañanaTarde: 0.5,
+      opsLeadMaxSimultaneousLDOPS: 1,
       opsLeads: {
         diasLdops: 3,
         diasMixtos: 2
@@ -108,10 +114,10 @@
         jueSabRotacion2x2: true
       },
       restriccionesPersonales: {
-        jorge:  { fixedMorningDays: ['MON', 'WED'], neverOffDays: ['MON', 'TUE', 'WED'] },
-        sheila: { neverOffDays: ['MON', 'TUE', 'WED'] },
-        itziar: { neverOffDays: ['MON', 'TUE', 'WED'] },
-        cris_c: { morningOnlyWeekdays: true, neverOffDays: ['MON', 'TUE', 'WED'] },
+        jorge:  { fixedMorningDays: ['WED'], ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
+        sheila: { ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
+        itziar: { ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
+        cris_c: { morningOnlyWeekdays: true, ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
         javi_s: { aorFixedDays: ['MON', 'FRI'], avoidOffDays: ['TUE', 'WED'] },
         // Semana A: L-V 7:00-16:00, finde descanso. Semana B: libre disposición.
         // Ancla: semana del 2026-03-30 (lunes) = Semana A. Alterna A,B,A,B...
@@ -131,8 +137,13 @@
             THU: { start: '07:00', end: '16:00' },
             FRI: { start: '07:00', end: '16:00' }
           },
-          availableWeekends: true
+          availableWeekends: true,
+          ownPerWeek: 1,
+          ownNeverOn: ['SAT'],
+          ownCountsForCoverage: false,
+          role: 'PEOPLE_MANAGER'
         },
+        toni:   { ownPerWeek: 1, ownNeverOn: ['SAT'], ownCountsForCoverage: false, role: 'PEOPLE_MANAGER' },
         eva_h:  { morningOnly: true, altWeekend: true, hours32: true },
         eli:    { morningOnly: true, altWeekend: true },
         clara:  {
@@ -141,8 +152,8 @@
           // Los jueves Clara no está disponible para floor hasta las 13:00
           thursdayFloorAvailableFrom: '13:00'
         },
-        aurora: { crossedWith: 'ruben' },
-        ruben:  { crossedWith: 'aurora' }
+        aurora: { crossedWith: 'ruben', ldopsPerWeek: 3, ldopsMinPerWeek: 2, role: 'OPS_LEAD' },
+        ruben:  { crossedWith: 'aurora', ldopsPerWeek: 3, ldopsMinPerWeek: 2, role: 'OPS_LEAD' }
       }
     },
     alertas: {
