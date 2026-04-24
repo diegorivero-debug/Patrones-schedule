@@ -219,10 +219,10 @@ function buildDrillValidations(patIdx, rowIdx, row, BR) {
   }
 
   // 5. If starts before 09:15, activity before opening should be LDOPS/AOR/DD
-  var openStore = TIME_SLOTS.indexOf('09:30');
-  if (si < openStore) {
+  var openStoreSlot = TIME_SLOTS.indexOf('09:30');
+  if (si < openStoreSlot) {
     var preOpenOk = true;
-    for (var c4 = si; c4 < Math.min(openStore, ei); c4++) {
+    for (var c4 = si; c4 < Math.min(openStoreSlot, ei); c4++) {
       var a = row.acts[c4];
       if (a && a !== 'LDOPS' && a !== 'AOR' && a !== 'DD' && a !== '') {
         preOpenOk = false; break;

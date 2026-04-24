@@ -81,7 +81,8 @@ function getEquityData() {
 
       // Morning/afternoon: morning if shift starts <= 09:30
       var startTime = row.shift ? row.shift.split('-')[0] : '';
-      var startHour = parseInt(startTime.replace(':', ''), 10);
+      var startHourStr = startTime.replace(':', '');
+      var startHour = startHourStr ? parseInt(startHourStr, 10) : 1200;
       var isMorning = startHour <= 930;
 
       days.push({ role: role, shift: row.shift, isMorning: isMorning, off: false });

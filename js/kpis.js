@@ -258,7 +258,6 @@ function buildCoverageHeatmap(patIdx) {
   svg += '<line x1="' + closeLineX + '" y1="0" x2="' + closeLineX + '" y2="' + linesH + '" class="hm-close-line" stroke-width="2" stroke-dasharray="4,3"/>';
 
   // X-axis labels — only full hours & notable slots
-  var shownLabels = new Set();
   for (var i = 0; i < n; i++) {
     var t = TIME_SLOTS[i];
     if (t.slice(3) === '00') { // full hour
