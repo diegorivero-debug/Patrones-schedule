@@ -45,6 +45,7 @@
     <button class="tab-btn"        data-pat="4">🏪 Domingo</button>
     <button class="tab-btn"        data-pat="week">📅 Semana</button>
     <button class="tab-btn"        data-pat="planner">📋 Planificar</button>
+    <button class="tab-btn"        data-pat="equity">⚖️ Equidad Mgr</button>
   </div>
   <div class="action-btns">
     <!-- Grupo Edición -->
@@ -90,6 +91,8 @@
 </div>
 <div class="main">
   <div id="quick-stats" class="quick-stats"></div>
+  <div id="kpi-cards"></div>
+  <div id="kpi-heatmap"></div>
   <div id="schedule-container"></div>
 </div>
 
@@ -164,6 +167,17 @@
 <!-- Coverage chart tooltip (global, reused across renders) -->
 <div class="chart-tooltip-box" id="chart-tooltip-box"></div>
 
+<!-- Person Drill-down Modal -->
+<div class="modal-overlay" id="modal-person-drill" role="dialog" aria-modal="true" aria-labelledby="pd-modal-title" onclick="if(event.target===this)closePersonDrilldown()">
+  <div class="modal modal-person-drill-inner">
+    <div class="modal-person-drill-topbar">
+      <h2 id="pd-modal-title">👤 Detalle de persona</h2>
+      <button class="pd-close-btn" onclick="closePersonDrilldown()" aria-label="Cerrar detalle">✕</button>
+    </div>
+    <div class="person-drill-body"></div>
+  </div>
+</div>
+
 <!-- Team Management Modal -->
 <div class="modal-overlay" id="modal-team" onclick="if(event.target===this)closeTeamModal()">
   <div class="modal team-modal">
@@ -178,6 +192,9 @@
 
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
+<script src="js/kpis.js"></script>
+<script src="js/person-drill.js"></script>
+<script src="js/equity-tracker.js"></script>
 <script>
 /* Cierra el dropdown de exportar al hacer clic fuera */
 document.addEventListener('click', function(e) {
