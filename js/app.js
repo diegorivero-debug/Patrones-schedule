@@ -1850,7 +1850,8 @@ function cellClick(evt, patIdx, rowIdx, colIdx) {
 
 document.addEventListener('click', e => { if (openDropdownEl&&!openDropdownEl.contains(e.target)) closeDropdown(); });
 
-// Close export dropdown when clicking outside it
+// Close export dropdown when clicking outside it (clicking the toggle button itself is
+// excluded because it is a child of .export-dropdown and the toggle onclick handles that).
 document.addEventListener('click', e => {
   const dd = document.querySelector('.export-dropdown.open');
   if (dd && !dd.contains(e.target)) dd.classList.remove('open');
@@ -2795,13 +2796,11 @@ function confirmAIPreview() {
   currentState[patIdx] = original;
   aiPreviewState = null;
   // Ensure the suggestion is applied to the pattern that was previewed
-  const prevActivePattern = activePattern;
   activePattern = patIdx;
   applySuggestion(suggestionId);
-  // Restore activePattern only if the tab visually differs (applySuggestion already re-renders)
-  if (prevActivePattern !== patIdx) {
-    // Sync the tab-btn active class to match patIdx
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.pat == patIdx));
+  // If the active tab showed a different pattern, sync the tab-btn highlight to patIdx
+  if (patIdx !== parseInt(document.querySelector('.tab-btn.active')?.dataset.pat ?? NaN)) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.pat === String(patIdx)));
   }
   document.querySelectorAll('td.ai-preview').forEach(td => td.classList.remove('ai-preview'));
   const banner = document.getElementById('ai-preview-banner');
