@@ -636,7 +636,7 @@ function saveTeamModal() {
   saveTeam();
   closeTeamModal();
   // Auto-assign on all patterns with the updated team data
-  for (let i = 0; i < 4; i++) autoAssignNames(i);
+  for (let i = 0; i < 5; i++) autoAssignNames(i);
   saveState();
   const activeTab = document.querySelector('.tab-btn.active');
   if (activeTab && activeTab.dataset.pat === 'week') renderWeeklyView();
@@ -1088,7 +1088,7 @@ function buildPersonRow(patIdx, rowIdx, row, cls) {
     const draggable = a ? ' draggable="true"' : '';
     h += `<td class="act-cell"${draggable} data-pat="${patIdx}" data-row="${rowIdx}" data-col="${c}" style="background:${bg};color:${fg}" onclick="cellClick(event,${patIdx},${rowIdx},${c})">${esc(a)}</td>`;
   }
-  h += `<td class="col-hours">${buildHoursCell(row)}</td>`;
+  h += `<td class="col-hours" data-hours-row="${rowIdx}">${buildHoursCell(row)}</td>`;
   h += `<td class="col-actions"><button class="del-btn" title="Eliminar persona" onclick="deletePerson(${patIdx},${rowIdx})">✕</button></td>`;
   return h+'</tr>';
 }
@@ -1830,6 +1830,7 @@ function cellClick(evt, patIdx, rowIdx, colIdx) {
     saveState();
     // Refresh hours cell for this row
     const hcell = document.querySelector(`td.col-hours[data-hours-row="${rowIdx}"]`);
+    if (hcell) hcell.innerHTML = buildHoursCell(currentState[patIdx][rowIdx]);
     // Re-render summary, chart & alerts
     const sc=document.querySelector('.summary-section');
     if (sc) { const t=document.createElement('div'); t.innerHTML=buildSummaryTable(patIdx); sc.replaceWith(t.firstChild); }
@@ -1848,6 +1849,13 @@ function cellClick(evt, patIdx, rowIdx, colIdx) {
 }
 
 document.addEventListener('click', e => { if (openDropdownEl&&!openDropdownEl.contains(e.target)) closeDropdown(); });
+
+// Close export dropdown when clicking outside it (clicking the toggle button itself is
+// excluded because it is a child of .export-dropdown and the toggle onclick handles that).
+document.addEventListener('click', e => {
+  const dd = document.querySelector('.export-dropdown.open');
+  if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+});
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SEASON TOGGLE
@@ -1868,13 +1876,15 @@ function switchSeason(season) {
   try { localStorage.setItem(LS_KEY_SEASON, season); } catch(e) {}
   // Update button UI
   document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.season === season));
-  // Clear undo/redo history when switching season
-  for (let i = 0; i < 4; i++) { undoHistory[i] = []; redoHistory[i] = []; }
+  // Clear undo/redo history when switching season (includes Sunday pattern 4)
+  for (let i = 0; i < 5; i++) { undoHistory[i] = []; redoHistory[i] = []; }
   updateUndoRedoButtons();
-  // Re-render active tab (weekly or pattern)
+  // Re-render active tab (weekly, planner, or pattern)
   const activeTab = document.querySelector('.tab-btn.active');
   if (activeTab && activeTab.dataset.pat === 'week') {
     renderWeeklyView();
+  } else if (activeTab && activeTab.dataset.pat === 'planner') {
+    renderPlannerView();
   } else {
     render(activePattern);
   }
@@ -2333,9 +2343,9 @@ function confirmShiftEdit(patIdx, rowIdx) {
 // WHAT-IF SIMULATOR
 // ═══════════════════════════════════════════════════════════════════════════════
 function toggleWhatif() {
-  // What-if only works on individual pattern views (not weekly)
+  // What-if only works on individual pattern views (not weekly or planner)
   const activeTab = document.querySelector('.tab-btn.active');
-  if (activeTab && activeTab.dataset.pat === 'week') return;
+  if (activeTab && (activeTab.dataset.pat === 'week' || activeTab.dataset.pat === 'planner')) return;
 
   whatifMode = !whatifMode;
 
@@ -2594,7 +2604,7 @@ function renderWhatifImpact() {
 document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.season === activeSeason));
 // Auto-assign names on startup (only for rows without an existing assignment)
 if (teamData.leads.length > 0 || teamData.managers.length > 0) {
-  for (let i = 0; i < 4; i++) autoAssignNames(i);
+  for (let i = 0; i < 5; i++) autoAssignNames(i);
 }
 render(0);
 updateUndoRedoButtons();
@@ -2785,7 +2795,13 @@ function confirmAIPreview() {
   // Restore original first, then apply with undo
   currentState[patIdx] = original;
   aiPreviewState = null;
+  // Ensure the suggestion is applied to the pattern that was previewed
+  activePattern = patIdx;
   applySuggestion(suggestionId);
+  // If the active tab showed a different pattern, sync the tab-btn highlight to patIdx
+  if (patIdx !== parseInt(document.querySelector('.tab-btn.active')?.dataset.pat ?? NaN)) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.pat === String(patIdx)));
+  }
   document.querySelectorAll('td.ai-preview').forEach(td => td.classList.remove('ai-preview'));
   const banner = document.getElementById('ai-preview-banner');
   if (banner) banner.classList.remove('visible');
