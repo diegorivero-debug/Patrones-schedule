@@ -1779,6 +1779,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       renderPlannerView();
     } else if (btn.dataset.pat === 'equity') {
       if (typeof renderEquityTrackerView === 'function') renderEquityTrackerView();
+    } else if (btn.dataset.pat === 'real') {
+      if (typeof renderRealDayView === 'function') renderRealDayView();
     } else {
       activePattern = parseInt(btn.dataset.pat);
       render(activePattern);
@@ -1889,6 +1891,10 @@ function switchSeason(season) {
     renderWeeklyView();
   } else if (activeTab && activeTab.dataset.pat === 'planner') {
     renderPlannerView();
+  } else if (activeTab && activeTab.dataset.pat === 'equity') {
+    if (typeof renderEquityTrackerView === 'function') renderEquityTrackerView();
+  } else if (activeTab && activeTab.dataset.pat === 'real') {
+    if (typeof renderRealDayView === 'function') renderRealDayView();
   } else {
     render(activePattern);
   }

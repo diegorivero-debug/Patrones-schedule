@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="manifest.webmanifest">
 <title>🗓️ Leadership Schedule - Dashboard</title>
 <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -46,6 +48,7 @@
     <button class="tab-btn"        data-pat="week">📅 Semana</button>
     <button class="tab-btn"        data-pat="planner">📋 Planificar</button>
     <button class="tab-btn"        data-pat="equity">⚖️ Equidad Mgr</button>
+    <button class="tab-btn"        data-pat="real">📂 Día Real</button>
   </div>
   <div class="action-btns">
     <!-- Grupo Edición -->
@@ -195,6 +198,8 @@
 <script src="js/kpis.js"></script>
 <script src="js/person-drill.js"></script>
 <script src="js/equity-tracker.js"></script>
+<script src="js/real-day.js"></script>
+<script src="js/command-palette.js"></script>
 <script>
 /* Cierra el dropdown de exportar al hacer clic fuera */
 document.addEventListener('click', function(e) {
@@ -236,5 +241,6 @@ document.addEventListener('click', function(e) {
   <button onclick="confirmAIPreview()">✅ Aplicar</button>
   <button onclick="cancelAIPreview()">❌ Cancelar</button>
 </div>
+<script src="js/pwa.js"></script>
 </body>
 </html>

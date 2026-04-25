@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="manifest.webmanifest">
 <title>⚙️ Ajustes · Leadership Schedule</title>
 <link rel="stylesheet" href="css/ajustes.css">
 </head>
@@ -458,6 +460,19 @@
         </label>
       </div>
       <p id="backup-status" style="font-size:0.82rem;color:var(--text-muted);margin-top:0.75rem;"></p>
+    </div>
+
+    <!-- PWA Install Section -->
+    <div class="settings-section">
+      <h2>📲 Instalar aplicación</h2>
+      <p class="help-text">Instala la app en tu dispositivo para acceder más rápido y poder usarla sin conexión (requiere servidor HTTP — ver notas abajo).</p>
+      <div class="form-row" style="margin-top:1rem;">
+        <button class="btn-save pwa-install-btn" style="display:none" onclick="window.triggerPWAInstall()">📲 Instalar app en este dispositivo</button>
+        <p style="font-size:.82rem;color:var(--text-muted);margin-top:8px;">
+          Si el botón no aparece, tu navegador ya tiene la app instalada o no está sirviendo la página desde HTTP.<br>
+          Para activar el modo offline, sirve la carpeta con: <code style="background:var(--surface-alt);padding:2px 5px;border-radius:4px;">python3 -m http.server 8080</code>
+        </p>
+      </div>
     </div>
 
   </div>
@@ -958,5 +973,7 @@
 
 })();
 </script>
+<script src="js/command-palette.js"></script>
+<script src="js/pwa.js"></script>
 </body>
 </html>
