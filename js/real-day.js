@@ -12,6 +12,24 @@ var REAL_ES_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sába
 // Currently selected day index within the available days
 var realDaySelectedIdx = 0;
 
+// Cached data reference for event delegation (updated on each render)
+var _realCurrentData = null;
+
+// ── Initialize schedule-container click delegation (once) ─────────────────────
+// We attach once and look up data from _realCurrentData to avoid duplicate listeners.
+(function initRealClickDelegation() {
+  document.addEventListener('DOMContentLoaded', function() {
+    var sc = document.getElementById('schedule-container');
+    if (!sc) return;
+    sc.addEventListener('click', function(e) {
+      var card = e.target.closest('.real-person-card');
+      if (!card || !_realCurrentData) return;
+      var personName = card.dataset.personName;
+      if (personName) openRealPersonDrilldown(personName, _realCurrentData);
+    });
+  });
+})();
+
 // ── Load / persist helpers ────────────────────────────────────────────────────
 
 function loadRealSchedule() {
@@ -25,6 +43,7 @@ function loadRealSchedule() {
 
 function renderRealDayView() {
   var data = loadRealSchedule();
+  _realCurrentData = data;  // Update cached reference for event delegation
 
   var subtitle = document.getElementById('subtitle');
   var kpiEl    = document.getElementById('kpi-cards');
@@ -214,7 +233,8 @@ function buildRealScheduleHTML(data, availableDays, selectedDay, persons) {
     for (var gi = 0; gi < groupPersons.length; gi++) {
       var p = groupPersons[gi];
       var shiftColor = getRealShiftColor(p.shift);
-      gh += '<div class="real-person-card ' + rowClass + '" onclick="openRealPersonDrilldown(' + JSON.stringify(p.name) + ', ' + JSON.stringify(data) + ')">' +
+      // Use data-person-name attribute; click is handled via event delegation
+      gh += '<div class="real-person-card ' + rowClass + '" data-person-name="' + escAttr(p.name) + '">' +
         '<div class="real-person-name">' + esc(p.name) + '</div>' +
         '<div class="real-person-role" style="color:' + (rowClass === 'real-lead' ? 'var(--lead-text)' : 'var(--mgr-text)') + '">' + esc(p.role) + '</div>' +
         '<div class="real-person-shift" style="background:' + shiftColor.bg + ';color:' + shiftColor.text + '">' + esc(p.shift) + '</div>' +
