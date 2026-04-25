@@ -22,10 +22,18 @@ var _realCurrentData = null;
     var sc = document.getElementById('schedule-container');
     if (!sc) return;
     sc.addEventListener('click', function(e) {
+      // Person card click → drill-down
       var card = e.target.closest('.real-person-card');
-      if (!card || !_realCurrentData) return;
-      var personName = card.dataset.personName;
-      if (personName) openRealPersonDrilldown(personName, _realCurrentData);
+      if (card && _realCurrentData) {
+        var personName = card.dataset.personName;
+        if (personName) { openRealPersonDrilldown(personName, _realCurrentData); return; }
+      }
+      // Day selector button click
+      var dayBtn = e.target.closest('.real-day-btn');
+      if (dayBtn) {
+        var idx = parseInt(dayBtn.dataset.dayIdx, 10);
+        if (!isNaN(idx)) selectRealDay(idx);
+      }
     });
   });
 })();
@@ -207,7 +215,7 @@ function buildRealScheduleHTML(data, availableDays, selectedDay, persons) {
     var count = data.days[day] ? data.days[day].length : 0;
     var isActive = day === selectedDay;
     h += '<button class="real-day-btn' + (isActive ? ' active' : '') + '" ' +
-      'onclick="selectRealDay(' + i + ')" aria-pressed="' + isActive + '">' +
+      'data-day-idx="' + i + '" aria-pressed="' + isActive + '">' +
       esc(day.substring(0, 3)) +
       '<span class="real-day-count">' + count + '</span>' +
       '</button>';
