@@ -195,3 +195,82 @@ Patrones de schedule optimizados para asegurar la cobertura mínima de la tienda
 ### Actividades por zona
 - **Floor:** LDSup (Leads), Coach (Mgr), Support (Mgr) — cuentan como cobertura
 - **Oficina/back:** LDOPS (Leads), AOR (Mgr) — NO cuentan como cobertura de floor, pero disponibles para emergencias
+
+---
+
+## Nuevas funcionalidades (v4)
+
+### 📂 Modo "Día Real"
+
+Permite visualizar en el Dashboard el horario real que fue importado desde el Auditor.
+
+**Cómo usarlo:**
+
+1. Abre **Auditor de Horarios** (`auditor.html`).
+2. Importa tu archivo `.xlsx` o `.csv` con el horario de la semana.
+3. El auditor guarda automáticamente el horario en `localStorage` (clave `realSchedule:v1`).
+4. Vuelve al **Dashboard** (`dashboard.html`) y haz clic en la pestaña **📂 Día Real**.
+5. Selecciona el día que quieres ver (Lunes–Sábado).
+6. Verás quién trabaja ese día, su tipo de turno (Early/Mid/Late/Close) y KPIs básicos.
+7. Haz clic en cualquier persona para ver su semana completa (drill-down).
+
+**Notas:**
+- Si no hay datos importados, verás un estado vacío con un enlace directo al Auditor.
+- Los KPIs del Día Real se basan en número de personas y cobertura de apertura/cierre (no en actividades por franja, ya que el auditor sólo tiene tipos de turno, no actividad slot a slot).
+
+---
+
+### ⌘K Command Palette
+
+Paleta de comandos accesible desde **cualquier página** del sitio.
+
+**Cómo abrir:**
+- **Mac:** `⌘K`
+- **Windows/Linux:** `Ctrl+K`
+- También hay un botón 🔍 en la barra de navegación superior.
+
+**Comandos disponibles:**
+- **Navegación:** ir a cualquier módulo (Dashboard, Auditor, Equipo, Vacaciones, Planificador, Equidad, Ajustes, Inicio).
+- **Patrones** (desde Dashboard): cambiar a cualquier patrón o vista (Día Normal, Martes, Sábado, Semana, Día Real, Equidad…).
+- **Acciones** (desde Dashboard): cambiar tema, cambiar temporada, añadir figura, generar patrón, activar What-if, abrir reglas, abrir IA Advisor, resetear, exportar, deshacer/rehacer.
+- **Búsqueda de personas** (desde Dashboard): escribe un nombre del equipo para abrir su drill-down.
+
+**Controles del teclado en la paleta:**
+- `↑↓` para navegar entre opciones.
+- `Enter` para ejecutar.
+- `Esc` para cerrar.
+
+---
+
+### 📱 PWA instalable + offline
+
+El sitio es una Progressive Web App (PWA): se puede instalar en cualquier dispositivo y funciona offline tras la primera carga.
+
+**Instalar la app:**
+1. Sirve el sitio en local (ver abajo) o desde un servidor HTTPS.
+2. Espera a que aparezca el botón **📲 Instalar app** en la barra de navegación, o ve a **Ajustes** → sección **Instalar aplicación**.
+3. Haz clic en el botón y acepta el prompt del navegador.
+
+**Modo offline:**
+- Tras la primera carga online, todos los recursos (HTML, CSS, JS, CSVs, iconos) quedan en caché.
+- Puedes recargar la página sin conexión y seguir usando el Dashboard, Auditor y demás módulos.
+- El indicador de estado (puntito verde/rojo en el header) muestra el estado de la conexión.
+
+**Cómo levantar un servidor local para activar el Service Worker:**
+
+```bash
+# Opción 1: Python 3
+cd /ruta/a/Patrones-schedule
+python3 -m http.server 8080
+# Abre: http://localhost:8080
+
+# Opción 2: Node.js (si tienes npx)
+npx serve .
+# o
+npx http-server -p 8080
+
+# Opción 3: VS Code + Live Server
+# Instala la extensión "Live Server" y haz clic en "Go Live"
+```
+
+> **Nota:** El Service Worker **no funciona** abriendo los HTML directamente con `file://`. Todo lo demás (dashboard, auditor, equipo, etc.) sigue funcionando normalmente sin servidor.

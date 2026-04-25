@@ -479,6 +479,8 @@ function loadFromPreload(preload) {
     timestamp:  preload.timestamp,
   };
 
+  persistRealSchedule(state.fileName, state.parsedPersons, state.weekDates);
+
   // Hide the upload section and show the planner banner instead
   const uploadSection = document.getElementById('upload-section');
   if (uploadSection) uploadSection.style.display = 'none';
@@ -656,6 +658,7 @@ function parseFile(buffer, ext) {
   state.parsedPersons = parsed.persons;
   state.weekDates = parsed.weekDates;
 
+  persistRealSchedule(state.fileName, parsed.persons, parsed.weekDates);
   runAudit();
   showLoading(false);
   renderSummaryCards();
@@ -826,8 +829,61 @@ function normalizeShift(raw) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AUDIT ENGINE
+// PERSIST REAL SCHEDULE — stores parsed schedule in localStorage for Dashboard
 // ═══════════════════════════════════════════════════════════════════════════
+function persistRealSchedule(fileName, persons, weekDates) {
+  try {
+    const DAY_KEY_TO_ES = {
+      Mon: 'Lunes', Tue: 'Martes', Wed: 'Miércoles',
+      Thu: 'Jueves', Fri: 'Viernes', Sat: 'Sábado', Sun: 'Domingo',
+    };
+    // Determine season from the same Dashboard localStorage key (fall back to 'verano')
+    const storedSeason = localStorage.getItem('schedule_season') || 'verano';
+
+    // Detect weekStart from weekDates labels
+    let weekStart = null;
+    for (const wd of weekDates) {
+      const d = parseDateFromLabel(wd.label);
+      if (d) { weekStart = d.toISOString(); break; }
+    }
+
+    // Build days map keyed by Spanish day name
+    const days = {};
+    for (let i = 0; i < weekDates.length; i++) {
+      const wd = weekDates[i];
+      const esKey = DAY_KEY_TO_ES[wd.key] || wd.label;
+      const personList = [];
+      for (const p of persons) {
+        const shift = (p.days && p.days[wd.key]) || '';
+        if (!shift || shift === 'Off' || shift === 'Holidays') continue;
+        personList.push({
+          name: p.name,
+          role: p.role || '',
+          dept: p.dept || '',
+          shift: shift,
+          activities: [],  // auditor data doesn't have slot-level activities
+        });
+      }
+      if (personList.length > 0) {
+        days[esKey] = personList;
+      }
+    }
+
+    const payload = {
+      importedAt: new Date().toISOString(),
+      fileName: fileName || 'horario importado',
+      weekStart: weekStart,
+      season: storedSeason,
+      weekDates: weekDates,
+      days: days,
+    };
+    localStorage.setItem('realSchedule:v1', JSON.stringify(payload));
+  } catch(e) {
+    // Non-fatal: if localStorage is full or unavailable, skip silently
+  }
+}
+
+
 
 // Build a human-readable closing fix description from shortage counts
 function buildClosingFix(dayLabel, leadShortage, mgrShortage) {
