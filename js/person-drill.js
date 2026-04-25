@@ -218,9 +218,11 @@ function buildDrillValidations(patIdx, rowIdx, row, BR) {
     checks.push({ ok: hasDDSlot, text: 'DD a las 09:15 ' + (hasDDSlot ? 'asignado' : 'NO asignado') });
   }
 
-  // 5. If starts before 09:15, activity before opening should be LDOPS/AOR/DD
-  var openStoreSlot = TIME_SLOTS.indexOf('09:30');
-  if (si < openStoreSlot) {
+  // 5. If starts before store opening, activity before opening should be LDOPS/AOR/DD
+  var openStart = getOpenStart(patIdx);
+  if (!openStart && BR && BR.store) openStart = BR.store.openTime;
+  var openStoreSlot = TIME_SLOTS.indexOf(openStart);
+  if (openStoreSlot !== -1 && si < openStoreSlot) {
     var preOpenOk = true;
     for (var c4 = si; c4 < Math.min(openStoreSlot, ei); c4++) {
       var a = row.acts[c4];
