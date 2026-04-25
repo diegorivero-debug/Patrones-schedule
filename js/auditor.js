@@ -837,8 +837,8 @@ function persistRealSchedule(fileName, persons, weekDates) {
       Mon: 'Lunes', Tue: 'Martes', Wed: 'Miércoles',
       Thu: 'Jueves', Fri: 'Viernes', Sat: 'Sábado', Sun: 'Domingo',
     };
-    // Determine season from current app theme / localStorage (fall back to 'verano')
-    const storedSeason = localStorage.getItem('app_season') || 'verano';
+    // Determine season from the same Dashboard localStorage key (fall back to 'verano')
+    const storedSeason = localStorage.getItem('schedule_season') || 'verano';
 
     // Detect weekStart from weekDates labels
     let weekStart = null;
