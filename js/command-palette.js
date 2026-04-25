@@ -314,11 +314,39 @@
       if (e.target === overlayEl) close();
     });
 
-    // Focus trap: keep focus inside the palette
+    function getFocusableElements() {
+      var focusable = overlayEl.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), ' +
+        'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+
+      return Array.prototype.filter.call(focusable, function(el) {
+        return el.offsetParent !== null;
+      });
+    }
+
+    // Focus trap: keep focus inside the palette while allowing keyboard navigation
     overlayEl.addEventListener('keydown', function(e) {
-      if (e.key === 'Tab') {
+      if (e.key !== 'Tab') return;
+
+      var focusableEls = getFocusableElements();
+      if (!focusableEls.length) return;
+
+      var firstEl = focusableEls[0];
+      var lastEl = focusableEls[focusableEls.length - 1];
+      var activeEl = document.activeElement;
+
+      if (e.shiftKey) {
+        if (activeEl === firstEl || overlayEl !== activeEl && !overlayEl.contains(activeEl)) {
+          e.preventDefault();
+          lastEl.focus();
+        }
+        return;
+      }
+
+      if (activeEl === lastEl) {
         e.preventDefault();
-        inputEl.focus();
+        firstEl.focus();
       }
     });
   }
