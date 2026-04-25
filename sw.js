@@ -77,17 +77,17 @@ self.addEventListener('fetch', function(event) {
   // Only handle GET requests
   if (request.method !== 'GET') return;
 
-  // Skip cross-origin requests (CDN, etc.) and chrome-extension
+  // Only handle HTTP(S) requests; ignore browser-extension and other unsupported schemes
   var url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
   // Stale-while-revalidate: respond from cache immediately, update in background
   event.respondWith(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.match(request).then(function(cached) {
         var fetchPromise = fetch(request).then(function(response) {
-          // Cache valid responses
-          if (response && response.status === 200 && response.type === 'basic') {
+          // Cache successful same-origin/basic, cross-origin/cors, and opaque responses
+          if (response && (response.ok || response.type === 'opaque')) {
             cache.put(request, response.clone());
           }
           return response;
