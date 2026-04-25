@@ -1081,7 +1081,7 @@ function buildHoursCell(row) {
 function buildPersonRow(patIdx, rowIdx, row, cls) {
   let h = `<tr class="${cls}" data-pat="${patIdx}" data-row="${rowIdx}" draggable="true" ondragstart="onDragStart(event,${patIdx},${rowIdx})" ondragover="onDragOver(event)" ondrop="onDrop(event,${patIdx},${rowIdx})" ondragleave="onDragLeave(event)">`;
   h += `<td class="col-drag"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>`;
-  h += `<td class="col-role name-cell-wrap" onclick="openAssignDropdown(event,${patIdx},${rowIdx})" title="Clic para asignar nombre">${renderNameCell(row)}</td>`;
+  h += `<td class="col-role name-cell-wrap" onclick="openAssignDropdown(event,${patIdx},${rowIdx})" title="Clic para asignar nombre">${renderNameCell(row)}<button class="drill-btn" onclick="event.stopPropagation();openPersonDrilldown(${patIdx},${rowIdx})" title="Ver detalle de esta persona" aria-label="Ver detalle">ℹ</button></td>`;
   h += `<td class="col-shift" onclick="openShiftEdit(event,${patIdx},${rowIdx})" title="Clic para editar turno"><span class="shift-text">${esc(row.shift)}</span><span class="shift-edit-icon">✏️</span></td>`;
   for (let c=0;c<TIME_SLOTS.length;c++) {
     const a=row.acts[c], bg=getColor(a), fg=textColor(bg);
@@ -1572,6 +1572,7 @@ function render(patIdx) {
   document.getElementById('subtitle').textContent = PATTERN_NAMES[patIdx] + seasonTag;
   renderAlerts(patIdx);
   document.getElementById('quick-stats').innerHTML = buildQuickStats(patIdx);
+  if (typeof renderKPISection === 'function') renderKPISection(patIdx);
   document.getElementById('schedule-container').innerHTML =
     buildScheduleTable(patIdx) + buildSummaryTable(patIdx) + buildCoverageChart(patIdx) + buildLegend() + buildRulesSection();
   applyWhatifVisuals();
@@ -1731,6 +1732,7 @@ function buildWeeklyView() {
 
 function renderWeeklyView() {
   closeDropdown();
+  if (typeof renderKPISection === 'function') renderKPISection(null);
   const seasonTag = activeSeason === 'invierno' ? ' · ❄️ Invierno' : ' · ☀️ Verano';
   document.getElementById('subtitle').textContent = 'Vista Semanal (Lun–Sáb)' + seasonTag;
   const badge   = document.getElementById('alerts-badge');
@@ -1775,6 +1777,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       renderWeeklyView();
     } else if (btn.dataset.pat === 'planner') {
       renderPlannerView();
+    } else if (btn.dataset.pat === 'equity') {
+      if (typeof renderEquityTrackerView === 'function') renderEquityTrackerView();
     } else {
       activePattern = parseInt(btn.dataset.pat);
       render(activePattern);
@@ -2611,6 +2615,14 @@ updateUndoRedoButtons();
 
 // ── Undo/Redo keyboard shortcuts ─────────────────────────────────────────────
 document.addEventListener('keydown', function(e) {
+  // Close person drill-down modal on Esc
+  if (e.key === 'Escape') {
+    const drillModal = document.getElementById('modal-person-drill');
+    if (drillModal && drillModal.classList.contains('open')) {
+      if (typeof closePersonDrilldown === 'function') closePersonDrilldown();
+      return;
+    }
+  }
   // Skip if a modal is open or an input/textarea/select has focus
   if (document.querySelector('.modal-overlay.open')) return;
   const tag = document.activeElement && document.activeElement.tagName;
@@ -4123,6 +4135,7 @@ function advancePlanStatus(weekId) {
 function renderPlannerView() {
   closeDropdown();
   closePlannerPopover();
+  if (typeof renderKPISection === 'function') renderKPISection(null);
 
   if (!plannerCurrentWeek) plannerCurrentWeek = getCurrentWeekId();
 

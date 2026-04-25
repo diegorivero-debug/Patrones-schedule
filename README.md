@@ -1,5 +1,41 @@
 # Patrones de Schedule - Cobertura de Tienda
 
+## 🆕 Novedades del Dashboard (v3.3)
+
+### Feature 1 — KPIs Semáforo + Heatmap de Cobertura
+Encima del schedule se muestran **6 tarjetas semáforo** (verde/ámbar/rojo) calculadas en tiempo real para el patrón visible:
+
+| KPI | Umbral verde | Umbral ámbar | Umbral rojo |
+|---|---|---|---|
+| **Cobertura Floor** | ≥ 95 % franjas OK | 80–94 % | < 80 % |
+| **Coach (min–max)** | mín ≥ 2 | mín = 1 | mín = 0 |
+| **Managers Floor** | mín ≥ 2 | mín = 1 | mín = 0 |
+| **Apertura** | ≥ 2 personas en 07:00 / 08:00 | — | < 2 |
+| **Cierre** | ≥ 2 Leads + ≥ 1 Mgr al cierre | parcial | ninguno |
+| **Balance Horas** | ≥ 80 % personas OK vs target | 60–79 % | < 60 % |
+
+Hacer **clic en una tarjeta roja/ámbar** hace scroll al schedule y resalta (con animación) las franjas problemáticas.
+
+Justo debajo se muestra un **heatmap SVG** con filas Total Floor / Support / Coach / Managers / Leads y columnas de 30 min desde 07:00 hasta 22:00. Las líneas verticales marcan apertura y cierre de tienda. Reacciona al toggle Verano/Invierno. Pasa el ratón sobre una celda para ver el conteo exacto.
+
+### Feature 2 — Drill-down por persona
+Cada fila de persona en el schedule muestra un botón **ℹ** (al hacer hover). Al pulsarlo se abre un modal con:
+- Cabecera: nombre, rol, turno.
+- **Mini-timeline** horizontal con bloques coloreados por actividad.
+- **Resumen de horas** del día (floor, gestión, lunch) comparado con el target del rol (verde si cumple, rojo si no).
+- **Validaciones individuales**: lunch en ventana 11:00–17:00, bloques floor ≥ 2 h seguidas, AOR/LDOPS en máx 2 bloques, pre-apertura en actividades correctas.
+
+Cierra con clic fuera, botón ✕ o tecla Esc.
+
+### Feature 3 — Equity Tracker semanal de Managers
+Nueva pestaña **⚖️ Equidad Mgr** en la barra de tabs. Muestra:
+- **Tabla** Manager × día (L/M/X/J/V/S) con 🟦 Coach, 🟧 Support, ⚪ Libre y 🌅/🌙 mañana/tarde.
+- **Barras duales** Coach vs Support — resaltadas en rojo si están fuera del rango objetivo 2-3.
+- **Alertas**: Manager fuera de equidad · > 5 días seguidos del mismo turno · ≥ 6 días consecutivos trabajados.
+- Funciona con la **Semana modelo** (Día Normal × 3 + Martes + Miércoles + Sábado = 14 personas).
+
+---
+
 ## 🗂️ Páginas del Proyecto
 
 | Página | Descripción |
