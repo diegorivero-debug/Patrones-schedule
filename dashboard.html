@@ -73,6 +73,7 @@
         <div class="export-menu">
           <button onclick="exportCSV(); this.closest('.export-dropdown').classList.remove('open')">⬇️ Exportar CSV</button>
           <button onclick="window.print(); this.closest('.export-dropdown').classList.remove('open')">🖨️ Imprimir</button>
+          <button onclick="openDashboardIcalModal(); this.closest('.export-dropdown').classList.remove('open')">📅 Exportar iCal (.ics)</button>
         </div>
       </div>
     </div>
@@ -175,6 +176,7 @@
   <div class="modal modal-person-drill-inner">
     <div class="modal-person-drill-topbar">
       <h2 id="pd-modal-title">👤 Detalle de persona</h2>
+      <button class="btn-secondary" style="font-size:.8rem;padding:4px 10px;margin-right:6px" onclick="openDrillIcalExport()" title="Exportar turnos al calendario (.ics)">📅 Exportar iCal</button>
       <button class="pd-close-btn" onclick="closePersonDrilldown()" aria-label="Cerrar detalle">✕</button>
     </div>
     <div class="person-drill-body"></div>
@@ -242,5 +244,163 @@ document.addEventListener('click', function(e) {
   <button onclick="cancelAIPreview()">❌ Cancelar</button>
 </div>
 <script src="js/pwa.js"></script>
-</body>
-</html>
+<script src="js/ical-export.js"></script>
+<script>
+/* ===== iCal Export — Dashboard integration ===== */
+
+// Context for drill-down iCal: set by openPersonDrilldown() in person-drill.js
+window._drillIcalCtx = null;
+
+// Called when the 📅 button is clicked in the person drill-down modal
+function openDrillIcalExport() {
+  var ctx = window._drillIcalCtx;
+  if (!ctx) return;
+  var personName = ctx.displayName || ctx.role || 'Persona';
+  var personId   = ctx.assignedId  || ('row-' + ctx.patIdx + '-' + ctx.rowIdx);
+
+  openICalModal({
+    title:      '📅 Exportar iCal — ' + personName,
+    personName: personName,
+    show13w:    false,
+    showPersons: false,
+    onDownload: function(opts) {
+      var range = getICalDateRange(opts.range, opts.dateFrom, opts.dateTo);
+      var days  = _buildDashboardRowDays(ctx, range.from, range.to);
+      var events = personScheduleToEvents({
+        personId:   personId,
+        personName: personName,
+        role:       ctx.role || 'Manager',
+        days:       days,
+      }, {
+        season:          localStorage.getItem('schedule_season') || 'verano',
+        includeDaysOff:  opts.includeDaysOff,
+        includeLunch:    opts.includeLunch,
+        includeMeetings: opts.includeMeetings,
+        includeDD:       opts.includeDD,
+        alarmMinutes:    opts.alarmMinutes,
+      });
+      var ics = buildICS(events, opts.calName);
+      downloadICS(ics, 'schedule-' + nameToSlug(personName) + '-' + todayISO() + '.ics');
+    },
+  });
+}
+
+// Called from the Exportar dropdown (no specific person; exports all patterns)
+function openDashboardIcalModal() {
+  openICalModal({
+    title:       '📅 Exportar iCal — Patrón semanal',
+    personName:  null,
+    show13w:     false,
+    showPersons: false,
+    onDownload: function(opts) {
+      var range = getICalDateRange(opts.range, opts.dateFrom, opts.dateTo);
+      var allEvents = [];
+      // Export all assigned persons across all patterns
+      var exported = new Set();
+      for (var pi = 0; pi < currentState.length; pi++) {
+        var rows = currentState[pi];
+        if (!rows) continue;
+        for (var ri = 0; ri < rows.length; ri++) {
+          var row = rows[ri];
+          var pid = row.assignedId || ('pat' + pi + '-row' + ri);
+          if (exported.has(pid)) continue;
+          exported.add(pid);
+          var displayName = row.role;
+          if (row.assignedId && typeof teamData !== 'undefined') {
+            var members = row.role === 'Lead' ? teamData.leads : teamData.managers;
+            var member = members && members.find(function(m) { return m.id === row.assignedId; });
+            if (member) displayName = member.name || member.shortName || row.role;
+          }
+          var ctx2 = { patIdx: pi, rowIdx: ri, row: row, role: row.role, displayName: displayName, assignedId: row.assignedId };
+          var days = _buildDashboardRowDays(ctx2, range.from, range.to);
+          var evs = personScheduleToEvents({
+            personId:   pid,
+            personName: displayName,
+            role:       row.role || 'Manager',
+            days:       days,
+          }, {
+            season:          localStorage.getItem('schedule_season') || 'verano',
+            includeDaysOff:  opts.includeDaysOff,
+            includeLunch:    opts.includeLunch,
+            includeMeetings: opts.includeMeetings,
+            includeDD:       opts.includeDD,
+            alarmMinutes:    opts.alarmMinutes,
+          });
+          allEvents = allEvents.concat(evs);
+        }
+      }
+      var ics = buildICS(allEvents, opts.calName);
+      downloadICS(ics, 'schedule-patron-' + todayISO() + '.ics');
+    },
+  });
+}
+
+/**
+ * Builds day objects for a dashboard row, repeated across weeks in the date range.
+ * Maps WEEK_DAYS → patterns → actual calendar dates.
+ */
+function _buildDashboardRowDays(ctx, from, to) {
+  var row    = ctx.row || currentState[ctx.patIdx][ctx.rowIdx];
+  var days   = [];
+  var season = localStorage.getItem('schedule_season') || 'verano';
+
+  // Determine Monday of the 'from' week
+  var startMon = new Date(from);
+  var dow = startMon.getDay() || 7;
+  startMon.setDate(startMon.getDate() - dow + 1);
+  startMon.setHours(0, 0, 0, 0);
+
+  // Iterate weeks
+  var curMon = new Date(startMon);
+  var toEnd = new Date(to);
+  toEnd.setHours(23, 59, 59, 999);
+
+  while (curMon <= toEnd) {
+    // WEEK_DAYS: [Lunes, Martes, Miércoles, Jueves, Viernes, Sábado]
+    // DAY_PATTERN_IDX: [0, 1, 2, 0, 0, 3]
+    for (var di = 0; di < 6; di++) {
+      var cellDate = new Date(curMon);
+      cellDate.setDate(curMon.getDate() + di);
+      if (cellDate < from || cellDate > toEnd) continue;
+
+      var patIdx = (typeof DAY_PATTERN_IDX !== 'undefined') ? DAY_PATTERN_IDX[di] : 0;
+      var rowForDay = currentState[patIdx] && currentState[patIdx][ctx.rowIdx];
+      if (!rowForDay) rowForDay = row;
+
+      var dateISO = cellDate.getFullYear() + '-' +
+        String(cellDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(cellDate.getDate()).padStart(2, '0');
+
+      // Build activities from slot data
+      var activities = [];
+      if (typeof TIME_SLOTS !== 'undefined' && typeof shiftIndices !== 'undefined' && rowForDay.acts) {
+        var si_ei = shiftIndices(rowForDay.shift);
+        var si = si_ei[0], ei = si_ei[1];
+        var segStart = null, segAct = null;
+        for (var c = si; c <= ei; c++) {
+          var act = c < ei ? (rowForDay.acts[c] || '') : null;
+          if (act !== segAct) {
+            if (segAct && segStart !== null) {
+              var startT = TIME_SLOTS[segStart];
+              var endT   = c < TIME_SLOTS.length ? TIME_SLOTS[c] : TIME_SLOTS[TIME_SLOTS.length - 1];
+              if (startT && endT) activities.push(startT + '-' + endT + ' ' + segAct);
+            }
+            segStart = c;
+            segAct   = act;
+          }
+        }
+      }
+
+      days.push({
+        date:       dateISO,
+        shift:      rowForDay.shift || '',
+        dayLabel:   (typeof WEEK_DAYS !== 'undefined') ? WEEK_DAYS[di] : '',
+        activities: activities.length ? activities : undefined,
+      });
+    }
+    curMon.setDate(curMon.getDate() + 7);
+  }
+
+  return days;
+}
+</script>

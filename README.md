@@ -274,3 +274,62 @@ npx http-server -p 8080
 ```
 
 > **Nota:** El Service Worker **no funciona** abriendo los HTML directamente con `file://`. Todo lo demás (dashboard, auditor, equipo, etc.) sigue funcionando normalmente sin servidor.
+
+---
+
+## 📅 Exportar al calendario (iCal)
+
+Cada Manager y Lead puede importar sus turnos al **calendario nativo** (Google Calendar, Apple Calendar, Outlook) con un click. El módulo genera archivos `.ics` en formato iCalendar 2.0 (RFC 5545), sin dependencias externas.
+
+### Cómo exportar
+
+| Página | Dónde encontrar el botón | Qué exporta |
+|--------|--------------------------|-------------|
+| **👥 Equipo** | Botón **📅 .ics** en cada fila del Roster | Semana modelo de esa persona (turno + días libres según configuración) |
+| **👥 Equipo** | Botón **📅 Exportar todos .ics** en la barra de herramientas | Toda el equipo en un único `.ics` |
+| **📊 Dashboard** | Menú **⬇️ Exportar → 📅 Exportar iCal** | Todos los patrones del Dashboard |
+| **📊 Dashboard** | Botón **📅 Exportar iCal** en el modal de drill-down | Solo esa persona |
+| **📅 Planificador 13W** | Botón **📅 .ics** en la barra de herramientas del horario | El horario trimestral generado (todo el equipo o por persona) |
+| **🔍 Auditor** | Botón **📅 Exportar .ics** en la barra inferior | El horario importado y auditado |
+
+### Modal de opciones de exportación
+
+Al pulsar cualquier botón de exportación iCal se abre un modal con opciones:
+
+- **Rango**: Esta semana / Próximas 4 semanas / Próximas 13 semanas / Rango personalizado
+- **Incluir**: ☑ Turnos trabajados · ☐ Días libres 🌴 · ☑ Lunches · ☑ Reuniones especiales · ☐ DD
+- **Recordatorio**: Sin recordatorio / 15 min antes / 1 h antes / 1 día antes
+- **Nombre del calendario**: editable (por defecto `Leadership Schedule – Nombre`)
+
+### Cómo importar el .ics
+
+**Google Calendar:**
+1. Abre [calendar.google.com](https://calendar.google.com)
+2. Haz clic en ⚙️ Configuración → **Importar y exportar** → Importar
+3. Selecciona el archivo `.ics` descargado y elige el calendario destino
+4. Clic en **Importar**
+
+**Apple Calendar (macOS/iOS):**
+- **macOS**: Abre Calendario → Archivo → Importar → selecciona el `.ics`
+- **iOS**: Abre el archivo `.ics` desde Archivos/Mail → toca **Añadir todos los eventos**
+
+**Microsoft Outlook:**
+1. Archivo → Abrir y exportar → Importar/Exportar
+2. Selecciona **Importar un archivo iCalendar (.ics)**
+3. Elige el archivo descargado → **Importar**
+
+### UIDs estables — re-importar actualiza, no duplica
+
+Cada evento tiene un `UID` único y estable basado en la persona, la fecha y la hora de inicio:
+
+```
+ana_garcia-20260407-0900@leadership-schedule
+```
+
+Esto significa que si **re-importas** el mismo `.ics` después de actualizar el horario, los calendarios compatibles (Google, Apple, Outlook) **actualizan los eventos existentes** en lugar de duplicarlos.
+
+### Zona horaria
+
+Todos los eventos se generan en **Europe/Madrid** con soporte de horario de verano (CEST, UTC+2) e invierno (CET, UTC+1) según RFC 5545. Las horas aparecerán correctamente en cualquier aplicación de calendario del mundo.
+
+> 💡 **Validar el .ics**: puedes comprobar la conformidad del archivo generado en [icalendar.org/validator.html](https://icalendar.org/validator.html).

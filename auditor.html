@@ -96,6 +96,7 @@
   <button class="btn-secondary" onclick="exportReport()" title="Exportar informe de auditoría en texto plano">📄 Exportar TXT</button>
   <button class="btn-secondary" onclick="exportReportHTML()" title="Exportar informe en formato HTML">🌐 Exportar HTML</button>
   <button class="btn-primary" onclick="copyReportForMail()" title="Copia el informe en formato HTML listo para pegar en Gmail/Outlook">📧 Copiar para Mail</button>
+  <button class="btn-secondary" onclick="openAuditorIcalModal()" title="Exportar horario importado al calendario (.ics)">📅 Exportar .ics</button>
 </div>
 
 <!-- ===== TOAST ===== -->
@@ -103,7 +104,66 @@
 
 <!-- SheetJS via CDN -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="js/ical-export.js"></script>
 <script src="js/auditor.js"></script>
+<script>
+/* ===== iCal Export — Auditor integration ===== */
+function openAuditorIcalModal() {
+  if (typeof openICalModal !== 'function') return;
+  var persons   = (typeof state !== 'undefined') ? state.parsedPersons : [];
+  var weekDates = (typeof state !== 'undefined') ? state.weekDates : [];
+  if (!persons || !persons.length) {
+    alert('Importa un horario primero antes de exportar al calendario.');
+    return;
+  }
+  openICalModal({
+    title:       '📅 Exportar al calendario (.ics)',
+    personName:  null,
+    show13w:     false,
+    showPersons: true,
+    onDownload: function(opts) {
+      // Enrich weekDates with isoDate by parsing from label
+      var enriched = weekDates.map(function(wd, i) {
+        var d = (typeof parseDateFromLabel === 'function') ? parseDateFromLabel(wd.label) : null;
+        var iso = null;
+        if (d) {
+          iso = d.getFullYear() + '-' +
+            String(d.getMonth() + 1).padStart(2, '0') + '-' +
+            String(d.getDate()).padStart(2, '0');
+        }
+        return Object.assign({}, wd, { isoDate: iso });
+      }).filter(function(wd) { return wd.isoDate; });
+
+      if (!enriched.length) {
+        alert('No se pudieron determinar las fechas de la semana. Asegúrate de que los encabezados del horario incluyen fechas.');
+        return;
+      }
+
+      var allEvents = [];
+      persons.forEach(function(p) {
+        var days = auditorPersonToDays(p, enriched);
+        var evs  = personScheduleToEvents({
+          personId:   (p.name || 'persona').toLowerCase().replace(/\s+/g, '_'),
+          personName: p.name,
+          role:       p.role || 'Manager',
+          days:       days,
+        }, {
+          season:          localStorage.getItem('schedule_season') || 'verano',
+          includeDaysOff:  opts.includeDaysOff,
+          includeLunch:    opts.includeLunch,
+          includeMeetings: opts.includeMeetings,
+          includeDD:       opts.includeDD,
+          alarmMinutes:    opts.alarmMinutes,
+        });
+        allEvents = allEvents.concat(evs);
+      });
+
+      var ics = buildICS(allEvents, opts.calName);
+      downloadICS(ics, 'schedule-auditado-' + todayISO() + '.ics');
+    },
+  });
+}
+</script>
 <script src="js/command-palette.js"></script>
 <script src="js/pwa.js"></script>
 </body>
