@@ -21,16 +21,15 @@ function openPersonDrilldown(patIdx, rowIdx) {
   }
 
   // Store context for the 📅 iCal export button in the modal topbar
-  if (typeof _drillIcalCtx !== 'undefined') {
-    _drillIcalCtx = {
-      patIdx:      patIdx,
-      rowIdx:      rowIdx,
-      row:         row,
-      role:        isLead ? 'Lead' : 'Manager',
-      displayName: displayName,
-      assignedId:  row.assignedId || null,
-    };
-  }
+  // _drillIcalCtx is defined in dashboard.html's inline script
+  window._drillIcalCtx = {
+    patIdx:      patIdx,
+    rowIdx:      rowIdx,
+    row:         row,
+    role:        isLead ? 'Lead' : 'Manager',
+    displayName: displayName,
+    assignedId:  row.assignedId || null,
+  };
 
   overlay.querySelector('.person-drill-body').innerHTML = buildDrilldownContent(patIdx, rowIdx, row);
   overlay.classList.add('open');

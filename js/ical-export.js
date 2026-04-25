@@ -69,7 +69,9 @@ function icsFold(line) {
 
 /**
  * Formats a Date to iCalendar local datetime string "YYYYMMDDTHHMMSS".
- * Uses local (wall-clock) time — paired with TZID=Europe/Madrid.
+ * Note: uses the JavaScript Date object's local (wall-clock) time.
+ * This works correctly when the browser's timezone is Europe/Madrid.
+ * The output is paired with TZID=Europe/Madrid in the iCalendar event.
  */
 function formatICSLocal(date) {
   var y  = date.getFullYear();
@@ -263,7 +265,8 @@ function toICSLocal(dateISO, timeStr) {
   var dateParts = dateISO.split('-');
   var timeParts = (timeStr || '00:00').split(':');
   return dateParts[0] + dateParts[1] + dateParts[2] +
-         'T' + (timeParts[0] || '00') + (timeParts[1] || '00') + '00';
+         'T' + String(timeParts[0] || '0').padStart(2, '0') +
+         String(timeParts[1] || '0').padStart(2, '0') + '00';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -307,7 +310,7 @@ function personScheduleToEvents(params, options) {
     alarmMinutes:    0,
   }, options || {});
 
-  var OFF_PATTERN = /^(off|libre|OFF|V|V25|TGD|F|Parental|Paternidad|Lactancia|UNPAID|BH_off|Holidays|Holiday|vacation)$/i;
+  var OFF_PATTERN = /^(off|libre|V|V25|TGD|F|Parental|Paternidad|Lactancia|UNPAID|BH_off|Holidays|Holiday|vacation)$/i;
 
   var events = [];
 
@@ -479,7 +482,7 @@ function getICalDateRange(range, dateFrom, dateTo) {
   } else if (range === '13weeks') {
     from = new Date(monday);
     to   = new Date(monday);
-    to.setDate(monday.getDate() + 90);
+    to.setDate(monday.getDate() + (13 * 7 - 1)); // 13 full weeks, ending on Sunday
   } else if (range === 'custom' && dateFrom) {
     from = new Date(dateFrom + 'T00:00:00');
     to   = dateTo ? new Date(dateTo + 'T23:59:59') : new Date(from);

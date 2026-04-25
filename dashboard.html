@@ -248,13 +248,13 @@ document.addEventListener('click', function(e) {
 <script>
 /* ===== iCal Export — Dashboard integration ===== */
 
-// State for drill-down iCal: which person + patIdx we're looking at
-var _drillIcalCtx = null;
+// Context for drill-down iCal: set by openPersonDrilldown() in person-drill.js
+window._drillIcalCtx = null;
 
 // Called when the 📅 button is clicked in the person drill-down modal
 function openDrillIcalExport() {
-  if (!_drillIcalCtx) return;
-  var ctx = _drillIcalCtx;
+  var ctx = window._drillIcalCtx;
+  if (!ctx) return;
   var personName = ctx.displayName || ctx.role || 'Persona';
   var personId   = ctx.assignedId  || ('row-' + ctx.patIdx + '-' + ctx.rowIdx);
 

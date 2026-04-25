@@ -2642,9 +2642,7 @@ function openPlanificadorIcalModal() {
       }
 
       const ics = buildICS(allEvents, opts.calName);
-      const filename = opts.persons === 'team'
-        ? 'schedule-equipo-' + todayISO() + '.ics'
-        : 'schedule-planificador-' + todayISO() + '.ics';
+      const filename = 'schedule-' + (opts.persons === 'team' ? 'equipo' : 'planificador') + '-' + todayISO() + '.ics';
       downloadICS(ics, filename);
     },
   });
