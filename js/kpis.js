@@ -167,16 +167,29 @@ function buildKPICards(patIdx) {
     var clickable = kpi.badSlots && kpi.badSlots.length > 0;
     var onclick = clickable ? 'kpiScrollToProblematic(\'' + kpi.type + '\',' + patIdx + ')' : '';
     if (clickable) cls += ' kpi-clickable';
-    h += '<div class="' + cls + '" role="listitem"' +
-      (clickable ? ' onclick="' + onclick + '" tabindex="0" onkeydown="if(event.key===\'Enter\'){' + onclick + '}"' : '') +
-      ' title="' + escAttr(kpi.detail) + '"' +
-      ' aria-label="' + escAttr(kpi.label + ': ' + kpi.value + '. ' + kpi.detail) + '">' +
-      '<div class="kpi-status-icon">' + kpiIcon(kpi.status) + '</div>' +
-      '<div class="kpi-value">' + esc(kpi.value) + '</div>' +
-      '<div class="kpi-label">' + esc(kpi.label) + '</div>' +
-      '<div class="kpi-detail">' + esc(kpi.detail) + '</div>' +
-      (clickable ? '<div class="kpi-hint">Clic para ver ▼</div>' : '') +
-      '</div>';
+    h += '<div role="listitem">';
+    if (clickable) {
+      h += '<button type="button" class="' + cls + '"' +
+        ' onclick="' + onclick + '"' +
+        ' title="' + escAttr(kpi.detail) + '"' +
+        ' aria-label="' + escAttr(kpi.label + ': ' + kpi.value + '. ' + kpi.detail) + '">' +
+        '<div class="kpi-status-icon">' + kpiIcon(kpi.status) + '</div>' +
+        '<div class="kpi-value">' + esc(kpi.value) + '</div>' +
+        '<div class="kpi-label">' + esc(kpi.label) + '</div>' +
+        '<div class="kpi-detail">' + esc(kpi.detail) + '</div>' +
+        '<div class="kpi-hint">Clic para ver ▼</div>' +
+        '</button>';
+    } else {
+      h += '<div class="' + cls + '"' +
+        ' title="' + escAttr(kpi.detail) + '"' +
+        ' aria-label="' + escAttr(kpi.label + ': ' + kpi.value + '. ' + kpi.detail) + '">' +
+        '<div class="kpi-status-icon">' + kpiIcon(kpi.status) + '</div>' +
+        '<div class="kpi-value">' + esc(kpi.value) + '</div>' +
+        '<div class="kpi-label">' + esc(kpi.label) + '</div>' +
+        '<div class="kpi-detail">' + esc(kpi.detail) + '</div>' +
+        '</div>';
+    }
+    h += '</div>';
   }
   h += '</div>';
   return h;
