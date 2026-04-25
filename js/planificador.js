@@ -2241,6 +2241,7 @@ function renderScheduleSection() {
         </button>
         <button class="btn btn-export" onclick="exportCSV()">⬇️ CSV</button>
         <button class="btn btn-export" onclick="exportExcel()">📊 Excel</button>
+        <button class="btn btn-export" onclick="openPlanificadorIcalModal()" title="Exportar horario 13 semanas al calendario (.ics)">📅 .ics</button>
       </div>
     </div>
     <div class="week-nav" id="week-nav"></div>
@@ -2586,3 +2587,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderAll();
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// iCAL EXPORT — Planificador 13 semanas
+// ─────────────────────────────────────────────────────────────────────────────
+function openPlanificadorIcalModal() {
+  if (typeof openICalModal !== 'function') {
+    alert('El módulo de exportación iCal no está cargado.');
+    return;
+  }
+  if (!state.activeSchedule) {
+    showToast('Genera un horario primero antes de exportar.', 'warn');
+    return;
+  }
+
+  openICalModal({
+    title:       '📅 Exportar 13 semanas (.ics)',
+    personName:  null,
+    show13w:     true,
+    showPersons: true,
+    onDownload: function(opts) {
+      const sched  = state.activeSchedule;
+      const season = state.season;
+      const qStart = state.qStartDate;
+
+      const { from, to } = getICalDateRange(opts.range, opts.dateFrom, opts.dateTo);
+
+      // Determine which persons to export
+      let persons;
+      if (opts.persons === 'team') {
+        persons = TEAM_DATA.filter(p => p.role !== 'SL');
+      } else {
+        // Default: all persons (single-person selection not yet supported in planificador)
+        persons = TEAM_DATA.filter(p => p.role !== 'SL');
+      }
+
+      let allEvents = [];
+      for (const p of persons) {
+        const days = planificadorPersonToDays(p.id, sched, qStart, season, from, to);
+        const evs = personScheduleToEvents({
+          personId:   p.id,
+          personName: p.name,
+          role:       p.role,
+          days:       days,
+        }, {
+          season:          season,
+          includeDaysOff:  opts.includeDaysOff,
+          includeLunch:    opts.includeLunch,
+          includeMeetings: opts.includeMeetings,
+          includeDD:       opts.includeDD,
+          alarmMinutes:    opts.alarmMinutes,
+        });
+        allEvents = allEvents.concat(evs);
+      }
+
+      const ics = buildICS(allEvents, opts.calName);
+      const filename = opts.persons === 'team'
+        ? 'schedule-equipo-' + todayISO() + '.ics'
+        : 'schedule-planificador-' + todayISO() + '.ics';
+      downloadICS(ics, filename);
+    },
+  });
+}

@@ -764,6 +764,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
         ⬆️ Importar JSON
         <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
       </label>
+      <button class="btn btn-secondary" onclick="exportAllTeamIcal()" title="Descargar turnos de todo el equipo como .ics">📅 Exportar todos .ics</button>
     </div>
     <div class="table-wrap">
       <table id="roster-table">
@@ -1386,6 +1387,7 @@ function renderRoster() {
       <td>
         <button class="btn btn-secondary btn-sm" onclick="openEditMemberModal('${esc(m.id)}')">✏️ Editar</button>
         <button class="btn btn-secondary btn-sm" onclick="openViewMemberModal('${esc(m.id)}')">👁️ Ver</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportPersonIcal('${esc(m.id)}')" title="Exportar turnos de ${esc(m.name)} al calendario (.ics)">📅 .ics</button>
       </td>
     </tr>`;
   }).join('');
@@ -3240,6 +3242,73 @@ function getSampleData() {
   };
 }
 
+// ===== ICAL EXPORT =====
+
+function exportPersonIcal(id) {
+  const m = getMemberById(id);
+  if (!m) return;
+  openICalModal({
+    title: '📅 Exportar iCal — ' + m.name,
+    personName: m.name,
+    show13w: false,
+    showPersons: false,
+    onDownload: function(opts) {
+      const { from, to } = getICalDateRange(opts.range, opts.dateFrom, opts.dateTo);
+      const days = buildModelWeekDays(m, from, to);
+      const events = personScheduleToEvents({
+        personId: m.id,
+        personName: m.name,
+        role: m.defaultRole === 'lead' ? 'Lead' : 'Manager',
+        days: days,
+      }, {
+        season: 'verano',
+        includeDaysOff: opts.includeDaysOff,
+        includeLunch: opts.includeLunch,
+        includeMeetings: opts.includeMeetings,
+        includeDD: opts.includeDD,
+        alarmMinutes: opts.alarmMinutes,
+      });
+      const ics = buildICS(events, opts.calName);
+      downloadICS(ics, 'schedule-' + nameToSlug(m.name) + '-' + todayISO() + '.ics');
+      if (!events.length) showToast('No hay turnos en el rango seleccionado', 'err');
+    },
+  });
+}
+
+function exportAllTeamIcal() {
+  openICalModal({
+    title: '📅 Exportar iCal — Equipo completo',
+    personName: null,
+    show13w: false,
+    showPersons: false,
+    onDownload: function(opts) {
+      const { from, to } = getICalDateRange(opts.range, opts.dateFrom, opts.dateTo);
+      const members = getAllMembers();
+      let allEvents = [];
+      members.forEach(function(m) {
+        const days = buildModelWeekDays(m, from, to);
+        const evs = personScheduleToEvents({
+          personId: m.id,
+          personName: m.name,
+          role: m.defaultRole === 'lead' ? 'Lead' : 'Manager',
+          days: days,
+        }, {
+          season: 'verano',
+          includeDaysOff: opts.includeDaysOff,
+          includeLunch: opts.includeLunch,
+          includeMeetings: opts.includeMeetings,
+          includeDD: opts.includeDD,
+          alarmMinutes: opts.alarmMinutes,
+        });
+        allEvents = allEvents.concat(evs);
+      });
+      const ics = buildICS(allEvents, opts.calName);
+      downloadICS(ics, 'schedule-equipo-' + todayISO() + '.ics');
+      if (!allEvents.length) showToast('No hay turnos en el rango seleccionado', 'err');
+    },
+  });
+}
+
 // ===== INITIALIZATION =====
 
 (function init() {
@@ -3253,6 +3322,7 @@ function getSampleData() {
 })();
 </script>
 <div id="eq-toast"></div>
+<script src="js/ical-export.js"></script>
 <script src="js/command-palette.js"></script>
 <script src="js/pwa.js"></script>
 </body>

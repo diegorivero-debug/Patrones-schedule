@@ -11,6 +11,27 @@ function openPersonDrilldown(patIdx, rowIdx) {
   var overlay = document.getElementById('modal-person-drill');
   if (!overlay) return;
 
+  // Resolve display name for iCal export context
+  var displayName = row.role;
+  var isLead = row.role === 'Lead';
+  if (row.assignedId) {
+    var members = isLead ? teamData.leads : teamData.managers;
+    var member = members.find(function(m) { return m.id === row.assignedId; });
+    if (member) displayName = member.name || member.shortName || row.role;
+  }
+
+  // Store context for the 📅 iCal export button in the modal topbar
+  if (typeof _drillIcalCtx !== 'undefined') {
+    _drillIcalCtx = {
+      patIdx:      patIdx,
+      rowIdx:      rowIdx,
+      row:         row,
+      role:        isLead ? 'Lead' : 'Manager',
+      displayName: displayName,
+      assignedId:  row.assignedId || null,
+    };
+  }
+
   overlay.querySelector('.person-drill-body').innerHTML = buildDrilldownContent(patIdx, rowIdx, row);
   overlay.classList.add('open');
 
