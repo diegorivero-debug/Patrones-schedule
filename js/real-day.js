@@ -191,7 +191,7 @@ function buildRealScheduleHTML(data, availableDays, selectedDay, persons) {
 
   // ── Info bar ──
   var importDate = data.importedAt
-    ? new Date(data.importedAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    ? new Date(data.importedAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : '—';
   var weekStart = data.weekStart
     ? new Date(data.weekStart).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
