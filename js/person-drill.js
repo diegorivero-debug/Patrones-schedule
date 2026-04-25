@@ -204,7 +204,7 @@ function buildDrillValidations(patIdx, rowIdx, row, BR) {
   var mgmtAct = isLead ? 'LDOPS' : 'AOR';
   var mgmtBlocks = 0, inMgmtBlock = false;
   for (var c3 = si; c3 < ei; c3++) {
-    var isMgmt = row.acts[c3] === mgmtAct;
+    var isMgmt = row.acts[c3] === mgmtAct || row.acts[c3] === 'MEETING';
     if (isMgmt && !inMgmtBlock) { mgmtBlocks++; inMgmtBlock = true; }
     else if (!isMgmt) { inMgmtBlock = false; }
   }
