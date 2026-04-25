@@ -96,6 +96,7 @@ self.addEventListener('fetch', function(event) {
           return cached || new Response('Offline', { status: 503 });
         });
 
+        event.waitUntil(fetchPromise);
         // Return cached version immediately (or wait for network if no cache)
         return cached || fetchPromise;
       });
