@@ -1,0 +1,43 @@
+/* ===== UI-TOKENS.CSS — Design tokens for the App Shell ===== */
+/* Included on every page via app-shell.css */
+
+:root {
+  /* ── Layout ─────────────────────────────── */
+  --sidebar-w:           260px;
+  --sidebar-w-collapsed:  72px;
+  --topbar-h:             56px;
+
+  /* ── Spacing scale ──────────────────────── */
+  --space-1:  8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+
+  /* ── Sidebar colours (light) ────────────── */
+  --sidebar-bg:         #1a1a2e;
+  --sidebar-bg-hover:   rgba(255,255,255,.07);
+  --sidebar-bg-active:  rgba(255,255,255,.12);
+  --sidebar-text:       rgba(255,255,255,.75);
+  --sidebar-text-active:#fff;
+  --sidebar-border:     rgba(255,255,255,.1);
+  --sidebar-accent:     #63b3ed;  /* active indicator bar */
+
+  /* ── Topbar colours (light) ─────────────── */
+  --topbar-bg:    #1a1a2e;
+  --topbar-text:  #fff;
+  --topbar-border:rgba(255,255,255,.08);
+
+  /* ── Transition ─────────────────────────── */
+  --sidebar-transition: width .22s cubic-bezier(.4,0,.2,1);
+  --fade-transition:    opacity .18s ease, transform .18s ease;
+}
+
+/* Dark mode — sidebar is already dark, topbar same; page bg adjusts */
+[data-theme="dark"] {
+  --sidebar-bg:        #111827;
+  --sidebar-bg-hover:  rgba(255,255,255,.08);
+  --sidebar-bg-active: rgba(255,255,255,.14);
+  --topbar-bg:         #111827;
+}
