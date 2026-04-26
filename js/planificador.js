@@ -2328,17 +2328,18 @@ function renderScheduleTable() {
   tr1.appendChild(th0);
   weekDates.forEach((wd, wi) => {
     const hasSun  = isOpenSundayWeek(wi, state.qStartDate);
-    const colSpan = DAYS_PER_WEEK + (hasSun ? 1 : 0);
+    const colSpan = DAYS_PER_WEEK + 1; // domingo siempre visible
     const th = document.createElement('th');
     th.className = 'week-header' + (hasSun ? ' sunday-week' : '');
     th.colSpan = colSpan;
     th.id = `week-col-${wi}`;
-    const endDate = addDays(wd, hasSun ? 6 : 5);
-    th.textContent = `S${wi+1} ${formatDate(wd)}–${formatDate(endDate)}${hasSun ? ' 🏪' : ''}`;
+    const endDate = addDays(wd, 6); // siempre hasta el domingo
+    th.textContent = `S${wi+1} ${formatDate(wd)}–${formatDate(endDate)}${hasSun ? ' 🏪' : ' 🔒'}`;
     // Check if QBR week
     const qbrInWeek = Array.from({length:6},(_,d)=>isQBRDay(state.qStartDate,wi,d)).some(Boolean);
     if (qbrInWeek) { th.classList.add('qbr-week'); th.title = 'Semana QBR'; }
-    if (hasSun) th.title = (th.title ? th.title + ' | ' : '') + 'Domingo apertura';
+    if (hasSun) th.title = (th.title ? th.title + ' | ' : '') + 'Domingo apertura 🏪';
+    else th.title = (th.title ? th.title + ' | ' : '') + 'Domingo cerrado 🔒';
     tr1.appendChild(th);
   });
   thead.appendChild(tr1);
@@ -2353,13 +2354,18 @@ function renderScheduleTable() {
       th.textContent = dl;
       tr2.appendChild(th);
     });
+    // Always show Sunday column
+    const thSun = document.createElement('th');
     if (hasSun) {
-      const thSun = document.createElement('th');
       thSun.className = 'day-header sunday-header';
       thSun.textContent = 'D';
-      thSun.title = 'Domingo apertura';
-      tr2.appendChild(thSun);
+      thSun.title = 'Domingo apertura 🏪';
+    } else {
+      thSun.className = 'day-header sunday-header sunday-closed-header';
+      thSun.textContent = 'D';
+      thSun.title = 'Domingo cerrado 🔒';
     }
+    tr2.appendChild(thSun);
   }
   thead.appendChild(tr2);
   table.appendChild(thead);
@@ -2377,8 +2383,8 @@ function renderScheduleTable() {
   };
   const roleBadge = { SL:'sl', SM:'sm', MGR:'mgr', OPS_LEAD:'lead', LEAD_GENIUS:'lead', LEAD_SHOPPING:'lead' };
 
-  // Total columns = TOTAL_DAYS + number of open-Sunday weeks
-  const totalCols = TOTAL_DAYS + weekDates.reduce((acc, _, wi) => acc + (isOpenSundayWeek(wi, state.qStartDate) ? 1 : 0), 0);
+  // Total columns = TOTAL_DAYS + 1 Sunday column per week (always visible)
+  const totalCols = TOTAL_DAYS + WEEKS;
 
   let lastRole = '';
   for (const p of TEAM_DATA) {
@@ -2431,13 +2437,14 @@ function renderScheduleTable() {
         tr.appendChild(td);
       }
 
-      // Sunday cell for open-Sunday weeks
-      if (isOpenSundayWeek(w, state.qStartDate)) {
+      // Sunday column — always shown
+      const hasSun = isOpenSundayWeek(w, state.qStartDate);
+      const tdSun = document.createElement('td');
+      if (hasSun) {
         const sunShift = state.activeSundaySched?.[p.id]?.[w] || '';
         const def = SHIFT_DEFS[sunShift];
-        const tdSun = document.createElement('td');
         tdSun.className = 'shift-cell sunday-cell';
-        tdSun.title = 'Domingo apertura';
+        tdSun.title = 'Domingo apertura 🏪';
         if (sunShift) {
           tdSun.textContent = sunShift;
           tdSun.style.background = def?.bg   || '#fff';
@@ -2447,8 +2454,12 @@ function renderScheduleTable() {
           tdSun.style.background = '#f5f3f0';
           tdSun.style.color = '#bbb';
         }
-        tr.appendChild(tdSun);
+      } else {
+        tdSun.className = 'shift-cell sunday-cell sunday-closed-cell';
+        tdSun.textContent = '🔒';
+        tdSun.title = 'Domingo cerrado 🔒';
       }
+      tr.appendChild(tdSun);
     }
     tbody.appendChild(tr);
   }
