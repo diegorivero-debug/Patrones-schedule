@@ -235,20 +235,21 @@ const ORIGINAL_PATTERNS = [
     {role:'Manager',shift:'13:00-22:00',acts:['','','','','','','','','','','','','','AOR','AOR','AOR','AOR','Lunch','Lunch','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','AOR','']}
   ],
   // ── Pattern 4: Domingo (apertura) ─────────────────────────────────────────
-  // Tienda 11:00-21:00 (verano: 12:00-20:00). Primera persona 09:00 (verano: 10:00).
+  // Tienda 11:00-21:30 (verano) / 11:00-21:00 (invierno).
   // 3 Leads + 7 Managers. Los días libres de quien trabaja este domingo
   // DEBEN ser consecutivos en la semana (regla sagrada).
+  // Late leads and managers (13:00-22:00) ensure closing coverage.
   [
     {role:'Lead',    shift:'09:00-18:00',acts:['','','','','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','','','','','','','','','']},
-    {role:'Lead',    shift:'11:00-20:00',acts:['','','','','','','','','','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','','','','','']},
-    {role:'Lead',    shift:'12:00-21:00',acts:['','','','','','','','','','','','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','','','']},
+    {role:'Lead',    shift:'13:00-22:00',acts:['','','','','','','','','','','','','','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDSup','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','']},
+    {role:'Lead',    shift:'13:00-22:00',acts:['','','','','','','','','','','','','','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','LDSup','Lunch','Lunch','LDSup','LDSup','LDSup','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','LDOPS','']},
     {role:'Manager', shift:'09:00-18:00',acts:['','','','','AOR','AOR','AOR','AOR','AOR','Coach','Coach','Coach','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','AOR','AOR','AOR','AOR','','','','','','','','','']},
     {role:'Manager', shift:'09:00-18:00',acts:['','','','','AOR','AOR','AOR','AOR','AOR','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','','','','','','','','','']},
     {role:'Manager', shift:'11:00-20:00',acts:['','','','','','','','','','AOR','AOR','Coach','Coach','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','AOR','AOR','','','','','']},
     {role:'Manager', shift:'11:00-20:00',acts:['','','','','','','','','','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','','','','','']},
     {role:'Manager', shift:'12:00-21:00',acts:['','','','','','','','','','','','AOR','Coach','Coach','Coach','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','AOR','AOR','AOR','','','']},
-    {role:'Manager', shift:'12:00-21:00',acts:['','','','','','','','','','','','Support','Support','Support','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','AOR','','','']},
-    {role:'Manager', shift:'12:00-21:00',acts:['','','','','','','','','','','','AOR','AOR','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','AOR','','','']}
+    {role:'Manager', shift:'13:00-22:00',acts:['','','','','','','','','','','','','','AOR','AOR','AOR','AOR','AOR','AOR','Lunch','Lunch','Coach','Coach','Coach','Coach','Coach','Coach','Coach','Coach','AOR','AOR','']},
+    {role:'Manager', shift:'13:00-22:00',acts:['','','','','','','','','','','','','','Support','AOR','AOR','AOR','AOR','Lunch','Lunch','Support','Support','Support','Support','Support','Support','Support','AOR','AOR','AOR','AOR','']}
   ]
 ];
 
@@ -816,7 +817,9 @@ function validatePattern(patIdx) {
   }
 
   // ── Slot-by-slot validation during opening ─────────────
+  const ddSlot = TIME_SLOTS.indexOf(BR.dd.time);  // 09:15 — everyone does DD, no floor coverage expected
   for (let c = openStart; c <= openEnd; c++) {
+    if (c === ddSlot) continue;  // skip DD slot: no floor coverage expected (whole team does DD)
     const inMeeting   = meetingIndices.has(c);
     const floorVal    = counts.Floor[c];
     const mgrsOnFloor = counts.MgrsOnFloor[c];
@@ -1569,7 +1572,8 @@ function applyWhatifVisuals() {
 function render(patIdx) {
   closeDropdown();
   const seasonTag = activeSeason === 'invierno' ? ' · ❄️ Invierno' : ' · ☀️ Verano';
-  document.getElementById('subtitle').textContent = PATTERN_NAMES[patIdx] + seasonTag;
+  const subtitle = document.getElementById('subtitle');
+  if (subtitle) subtitle.textContent = PATTERN_NAMES[patIdx] + seasonTag;
   renderAlerts(patIdx);
   document.getElementById('quick-stats').innerHTML = buildQuickStats(patIdx);
   if (typeof renderKPISection === 'function') renderKPISection(patIdx);
@@ -1734,7 +1738,8 @@ function renderWeeklyView() {
   closeDropdown();
   if (typeof renderKPISection === 'function') renderKPISection(null);
   const seasonTag = activeSeason === 'invierno' ? ' · ❄️ Invierno' : ' · ☀️ Verano';
-  document.getElementById('subtitle').textContent = 'Vista Semanal (Lun–Sáb)' + seasonTag;
+  const subtitle = document.getElementById('subtitle');
+  if (subtitle) subtitle.textContent = 'Vista Semanal (Lun–Sáb)' + seasonTag;
   const badge   = document.getElementById('alerts-badge');
   const summary = document.getElementById('alert-drawer-summary');
   if (badge)   { badge.textContent = ''; badge.className = 'alert-badge ok'; }
@@ -2005,6 +2010,26 @@ function generatePattern() {
       coachIdx++;
     }
   });
+
+  // Ensure minimum 2 coaches on floor at every open slot:
+  // when there are few managers working (e.g. early Saturday), the alternating
+  // Coach/Support assignment can leave only 1 coach. Promote Support→Coach if needed.
+  const _openEnd = getOpenEnd();
+  for (let c = openStart; c <= _openEnd; c++) {
+    const mgrsHere = sortedIndices.filter(ri => {
+      if (rows[ri].role !== 'Manager') return false;
+      const [si, ei] = shiftIndices(rows[ri].shift);
+      return c >= si && c < ei;
+    });
+    let coachCnt = mgrsHere.filter(ri => mgrDailyRoles.get(ri) === 'Coach').length;
+    for (const ri of mgrsHere) {
+      if (coachCnt >= 2) break;
+      if (mgrDailyRoles.get(ri) === 'Support') {
+        mgrDailyRoles.set(ri, 'Coach');
+        coachCnt++;
+      }
+    }
+  }
 
   sortedIndices.forEach(ri => {
     const row = rows[ri];
