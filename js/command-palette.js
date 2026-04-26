@@ -37,10 +37,6 @@
     { id: 'pat-1',      icon: '📋', label: 'Patrón: Martes',            action: function() { switchTab('1'); } },
     { id: 'pat-2',      icon: '📋', label: 'Patrón: Miércoles',         action: function() { switchTab('2'); } },
     { id: 'pat-3',      icon: '📋', label: 'Patrón: Sábado',            action: function() { switchTab('3'); } },
-    { id: 'pat-week',   icon: '📅', label: 'Vista: Semana',             action: function() { switchTab('week'); } },
-    { id: 'pat-equity', icon: '⚖️', label: 'Vista: Equidad Managers',   action: function() { switchTab('equity'); } },
-    { id: 'pat-real',   icon: '📂', label: 'Vista: Día Real',           action: function() { switchTab('real'); } },
-    { id: 'pat-planner',icon: '📋', label: 'Vista: Planificar',         action: function() { switchTab('planner'); } },
   ];
 
   // ── Dashboard action commands ─────────────────────────────────────────────────
@@ -50,7 +46,6 @@
     { id: 'act-invierno', icon: '❄️', label: 'Temporada: Invierno',          action: function() { callIfExists('switchSeason', 'invierno'); } },
     { id: 'act-add',      icon: '➕', label: 'Añadir Figura',               action: function() { callIfExists('openAddFigure'); } },
     { id: 'act-gen',      icon: '⚙️', label: 'Generar Patrón',              action: function() { callIfExists('openGenerate'); } },
-    { id: 'act-whatif',   icon: '🔮', label: 'Activar/Desactivar What-if',   action: function() { callIfExists('toggleWhatif'); } },
     { id: 'act-rules',    icon: '📋', label: 'Abrir Reglas',                 action: function() { callIfExists('openRules'); } },
     { id: 'act-ai',       icon: '🤖', label: 'Abrir IA Advisor',             action: function() { callIfExists('openAIPanel'); } },
     { id: 'act-reset',    icon: '🔄', label: 'Resetear patrón',              action: function() { callIfExists('resetPattern'); } },

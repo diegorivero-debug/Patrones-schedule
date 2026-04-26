@@ -84,6 +84,11 @@ const BUSINESS_RULES = (function() {
       normal:     { support: cob.managersFloorMinimo || 2, coach: cob.coachMinimo || 2, totalFloor: cob.floorMinimo || 4 },
       lunchTrans: { support: Math.max((cob.managersFloorMinimo || 2) - 1, 1), coach: 1, totalFloor: Math.max((cob.floorMinimo || 4) - 2, 2) },
       minMgrsOnFloor: cob.managersFloorMinimo || 2,
+      maxMgrsOnFloor: cob.managersFloorMaximo || 6,
+      minCoach:   cob.coachMinimo || 2,
+      maxCoach:   cob.coachMaximo || 5,
+      floorObjetivo: cob.floorObjetivo || cob.floorHoraPunta || 6,
+      floorMaximo: cob.floorMaximo || 10,
       peakFloor:  cob.floorHoraPunta || 6,
       cierreInvierno: cob.cierreInvierno || '21:00',
       cierreVerano: cob.cierreVerano || '21:30',
@@ -367,10 +372,6 @@ let rules = loadRules();
 let activePattern = 0;
 let openDropdownEl = null;
 
-// ── What-if state ────────────────────────────────────────────────────────────
-let whatifMode   = false;
-let whatifAbsent = []; // rowIdx values of absent persons in activePattern (not persisted)
-
 // ── Cell Drag & Drop state ───────────────────────────────────────────────────
 let cellDragData = null; // {patIdx, rowIdx, colIdx, activity}
 
@@ -393,7 +394,6 @@ const HOURS_PER_SHIFT   = 8;   // standard working hours per shift (for staffing
 const SLOTS_PER_HOUR    = 2;   // 30-minute slots per hour
 
 function pushUndo(patIdx) {
-  if (whatifMode) return; // no snapshots during simulation
   const snapshot = currentState[patIdx].map(row => ({ role: row.role, shift: row.shift, acts: [...row.acts], assignedId: row.assignedId }));
   undoHistory[patIdx].push(snapshot);
   if (undoHistory[patIdx].length > MAX_UNDO) undoHistory[patIdx].shift();
@@ -639,9 +639,7 @@ function saveTeamModal() {
   // Auto-assign on all patterns with the updated team data
   for (let i = 0; i < 5; i++) autoAssignNames(i);
   saveState();
-  const activeTab = document.querySelector('.tab-btn.active');
-  if (activeTab && activeTab.dataset.pat === 'week') renderWeeklyView();
-  else render(activePattern);
+  render(activePattern);
 }
 
 // ── Name auto-assignment ─────────────────────────────────────────────────────
@@ -684,8 +682,6 @@ function renderNameCell(row) {
 
 // ── Manual assignment dropdown ────────────────────────────────────────────────
 function openAssignDropdown(e, patIdx, rowIdx) {
-  // In What-if mode, clicking a name cell toggles absence instead of opening dropdown
-  if (whatifMode) { toggleAbsence(patIdx, rowIdx); return; }
   e.stopPropagation();
   closeAssignDropdown();
   const row     = currentState[patIdx][rowIdx];
@@ -736,23 +732,13 @@ function assignPerson(patIdx, rowIdx, memberId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WHAT-IF: ACTIVE ROWS FILTER
-// ═══════════════════════════════════════════════════════════════════════════════
-// Returns the rows for a pattern, filtering out absent persons when in what-if mode.
-function getActiveRows(patIdx) {
-  const rows = currentState[patIdx];
-  if (!whatifMode || whatifAbsent.length === 0) return rows;
-  return rows.filter((_, i) => !whatifAbsent.includes(i));
-}
-
-// Returns all rows for a pattern regardless of what-if mode (for base-score comparisons).
-function getBaseRows(patIdx) {
-  return currentState[patIdx];
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // ALERTS / VALIDATION
 // ═══════════════════════════════════════════════════════════════════════════════
+function getActiveRows(patIdx) {
+  const rows = currentState[patIdx];
+  return rows;
+}
+
 function validatePattern(patIdx) {
   const rows = getActiveRows(patIdx);
   const n = TIME_SLOTS.length;
@@ -1194,11 +1180,13 @@ function buildCoverageChart(patIdx) {
   const firstMeetingIdx = meetingIndices.size > 0 ? Math.min(...meetingIndices) : -1;
 
   // Reference line positions (bottom offset in px)
-  const minAbsVal = BUSINESS_RULES.coverage.lunchTrans.totalFloor; // 4
-  const normVal   = BUSINESS_RULES.coverage.normal.totalFloor;     // 6
+  const minAbsVal   = BUSINESS_RULES.coverage.lunchTrans.totalFloor;
+  const objetivoVal = BUSINESS_RULES.coverage.floorObjetivo || BUSINESS_RULES.coverage.normal.totalFloor;
+  const maxVal      = BUSINESS_RULES.coverage.floorMaximo || 0;
   const px = v => maxFloor > 0 ? Math.round((v / maxFloor) * CHART_H) : 0;
-  const minAbsBot = px(minAbsVal);
-  const normBot   = px(normVal);
+  const minAbsBot  = px(minAbsVal);
+  const normBot    = px(objetivoVal);
+  const maxBot     = maxVal > 0 ? px(maxVal) : -1;
 
   // Y-axis ticks (every 2 units)
   let yAxisHtml = '';
@@ -1250,14 +1238,16 @@ function buildCoverageChart(patIdx) {
     `<div style="position:absolute;left:0;right:0;bottom:${minAbsBot}px;height:0;border-top:2px dashed #E53E3E;z-index:4;pointer-events:none">` +
     `<span style="position:absolute;right:2px;top:-10px;font-size:9px;font-weight:700;color:#E53E3E">mín ${minAbsVal}</span></div>` +
     `<div style="position:absolute;left:0;right:0;bottom:${normBot}px;height:0;border-top:2px dashed #DD6B20;z-index:4;pointer-events:none">` +
-    `<span style="position:absolute;right:2px;top:-10px;font-size:9px;font-weight:700;color:#DD6B20">objetivo ${normVal}</span></div>`;
+    `<span style="position:absolute;right:2px;top:-10px;font-size:9px;font-weight:700;color:#DD6B20">objetivo ${objetivoVal}</span></div>` +
+    (maxBot > 0 ? `<div style="position:absolute;left:0;right:0;bottom:${maxBot}px;height:0;border-top:2px dashed #38a169;z-index:4;pointer-events:none">` +
+    `<span style="position:absolute;right:2px;top:-10px;font-size:9px;font-weight:700;color:#38a169">máx ${maxVal}</span></div>` : '');
 
   return `<div class="coverage-chart">
     <h3>📊 Cobertura Visual</h3>
     <div class="chart-wrap">
       <div class="chart-y-axis" style="height:${CHART_H}px">${yAxisHtml}</div>
       <div class="chart-scroll">
-        <div class="chart-area">
+        <div class="chart-area chart-area-fill">
           <div class="chart-bars" style="height:${CHART_H}px">${refLines}${barsHtml}</div>
           <div class="chart-x-axis">${xHtml}</div>
         </div>
@@ -1268,7 +1258,8 @@ function buildCoverageChart(patIdx) {
       <div class="chart-legend-item"><div class="chart-legend-swatch" style="background:#F5A623"></div><span>Support</span></div>
       <div class="chart-legend-item"><div class="chart-legend-swatch" style="background:#7BC67E"></div><span>Coach</span></div>
       <div class="chart-legend-item"><span style="color:#E53E3E;font-size:11px">- - mín ${minAbsVal} (absoluto)</span></div>
-      <div class="chart-legend-item"><span style="color:#DD6B20;font-size:11px">- - objetivo ${normVal} (normal)</span></div>
+      <div class="chart-legend-item"><span style="color:#DD6B20;font-size:11px">- - objetivo ${objetivoVal}</span></div>
+      ${maxVal > 0 ? `<div class="chart-legend-item"><span style="color:#38a169;font-size:11px">- - máx ${maxVal}</span></div>` : ''}
     </div>
   </div>`;
 }
@@ -1557,17 +1548,6 @@ function buildQuickStats(patIdx) {
   `;
 }
 
-// ── Apply what-if visuals after render ───────────────────────────────────────
-function applyWhatifVisuals() {
-  if (!whatifMode) return;
-  const main = document.querySelector('.main');
-  if (main) main.classList.add('whatif-mode');
-  for (const rowIdx of whatifAbsent) {
-    const tr = document.querySelector(`tr[data-pat="${activePattern}"][data-row="${rowIdx}"]`);
-    if (tr) tr.classList.add('whatif-absent');
-  }
-}
-
 // ── Main render ──────────────────────────────────────────────────────────────
 function render(patIdx) {
   closeDropdown();
@@ -1579,191 +1559,7 @@ function render(patIdx) {
   if (typeof renderKPISection === 'function') renderKPISection(patIdx);
   document.getElementById('schedule-container').innerHTML =
     buildScheduleTable(patIdx) + buildSummaryTable(patIdx) + buildCoverageChart(patIdx) + buildLegend() + buildRulesSection();
-  applyWhatifVisuals();
   scheduleAIAnalysis(patIdx);
-}
-
-// ── Weekly View ──────────────────────────────────────────────────────────────
-function buildWeeklyView() {
-  const totalDays = WEEK_DAYS.length;
-  const colSpan   = 2 + totalDays; // person + role + day columns
-
-  // Per-day pattern rows, split by role
-  const dayPatterns = DAY_PATTERN_IDX.map(idx => currentState[idx]);
-  const dayLeads    = dayPatterns.map(p => p.filter(r => r.role === 'Lead'));
-  const dayMgrs     = dayPatterns.map(p => p.filter(r => r.role === 'Manager'));
-
-  const maxLeads = Math.max(...dayLeads.map(a => a.length));
-  const maxMgrs  = Math.max(...dayMgrs.map(a => a.length));
-
-  let h = '<div class="weekly-view">';
-  h += '<div class="weekly-table-wrap"><table class="weekly-table"><thead><tr>';
-  h += '<th class="wk-person">Persona</th>';
-  h += '<th class="wk-role">Rol</th>';
-  for (const day of WEEK_DAYS) h += `<th>${day}</th>`;
-  h += '</tr></thead><tbody>';
-
-  // ── Leads ──
-  h += `<tr class="wk-group-label"><td colspan="${colSpan}">👤 Leads (${maxLeads})</td></tr>`;
-  for (let i = 0; i < maxLeads; i++) {
-    h += '<tr class="wk-lead-row">';
-    // Use name from the first day this position exists
-    const firstLeadRow = dayLeads.map(dl => dl[i]).find(r => r);
-    let leadLabel = `Lead ${i + 1}`;
-    if (firstLeadRow && firstLeadRow.assignedId) {
-      const m = teamData.leads.find(tm => tm.id === firstLeadRow.assignedId);
-      if (m) leadLabel = memberShortDisplay(m);
-    }
-    h += `<td class="wk-person" title="Lead ${i + 1}">${esc(leadLabel)}</td>`;
-    h += `<td class="wk-role-col">Lead</td>`;
-    for (let d = 0; d < totalDays; d++) {
-      const row = dayLeads[d][i];
-      if (!row) {
-        h += '<td class="wk-day-cell"><span class="wk-off">—</span></td>';
-      } else {
-        h += '<td class="wk-day-cell">';
-        h += `<span class="wk-shift-str">${esc(shiftShort(row.shift))}</span>`;
-        h += `<span class="wk-role-pill wk-pill-ldsup">LDSup</span>`;
-        h += '</td>';
-      }
-    }
-    h += '</tr>';
-  }
-
-  // ── Separator ──
-  h += `<tr class="wk-sep"><td colspan="${colSpan}"></td></tr>`;
-
-  // ── Managers ──
-  h += `<tr class="wk-group-label"><td colspan="${colSpan}">👔 Managers (${maxMgrs})</td></tr>`;
-  const mgrEquity = []; // [{coach, support, label}] per manager position
-  for (let i = 0; i < maxMgrs; i++) {
-    let coachDays = 0, supportDays = 0;
-    h += '<tr class="wk-mgr-row">';
-    // Use name from the first day this position exists
-    const firstMgrRow = dayMgrs.map(dm => dm[i]).find(r => r);
-    let mgrLabel = `Mgr ${i + 1}`;
-    if (firstMgrRow && firstMgrRow.assignedId) {
-      const m = teamData.managers.find(tm => tm.id === firstMgrRow.assignedId);
-      if (m) mgrLabel = memberShortDisplay(m);
-    }
-    h += `<td class="wk-person" title="Mgr ${i + 1}">${esc(mgrLabel)}</td>`;
-    h += `<td class="wk-role-col">Manager</td>`;
-    for (let d = 0; d < totalDays; d++) {
-      const row = dayMgrs[d][i];
-      if (!row) {
-        h += '<td class="wk-day-cell"><span class="wk-off">—</span></td>';
-      } else {
-        const role = getFloorRoleForRow(row);
-        if (role === 'Coach')   coachDays++;
-        if (role === 'Support') supportDays++;
-        const pillCls = role === 'Coach'   ? 'wk-pill-coach'
-                      : role === 'Support' ? 'wk-pill-support' : '';
-        h += '<td class="wk-day-cell">';
-        h += `<span class="wk-shift-str">${esc(shiftShort(row.shift))}</span>`;
-        if (role) {
-          h += `<span class="wk-role-pill ${pillCls}">${esc(role)}</span>`;
-        } else {
-          h += '<span class="wk-off">—</span>';
-        }
-        h += '</td>';
-      }
-    }
-    h += '</tr>';
-    mgrEquity.push({coach: coachDays, support: supportDays, label: mgrLabel});
-  }
-
-  // ── Totals ──
-  h += `<tr class="wk-sep"><td colspan="${colSpan}"></td></tr>`;
-
-  // Total persons per day
-  h += '<tr class="wk-totals">';
-  h += '<td class="wk-person">Total personas</td><td class="wk-role-col"></td>';
-  for (let d = 0; d < totalDays; d++) {
-    h += `<td>${dayPatterns[d].length}</td>`;
-  }
-  h += '</tr>';
-
-  // Coaches per day
-  h += '<tr class="wk-totals">';
-  h += `<td class="wk-person" style="color:var(--green)">Coaches</td><td class="wk-role-col"></td>`;
-  for (let d = 0; d < totalDays; d++) {
-    const cnt = dayMgrs[d].filter(r => getFloorRoleForRow(r) === 'Coach').length;
-    h += `<td>${cnt}</td>`;
-  }
-  h += '</tr>';
-
-  // Support per day
-  h += '<tr class="wk-totals">';
-  h += `<td class="wk-person" style="color:var(--orange)">Support</td><td class="wk-role-col"></td>`;
-  for (let d = 0; d < totalDays; d++) {
-    const cnt = dayMgrs[d].filter(r => getFloorRoleForRow(r) === 'Support').length;
-    h += `<td>${cnt}</td>`;
-  }
-  h += '</tr>';
-
-  // Score per day
-  h += '<tr class="wk-totals">';
-  h += `<td class="wk-person">📊 Score</td><td class="wk-role-col"></td>`;
-  const uniquePatIdxs = [...new Set(DAY_PATTERN_IDX)];
-  const patScores = {};
-  for (const idx of uniquePatIdxs) patScores[idx] = calculateScore(idx).score;
-  for (let d = 0; d < totalDays; d++) {
-    const s = patScores[DAY_PATTERN_IDX[d]];
-    h += `<td style="color:${scoreColor(s)};font-weight:800">${s}%</td>`;
-  }
-  h += '</tr>';
-
-  h += '</tbody></table></div>';
-
-  // ── Equity card ──
-  h += '<div class="equity-card">';
-  h += '<h3>⚖️ Equidad de Roles · Managers</h3>';
-  h += '<div class="equity-grid">';
-  for (let i = 0; i < mgrEquity.length; i++) {
-    const {coach, support} = mgrEquity[i];
-    const total     = coach + support;
-    // Managers with no floor-role assignments (total=0) are considered balanced.
-    const imbalance = total > 0 && Math.abs(coach - support) > 1;
-    const emoji     = imbalance ? '⚠️' : '✅';
-    const ariaLabel = imbalance ? ` aria-label="${escAttr(`${mgrEquity[i].label || `Mgr ${i + 1}`}: desequilibrio de roles (${coach}C/${support}S)`)}"` : '';
-    h += `<div class="equity-item${imbalance ? ' eq-warning' : ''}"${ariaLabel}>${esc(mgrEquity[i].label || `Mgr ${i + 1}`)}: ${coach}C/${support}S ${emoji}</div>`;
-  }
-  h += '</div></div>';
-
-  h += '</div>';
-  return h;
-}
-
-function renderWeeklyView() {
-  closeDropdown();
-  if (typeof renderKPISection === 'function') renderKPISection(null);
-  const seasonTag = activeSeason === 'invierno' ? ' · ❄️ Invierno' : ' · ☀️ Verano';
-  const subtitle = document.getElementById('subtitle');
-  if (subtitle) subtitle.textContent = 'Vista Semanal (Lun–Sáb)' + seasonTag;
-  const badge   = document.getElementById('alerts-badge');
-  const summary = document.getElementById('alert-drawer-summary');
-  if (badge)   { badge.textContent = ''; badge.className = 'alert-badge ok'; }
-  if (summary) { summary.innerHTML = 'ℹ️ <strong>Vista Semanal</strong> — selecciona un patrón individual para ver sus alertas'; summary.style.color = 'var(--text-muted)'; }
-  // Weekly average score in quick-stats
-  const scores = DAY_PATTERN_IDX.map(idx => calculateScore(idx).score);
-  const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-  const sColor = scoreColor(avgScore);
-  document.getElementById('quick-stats').innerHTML = `
-    <div class="stat-card score-card" tabindex="0" role="button" aria-label="Score promedio semanal: ${avgScore}%" onclick="toggleScoreTooltip('score-tooltip-week')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleScoreTooltip('score-tooltip-week')}">
-      <div class="stat-value" style="color:${sColor}">${avgScore}%</div>
-      <div class="stat-label">Score Semanal (prom.)</div>
-      <div class="score-progress-bar"><div class="score-progress-fill" style="width:${avgScore}%;background:${sColor}"></div></div>
-      <div class="score-tooltip" id="score-tooltip-week">
-        <div class="score-tooltip-header">Score promedio: ${avgScore}%</div>
-        <div class="score-tooltip-divider"></div>
-        ${DAY_PATTERN_IDX.map((idx, d) => {
-          const s = calculateScore(idx).score;
-          const icon = s >= 90 ? '✅' : s >= 70 ? '⚠️' : '🔴';
-          return `<div class="${s >= 90 ? 'score-detail-ok' : s >= 70 ? 'score-detail-warn' : 'score-detail-bad'}">${icon} ${esc(WEEK_DAYS[d])}: ${s}%</div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  document.getElementById('schedule-container').innerHTML = buildWeeklyView();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1773,24 +1569,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    // Clear what-if absences when switching patterns (indices differ per pattern)
-    if (whatifMode) {
-      whatifAbsent = [];
-      renderWhatifImpact();
-    }
-    if (btn.dataset.pat === 'week') {
-      renderWeeklyView();
-    } else if (btn.dataset.pat === 'planner') {
-      renderPlannerView();
-    } else if (btn.dataset.pat === 'equity') {
-      if (typeof renderEquityTrackerView === 'function') renderEquityTrackerView();
-    } else if (btn.dataset.pat === 'real') {
-      if (typeof renderRealDayView === 'function') renderRealDayView();
-    } else {
-      activePattern = parseInt(btn.dataset.pat);
-      render(activePattern);
-      updateUndoRedoButtons();
-    }
+    activePattern = parseInt(btn.dataset.pat);
+    render(activePattern);
+    updateUndoRedoButtons();
   });
 });
 
@@ -1873,11 +1654,6 @@ document.addEventListener('click', e => {
 // ═══════════════════════════════════════════════════════════════════════════════
 function switchSeason(season) {
   if (season === activeSeason) return;
-  // Clear what-if absences when switching season
-  if (whatifMode) {
-    whatifAbsent = [];
-    renderWhatifImpact();
-  }
   // Save current state for current season
   allSeasonState[activeSeason] = currentState;
   try { localStorage.setItem(LS_KEY_PATTERNS, JSON.stringify(allSeasonState)); } catch(e) {}
@@ -1890,19 +1666,7 @@ function switchSeason(season) {
   // Clear undo/redo history when switching season (includes Sunday pattern 4)
   for (let i = 0; i < 5; i++) { undoHistory[i] = []; redoHistory[i] = []; }
   updateUndoRedoButtons();
-  // Re-render active tab (weekly, planner, or pattern)
-  const activeTab = document.querySelector('.tab-btn.active');
-  if (activeTab && activeTab.dataset.pat === 'week') {
-    renderWeeklyView();
-  } else if (activeTab && activeTab.dataset.pat === 'planner') {
-    renderPlannerView();
-  } else if (activeTab && activeTab.dataset.pat === 'equity') {
-    if (typeof renderEquityTrackerView === 'function') renderEquityTrackerView();
-  } else if (activeTab && activeTab.dataset.pat === 'real') {
-    if (typeof renderRealDayView === 'function') renderRealDayView();
-  } else {
-    render(activePattern);
-  }
+  render(activePattern);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2372,144 +2136,6 @@ function confirmShiftEdit(patIdx, rowIdx) {
   row.shift = newShift;
   saveState();
   render(activePattern);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// WHAT-IF SIMULATOR
-// ═══════════════════════════════════════════════════════════════════════════════
-function toggleWhatif() {
-  // What-if only works on individual pattern views (not weekly or planner)
-  const activeTab = document.querySelector('.tab-btn.active');
-  if (activeTab && (activeTab.dataset.pat === 'week' || activeTab.dataset.pat === 'planner')) return;
-
-  whatifMode = !whatifMode;
-
-  if (!whatifMode) {
-    // Exiting what-if mode
-    whatifAbsent = [];
-    const btn = document.getElementById('btn-whatif');
-    if (btn) btn.textContent = '🔮 What-if';
-    const banner = document.getElementById('whatif-banner');
-    if (banner) banner.classList.remove('active');
-    const main = document.querySelector('.main');
-    if (main) main.classList.remove('whatif-mode');
-    render(activePattern);
-    return;
-  }
-
-  // Entering what-if mode
-  const btn = document.getElementById('btn-whatif');
-  if (btn) btn.textContent = '🔮 Salir What-if';
-  const banner = document.getElementById('whatif-banner');
-  if (banner) banner.classList.add('active');
-  const main = document.querySelector('.main');
-  if (main) main.classList.add('whatif-mode');
-  renderWhatifImpact();
-}
-
-function toggleAbsence(patIdx, rowIdx) {
-  if (!whatifMode) return;
-  const idx = whatifAbsent.indexOf(rowIdx);
-  if (idx >= 0) {
-    whatifAbsent.splice(idx, 1);
-  } else {
-    whatifAbsent.push(rowIdx);
-  }
-  // Toggle visual class on the row without full re-render
-  const tr = document.querySelector(`tr[data-pat="${patIdx}"][data-row="${rowIdx}"]`);
-  if (tr) tr.classList.toggle('whatif-absent', whatifAbsent.includes(rowIdx));
-
-  // Update impact panel
-  renderWhatifImpact();
-
-  // Update quick stats, alerts, summary, and chart (partial update)
-  renderAlerts(activePattern);
-  document.getElementById('quick-stats').innerHTML = buildQuickStats(activePattern);
-  const sc = document.querySelector('.summary-section');
-  if (sc) { const t = document.createElement('div'); t.innerHTML = buildSummaryTable(activePattern); sc.replaceWith(t.firstChild); }
-  const cc = document.querySelector('.coverage-chart');
-  if (cc) { const t2 = document.createElement('div'); t2.innerHTML = buildCoverageChart(activePattern); cc.replaceWith(t2.firstChild); }
-}
-
-function renderWhatifImpact() {
-  const panel = document.getElementById('whatif-impact');
-  if (!panel) return;
-
-  if (whatifAbsent.length === 0) {
-    panel.innerHTML = '<p style="font-size:.82rem;color:#6b46c1;font-style:italic;margin:0">Haz clic en el nombre de una persona para simular su ausencia.</p>';
-    return;
-  }
-
-  const allRows = currentState[activePattern];
-
-  // Base score computed directly from all rows (no filtering)
-  const baseScore   = calculateScoreForRows(getBaseRows(activePattern), activePattern);
-  const baseSummary = calcSummaryForRows(getBaseRows(activePattern));
-
-  // Simulated score with absent persons removed
-  const simScore   = calculateScoreForRows(getActiveRows(activePattern), activePattern);
-  const simSummary = calcSummaryForRows(getActiveRows(activePattern));
-  const scoreDiff  = simScore.score - baseScore.score;
-
-  // Count new uncovered slots
-  const openStart = getOpenStart(activePattern);
-  const openEnd   = getOpenEnd();
-  let newUncovered = 0;
-  for (let i = openStart; i <= openEnd; i++) {
-    if (baseSummary.TotalFloor[i] >= BUSINESS_RULES.coverage.lunchTrans.totalFloor &&
-        simSummary.TotalFloor[i]  <  BUSINESS_RULES.coverage.lunchTrans.totalFloor) {
-      newUncovered++;
-    }
-  }
-
-  // Check peak 12:00–14:00
-  const peakIdx1 = TIME_SLOTS.indexOf('12:00');
-  const peakIdx2 = TIME_SLOTS.indexOf('14:00');
-  let peakAffected = false;
-  for (let i = peakIdx1; i < peakIdx2 && i >= 0; i++) {
-    if (simSummary.TotalFloor[i] < BUSINESS_RULES.coverage.normal.totalFloor) { peakAffected = true; break; }
-  }
-
-  // Build absent list
-  let absentHtml = '';
-  for (const rowIdx of whatifAbsent) {
-    const row = allRows[rowIdx];
-    if (!row) continue;
-    let name = row.role;
-    if (row.assignedId) {
-      const isLead = row.role === 'Lead';
-      const m = isLead
-        ? teamData.leads.find(x => x.id === row.assignedId)
-        : teamData.managers.find(x => x.id === row.assignedId);
-      if (m) name = memberShortDisplay(m);
-    }
-    const floorRole = getFloorRoleForRow(row) || '—';
-    absentHtml += `<div>❌ <strong>${esc(name)}</strong> (${esc(floorRole)}, ${esc(row.shift)}) — ausente</div>`;
-  }
-
-  // Suggestion based on worst simulated floor slot
-  let minSimFloor = Infinity;
-  for (let i = openStart; i <= openEnd; i++) {
-    if (simSummary.TotalFloor[i] < minSimFloor) minSimFloor = simSummary.TotalFloor[i];
-  }
-  if (minSimFloor === Infinity) minSimFloor = 0;
-  const needed = Math.max(0, BUSINESS_RULES.coverage.lunchTrans.totalFloor - minSimFloor);
-  // pl(n, sg, pl) — Spanish pluralizer helper for this panel
-  const pl = (n, sg, plr) => n === 1 ? sg : plr;
-  const suggHtml = needed > 0
-    ? `<div style="color:#553c9a;">💡 Sugerencia: Necesitas ${needed} ${pl(needed, 'persona adicional', 'personas adicionales')} en floor</div>`
-    : '';
-
-  const absentCount = whatifAbsent.length;
-  panel.innerHTML = `
-    <div style="font-weight:700;color:#553c9a;margin-bottom:4px;">🔮 Simulación: ${absentCount} ${pl(absentCount, 'persona ausente', 'personas ausentes')}</div>
-    <div style="border-top:1px solid #d6bcfa;padding-top:4px;margin-bottom:4px;">${absentHtml}</div>
-    <div style="border-top:1px solid #d6bcfa;padding-top:4px;">
-      <div style="color:${scoreDiff < 0 ? 'var(--red)' : 'var(--green)'};">📉 Score: ${baseScore.score}% → ${simScore.score}% (${scoreDiff >= 0 ? '+' : ''}${scoreDiff} pts)</div>
-      ${newUncovered > 0 ? `<div style="color:var(--red);">🔴 ${newUncovered} ${pl(newUncovered, 'slot nuevo', 'slots nuevos')} sin cobertura mínima</div>` : ''}
-      ${peakAffected ? '<div style="color:var(--orange);">⚠️ Horas pico 12:00-14:00 afectadas</div>' : ''}
-      ${suggHtml}
-    </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3885,828 +3511,169 @@ function questionMeetings(patIdx) {
   return suggestions;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// WEEKLY PLANNER (Fase 3)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const LS_KEY_WEEK_PLANS = 'schedule_week_plans';
-const WEEK_DAY_KEYS = ['mon','tue','wed','thu','fri','sat'];
-const WEEK_DAY_LABELS_SHORT = ['L','M','X','J','V','S'];
-const EQUITY_IMBALANCE_THRESHOLD = 1.5; // max allowed deviation from average closings before flagging imbalance
-
-let weekPlans = {}; // { 'YYYY-Wnn': { plan, status, createdAt, notes } }
-let plannerCurrentWeek = null; // weekId string e.g. '2025-W15'
-let plannerEditPopover = null;
-
-// ── Persistence ───────────────────────────────────────────────────────────────
-function loadWeekPlans() {
-  try {
-    const s = localStorage.getItem(LS_KEY_WEEK_PLANS);
-    if (s) return JSON.parse(s);
-  } catch(e) {}
-  return {};
-}
-function saveWeekPlans() {
-  try { localStorage.setItem(LS_KEY_WEEK_PLANS, JSON.stringify(weekPlans)); } catch(e) {}
-}
-
-weekPlans = loadWeekPlans();
-
-// ── Week helpers ──────────────────────────────────────────────────────────────
-function getISOWeek(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-}
-
-function getWeekId(date) {
-  const w = getISOWeek(date);
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const year = d.getUTCFullYear();
-  return `${year}-W${String(w).padStart(2,'0')}`;
-}
-
-function getMondayOfWeek(weekId) {
-  const [yearStr, wStr] = weekId.split('-W');
-  const year = parseInt(yearStr), week = parseInt(wStr);
-  const jan4 = new Date(Date.UTC(year, 0, 4));
-  const dayOfWeek = jan4.getUTCDay() || 7;
-  const week1Mon = new Date(jan4);
-  week1Mon.setUTCDate(jan4.getUTCDate() - (dayOfWeek - 1));
-  const monday = new Date(week1Mon);
-  monday.setUTCDate(week1Mon.getUTCDate() + (week - 1) * 7);
-  return monday;
-}
-
-function getWeekDateRange(weekId) {
-  const monday = getMondayOfWeek(weekId);
-  const saturday = new Date(monday);
-  saturday.setUTCDate(monday.getUTCDate() + 5);
-  return { monday, saturday };
-}
-
-function formatWeekLabel(weekId) {
-  const { monday, saturday } = getWeekDateRange(weekId);
-  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const monDay = monday.getUTCDate(), monMon = months[monday.getUTCMonth()];
-  const satDay = saturday.getUTCDate(), satMon = months[saturday.getUTCMonth()];
-  // Use the ISO year from the weekId (which is based on Thursday's year, always correct)
-  const year = parseInt(weekId.split('-W')[0]);
-  if (monMon === satMon) return `${monDay} \u2013 ${satDay} ${satMon} ${year}`;
-  return `${monDay} ${monMon} \u2013 ${satDay} ${satMon} ${year}`;
-}
-
-function navigateWeek(delta) {
-  const monday = getMondayOfWeek(plannerCurrentWeek);
-  monday.setUTCDate(monday.getUTCDate() + delta * 7);
-  plannerCurrentWeek = getWeekId(monday);
-  renderPlannerView();
-}
-
-function getCurrentWeekId() {
-  return getWeekId(new Date());
-}
-
-// ── Team member helpers ───────────────────────────────────────────────────────
-function getAllMembers() {
-  return [...(teamData.leads || []), ...(teamData.managers || [])];
-}
-
-function findMemberById(id) {
-  return getAllMembers().find(m => m.id === id) || null;
-}
-
-function memberDaysOff(member) {
-  return Array.isArray(member.daysOff) ? member.daysOff : [];
-}
-
-function memberMaxClosings(member) {
-  return typeof member.maxClosings === 'number' ? member.maxClosings : 2;
-}
-
-function memberMaxOpenings(member) {
-  return typeof member.maxOpenings === 'number' ? member.maxOpenings : 2;
-}
-
-// ── Plan generation ───────────────────────────────────────────────────────────
-function generateWeekPlan(weekId) {
-  const plan = {};
-  const personStats = {};
-
-  const shiftIsClosing = (shift) => {
-    if (!shift) return false;
-    return shift.includes('-22:00') || shift.includes('-21:30');
-  };
-  const shiftIsOpening = (shift) => {
-    if (!shift) return false;
-    return shift.startsWith('07:');
-  };
-  const shiftIsMorning = (shift) => {
-    if (!shift) return false;
-    return shift.startsWith('07:') || shift.startsWith('08:') || shift.startsWith('09:') || shift.startsWith('10:');
-  };
-
-  const getAvailability = (member, dayIdx) => {
-    if (!plannerCurrentWeek) return true;
-    const weekOverride = (member.weeklyAvailability || {})[plannerCurrentWeek];
-    if (!weekOverride) return true;
-    const dayKey = WEEK_DAY_KEYS[dayIdx];
-    const dayVal = weekOverride[dayKey];
-    if (dayVal === false) return false;
-    return true;
-  };
-
-  for (let dayIdx = 0; dayIdx < 6; dayIdx++) {
-    const patIdx = DAY_PATTERN_IDX[dayIdx];
-    const pattern = currentState[patIdx];
-
-    for (const row of pattern) {
-      const isLead = row.role === 'Lead';
-      const candidates = isLead ? (teamData.leads || []) : (teamData.managers || []);
-
-      const scoredCandidates = candidates.map(member => {
-        const daysOff = memberDaysOff(member);
-        const calDayIdx = dayIdx + 1;
-        if (daysOff.includes(calDayIdx)) return null;
-        if (!getAvailability(member, dayIdx)) return null;
-
-        const stats = personStats[member.id] || { closings:0, openings:0, assignedDays:0 };
-
-        const alreadyThisDay = plan[member.id] && plan[member.id][dayIdx];
-        if (alreadyThisDay) return null;
-
-        let score = 0;
-        if (member.defaultShift === row.shift) score += 10;
-        if (!isLead && member.defaultRole === (getFloorRoleForRow(row) || 'Coach')) score += 5;
-
-        const isMorning = shiftIsMorning(row.shift);
-        if (member.preferMorning && isMorning) score += 3;
-        if (!member.preferMorning && !isMorning) score += 3;
-
-        if (shiftIsClosing(row.shift) && stats.closings >= memberMaxClosings(member)) score -= 10;
-        if (shiftIsOpening(row.shift) && stats.openings >= memberMaxOpenings(member)) score -= 10;
-        if (shiftIsClosing(row.shift)) score += 8 - Math.min(8, stats.closings * 3);
-        if (stats.assignedDays >= 5) score -= 5;
-
-        return { member, score };
-      }).filter(Boolean);
-
-      if (scoredCandidates.length === 0) continue;
-
-      scoredCandidates.sort((a, b) => b.score - a.score);
-      const best = scoredCandidates[0].member;
-
-      if (!plan[best.id]) plan[best.id] = {};
-      const role = row.role === 'Lead' ? 'LDSup' : (getFloorRoleForRow(row) || 'Coach');
-      plan[best.id][dayIdx] = { shift: row.shift, role };
-
-      if (!personStats[best.id]) personStats[best.id] = { closings:0, openings:0, assignedDays:0 };
-      if (shiftIsClosing(row.shift)) personStats[best.id].closings++;
-      if (shiftIsOpening(row.shift)) personStats[best.id].openings++;
-      personStats[best.id].assignedDays++;
-    }
-  }
-
-  return plan;
-}
-
-// ── Conflict detection ────────────────────────────────────────────────────────
-function detectConflicts(weekPlan) {
-  const conflicts = [];
-
-  for (const [personId, days] of Object.entries(weekPlan)) {
-    const member = findMemberById(personId);
-    if (!member) continue;
-
-    const daysOff = memberDaysOff(member);
-
-    for (const [dayIdx, assignment] of Object.entries(days)) {
-      if (!assignment) continue;
-      const dIdx = parseInt(dayIdx);
-      const calDay = dIdx + 1;
-      if (daysOff.includes(calDay)) {
-        conflicts.push({ type:'dayoff', severity:'red', person:member.name, day:WEEK_DAYS[dIdx],
-          msg:`${member.shortName||member.name} tiene ${WEEK_DAYS[dIdx]} como día libre` });
-      }
-    }
-
-    const closings = Object.values(days).filter(d => d && d.shift && (d.shift.endsWith('-22:00') || d.shift.endsWith('-21:30'))).length;
-    if (closings > memberMaxClosings(member)) {
-      conflicts.push({ type:'maxClosing', severity:'orange', person:member.name,
-        msg:`${member.shortName||member.name}: ${closings} cierres (máx ${memberMaxClosings(member)})` });
-    }
-
-    const openings = Object.values(days).filter(d => d && d.shift && d.shift.startsWith('07:')).length;
-    if (openings > memberMaxOpenings(member)) {
-      conflicts.push({ type:'maxOpening', severity:'orange', person:member.name,
-        msg:`${member.shortName||member.name}: ${openings} aperturas (máx ${memberMaxOpenings(member)})` });
-    }
-
-    const workedDays = Object.values(days).filter(d => d).length;
-    if (workedDays >= 6) {
-      conflicts.push({ type:'noRestDay', severity:'orange', person:member.name,
-        msg:`${member.shortName||member.name} trabaja los 6 días sin descanso` });
-    }
-  }
-
-  for (let dayIdx = 0; dayIdx < 6; dayIdx++) {
-    const patIdx = DAY_PATTERN_IDX[dayIdx];
-    const needed = currentState[patIdx].length;
-    const assigned = Object.values(weekPlan).filter(d => d[dayIdx]).length;
-    if (assigned < needed) {
-      conflicts.push({ type:'understaffed', severity:'red', day:WEEK_DAYS[dayIdx],
-        msg:`${WEEK_DAYS[dayIdx]}: ${assigned}/${needed} personas asignadas` });
-    }
-  }
-
-  return conflicts;
-}
-
-// ── Score for week plan ───────────────────────────────────────────────────────
-function calcPlannerWeekScore(weekPlan) {
-  const scores = DAY_PATTERN_IDX.map(idx => calculateScore(idx).score);
-  return scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
-}
-
-// ── Status helpers ─────────────────────────────────────────────────────────────
-const STATUS_LABELS = { draft:'🟡 Borrador', review:'🔵 Revisión', published:'🟢 Publicado' };
-const STATUS_CSS    = { draft:'planner-status-draft', review:'planner-status-review', published:'planner-status-published' };
-
-function getPlanForWeek(weekId) {
-  return weekPlans[weekId] || null;
-}
-
-function savePlanForWeek(weekId, plan, status, notes) {
-  weekPlans[weekId] = {
-    plan: plan || {},
-    status: status || 'draft',
-    createdAt: (weekPlans[weekId] && weekPlans[weekId].createdAt) || Date.now(),
-    updatedAt: Date.now(),
-    notes: notes || ''
-  };
-  saveWeekPlans();
-}
-
-function advancePlanStatus(weekId) {
-  const entry = weekPlans[weekId];
-  if (!entry) return;
-  const order = ['draft','review','published'];
-  const idx = order.indexOf(entry.status);
-  if (idx < order.length - 1) {
-    entry.status = order[idx + 1];
-    saveWeekPlans();
-  }
-}
-
-// ── Render planner view ───────────────────────────────────────────────────────
-function renderPlannerView() {
-  closeDropdown();
-  closePlannerPopover();
-  if (typeof renderKPISection === 'function') renderKPISection(null);
-
-  if (!plannerCurrentWeek) plannerCurrentWeek = getCurrentWeekId();
-
-  const weekLabel = formatWeekLabel(plannerCurrentWeek);
-  const entry = getPlanForWeek(plannerCurrentWeek);
-  const plan = entry ? entry.plan : {};
-  const status = entry ? (entry.status || 'draft') : 'draft';
-
-  const conflicts = detectConflicts(plan);
-  const weekScore = calcPlannerWeekScore(plan);
-  const totalConflicts = conflicts.length;
-
-  const subtitle = document.getElementById('subtitle');
-  if (subtitle) subtitle.textContent = `Planificador Semanal \u00b7 ${weekLabel}`;
-
-  const qs = document.getElementById('quick-stats');
-  if (qs) {
-    const sColor = scoreColor(weekScore);
-    qs.innerHTML = `<div class="stat-card"><div class="stat-value" style="color:${sColor}">${weekScore}%</div><div class="stat-label">Score Plan Semanal</div><div class="score-progress-bar"><div class="score-progress-fill" style="width:${weekScore}%;background:${sColor}"></div></div></div>`;
-  }
-
-  const badge = document.getElementById('alerts-badge');
-  if (badge) { badge.textContent = ''; badge.className = 'alert-badge ok'; }
-  const drawerSum = document.getElementById('alert-drawer-summary');
-  if (drawerSum) { drawerSum.innerHTML = 'ℹ️ <strong>Planificador Semanal</strong> — gestiona el horario semanal con personas reales'; drawerSum.style.color='var(--text-muted)'; }
-
-  const allMembers = getAllMembers();
-
-  let h = '<div class="planner-view">';
-
-  h += '<div class="planner-header">';
-  h += '<div class="planner-week-nav">';
-  h += `<button class="planner-week-btn" onclick="navigateWeek(-1)">&#9664; Anterior</button>`;
-  h += `<span class="planner-week-label">${esc(weekLabel)}</span>`;
-  h += `<button class="planner-week-btn" onclick="navigateWeek(1)">Siguiente &#9654;</button>`;
-  h += '</div>';
-
-  h += '<div class="planner-meta">';
-  h += `<span class="planner-status ${STATUS_CSS[status]}">${STATUS_LABELS[status]}</span>`;
-  h += `<span class="planner-score" style="color:${scoreColor(weekScore)}">📊 ${weekScore}%</span>`;
-  if (totalConflicts > 0) {
-    h += `<span class="planner-conflicts" onclick="document.getElementById('planner-conflicts-section').scrollIntoView({behavior:'smooth'})">⚠️ ${totalConflicts} conflicto${totalConflicts!==1?'s':''}</span>`;
-  } else {
-    h += `<span style="color:var(--green);font-size:.82rem;font-weight:600;">✅ Sin conflictos</span>`;
-  }
-  if (status !== 'published') {
-    const nextStatus = status === 'draft' ? 'Enviar a Revisión 🔵' : 'Publicar 🟢';
-    h += `<button class="planner-status-btn" onclick="plannerAdvanceStatus()">${nextStatus}</button>`;
-  }
-  h += '</div>';
-
-  h += '<div class="planner-actions">';
-  h += `<button onclick="openAvailabilityModal()">👥 Disponibilidad</button>`;
-  h += `<button onclick="plannerGenerate()">📥 Generar desde patrones</button>`;
-  h += `<button onclick="plannerSave()">💾 Guardar</button>`;
-  h += `<button onclick="plannerExportCSV()">📤 Exportar CSV</button>`;
-  h += '</div>';
-  h += '</div>'; // planner-header
-
-  h += '<div class="planner-table-wrap"><table class="planner-table">';
-  h += '<thead><tr>';
-  h += '<th>Persona</th><th>Rol</th>';
-  for (let d = 0; d < 6; d++) {
-    h += `<th class="day-header" onclick="plannerDayClick(${d})" title="Ver patrón del día">${WEEK_DAYS[d]}</th>`;
-  }
-  h += '</tr></thead><tbody>';
-
-  if (allMembers.length === 0) {
-    h += `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-muted)">No hay miembros del equipo. Configura el equipo primero con el botón 👥 Equipo.</td></tr>`;
-  } else {
-    const leads = teamData.leads || [];
-    if (leads.length > 0) {
-      h += `<tr><td colspan="8" style="background:var(--lead-bg);color:var(--lead-text);font-weight:700;font-size:.8rem;padding:5px 10px;">👤 Leads</td></tr>`;
-      for (const member of leads) {
-        h += plannerPersonRow(member, plan, conflicts);
-      }
-    }
-    const mgrs = teamData.managers || [];
-    if (mgrs.length > 0) {
-      h += `<tr><td colspan="8" style="background:var(--mgr-bg);color:var(--mgr-text);font-weight:700;font-size:.8rem;padding:5px 10px;">👔 Managers</td></tr>`;
-      for (const member of mgrs) {
-        h += plannerPersonRow(member, plan, conflicts);
-      }
-    }
-  }
-
-  h += '<tr class="planner-totals"><td colspan="2">Total asignados</td>';
-  for (let d = 0; d < 6; d++) {
-    const count = Object.values(plan).filter(days => days[d]).length;
-    const needed = currentState[DAY_PATTERN_IDX[d]].length;
-    const ok = count >= needed;
-    h += `<td style="color:${ok?'var(--green)':'var(--red)'}">${count}/${needed}</td>`;
-  }
-  h += '</tr>';
-
-  h += '<tr class="planner-score-row"><td colspan="2">📊 Score patrón</td>';
-  for (let d = 0; d < 6; d++) {
-    const s = calculateScore(DAY_PATTERN_IDX[d]).score;
-    h += `<td style="color:${scoreColor(s)}">${s}%</td>`;
-  }
-  h += '</tr>';
-
-  h += '</tbody></table></div>';
-
-  h += `<div id="planner-conflicts-section">`;
-  if (conflicts.length > 0) {
-    h += '<div class="planner-conflicts-panel">';
-    h += `<h3>⚠️ Conflictos (${conflicts.length})</h3>`;
-    for (const c of conflicts) {
-      const cls = c.severity === 'red' ? 'pl-conflict-red' : 'pl-conflict-orange';
-      const icon = c.severity === 'red' ? '🔴' : '🟠';
-      h += `<div class="pl-conflict-item ${cls}">${icon} ${esc(c.msg)}</div>`;
-    }
-    h += '</div>';
-  }
-  h += '</div>';
-
-  h += buildPlannerEquityPanel(plan);
-  h += '</div>'; // planner-view
-
-  const main = document.getElementById('schedule-container');
-  if (main) main.innerHTML = h;
-}
-
-function plannerPersonRow(member, plan, conflicts) {
-  const personPlan = plan[member.id] || {};
-  const isLead = teamData.leads && teamData.leads.some(m => m.id === member.id);
-  const roleLabel = isLead ? 'Lead' : 'Mgr';
-  const memberConflicts = conflicts.filter(c => c.person === member.name);
-
-  let h = `<tr>`;
-  h += `<td class="pl-person">${esc(member.shortName || member.name)}`;
-  if (memberConflicts.length > 0) {
-    const redCount = memberConflicts.filter(c=>c.severity==='red').length;
-    if (redCount > 0) h += `<span class="pl-conflict-badge">${redCount}</span>`;
-    else h += `<span class="pl-conflict-badge pl-conflict-badge-orange">${memberConflicts.length}</span>`;
-  }
-  h += `</td>`;
-  h += `<td class="pl-role" style="color:${isLead?'var(--lead-text)':'var(--mgr-text)'}">${roleLabel}</td>`;
-
-  for (let d = 0; d < 6; d++) {
-    const assignment = personPlan[d];
-    const daysOff = memberDaysOff(member);
-    const calDay = d + 1;
-    const isOff = daysOff.includes(calDay);
-    const hasConflictHere = conflicts.some(c => c.person === member.name && c.day === WEEK_DAYS[d]);
-
-    let cellCls = 'planner-cell ';
-    let cellContent = '';
-
-    if (isOff && !assignment) {
-      cellCls += 'planner-cell-off';
-      cellContent = '<span style="font-size:.75rem">Libre</span>';
-    } else if (!assignment) {
-      cellCls += 'planner-cell-unassigned';
-      cellContent = '<span style="font-size:.72rem;color:var(--text-muted)">\u2014 Sin asignar</span>';
-    } else {
-      cellCls += hasConflictHere ? 'planner-cell-conflict' : 'planner-cell-ok';
-      const shiftStr = shiftShort(assignment.shift);
-      const roleStr = assignment.role || '';
-      const pillCls = roleStr === 'Coach' ? 'pl-pill-coach'
-                    : roleStr === 'Support' ? 'pl-pill-support'
-                    : roleStr === 'LDSup' ? 'pl-pill-ldsup'
-                    : roleStr === 'AOR' ? 'pl-pill-aor' : '';
-      cellContent = `<span class="pl-shift">${esc(shiftStr)}</span>`;
-      if (roleStr) cellContent += `<span class="pl-role-pill ${pillCls}">${esc(roleStr)}</span>`;
-    }
-
-    cellContent += `<span class="planner-edit-btn" onclick="event.stopPropagation();openPlannerCellEdit(event,'${escAttr(member.id)}',${d})">✏️</span>`;
-    h += `<td><div class="${cellCls}" onclick="openPlannerCellEdit(event,'${escAttr(member.id)}',${d})" data-person="${escAttr(member.id)}" data-day="${d}">${cellContent}</div></td>`;
-  }
-  h += '</tr>';
-  return h;
-}
-
-function buildPlannerEquityPanel(plan) {
-  const allM = getAllMembers();
-  if (allM.length === 0) return '';
-
-  let h = '<div class="planner-equity">';
-  h += '<h3>⚖️ Equidad Semanal</h3>';
-  h += '<div style="overflow-x:auto"><table class="equity-table">';
-  h += '<thead><tr><th>Persona</th><th>Días</th><th>Aperturas</th><th>Cierres</th><th>Coach</th><th>Support</th><th></th></tr></thead>';
-  h += '<tbody>';
-
-  const stats = allM.map(m => {
-    const days = plan[m.id] || {};
-    const worked = Object.values(days).filter(d=>d).length;
-    const openings = Object.values(days).filter(d=>d&&d.shift&&d.shift.startsWith('07:')).length;
-    const closings = Object.values(days).filter(d=>d&&d.shift&&(d.shift.endsWith('-22:00')||d.shift.endsWith('-21:30'))).length;
-    const coach = Object.values(days).filter(d=>d&&d.role==='Coach').length;
-    const support = Object.values(days).filter(d=>d&&d.role==='Support').length;
-    return { m, worked, openings, closings, coach, support };
-  });
-
-  const avgClose = stats.reduce((s,x)=>s+x.closings,0)/Math.max(1,stats.length);
-
-  for (const s of stats) {
-    const imbal = Math.abs(s.closings - avgClose) > EQUITY_IMBALANCE_THRESHOLD;
-    h += `<tr class="${imbal?'equity-warning':''}">`;
-    h += `<td>${esc(s.m.shortName||s.m.name)}</td>`;
-    h += `<td>${s.worked}/6</td>`;
-    h += `<td>${s.openings}</td>`;
-    h += `<td>${s.closings}</td>`;
-    h += `<td>${s.coach}</td>`;
-    h += `<td>${s.support}</td>`;
-    h += `<td>${imbal?'⚠️':'✅'}</td>`;
-    h += '</tr>';
-  }
-
-  const totalEntries = stats.length || 1;
-  h += '<tr style="font-weight:700;background:var(--surface-alt)">';
-  h += '<td>PROMEDIO</td>';
-  h += `<td>${(stats.reduce((s,x)=>s+x.worked,0)/totalEntries).toFixed(1)}</td>`;
-  h += `<td>${(stats.reduce((s,x)=>s+x.openings,0)/totalEntries).toFixed(1)}</td>`;
-  h += `<td>${(stats.reduce((s,x)=>s+x.closings,0)/totalEntries).toFixed(1)}</td>`;
-  h += `<td>${(stats.reduce((s,x)=>s+x.coach,0)/totalEntries).toFixed(1)}</td>`;
-  h += `<td>${(stats.reduce((s,x)=>s+x.support,0)/totalEntries).toFixed(1)}</td>`;
-  h += '<td></td></tr>';
-
-  h += '</tbody></table></div></div>';
-  return h;
-}
-
-// ── Cell edit popover ─────────────────────────────────────────────────────────
-function closePlannerPopover() {
-  if (plannerEditPopover) {
-    plannerEditPopover.remove();
-    plannerEditPopover = null;
-  }
-}
-
-function openPlannerCellEdit(event, personId, dayIdx) {
-  event.stopPropagation();
-  closePlannerPopover();
-
-  const weekId = plannerCurrentWeek;
-  const entry = getPlanForWeek(weekId);
-  const plan = entry ? entry.plan : {};
-  const assignment = (plan[personId] || {})[dayIdx] || null;
-  const member = findMemberById(personId);
-  if (!member) return;
-
-  const shiftOpts = activeSeason === 'invierno' ? SHIFT_OPTIONS_INVIERNO : SHIFT_OPTIONS_VERANO;
-  const isLead = teamData.leads && teamData.leads.some(m => m.id === personId);
-  const currentShift = assignment ? assignment.shift : (member.defaultShift || shiftOpts[1]);
-  const currentRole  = assignment ? assignment.role  : (isLead ? 'LDSup' : 'Coach');
-
-  let html = `<div class="pl-cell-popover" id="planner-cell-popover">`;
-  html += `<h4>${esc(member.shortName||member.name)} \u2014 ${WEEK_DAYS[dayIdx]}</h4>`;
-  html += `<hr style="margin-bottom:8px;border:none;border-top:1px solid var(--border)">`;
-
-  html += `<label>Turno</label>`;
-  html += `<select id="pl-pop-shift">`;
-  for (const s of shiftOpts) {
-    html += `<option value="${escAttr(s)}"${s===currentShift?' selected':''}>${esc(s)}</option>`;
-  }
-  html += `</select>`;
-
-  if (!isLead) {
-    html += `<label>Rol</label>`;
-    html += `<select id="pl-pop-role">`;
-    for (const r of ['Coach','Support','AOR']) {
-      html += `<option value="${escAttr(r)}"${r===currentRole?' selected':''}>${esc(r)}</option>`;
-    }
-    html += `</select>`;
-  }
-
-  html += `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pl-pop-dayoff"${!assignment?' checked':''}> Día libre</label>`;
-  html += `<div class="pl-pop-actions" style="margin-top:10px">`;
-  html += `<button class="pl-pop-apply" onclick="applyPlannerCellEdit('${escAttr(personId)}',${dayIdx})">Aplicar</button>`;
-  html += `<button onclick="closePlannerPopover()">Cancelar</button>`;
-  html += `</div></div>`;
-
-  const pop = document.createElement('div');
-  pop.innerHTML = html;
-  plannerEditPopover = pop.firstChild;
-
-  document.body.appendChild(plannerEditPopover);
-  const rect = event.target.getBoundingClientRect();
-  let top = rect.bottom + window.scrollY + 4;
-  let left = rect.left + window.scrollX;
-  const pw = 220;
-  if (left + pw > window.innerWidth - 10) left = window.innerWidth - pw - 10;
-  plannerEditPopover.style.top = top + 'px';
-  plannerEditPopover.style.left = left + 'px';
-  plannerEditPopover.style.position = 'absolute';
-}
-
-function applyPlannerCellEdit(personId, dayIdx) {
-  const shiftEl = document.getElementById('pl-pop-shift');
-  const roleEl  = document.getElementById('pl-pop-role');
-  const dayOffEl = document.getElementById('pl-pop-dayoff');
-  if (!shiftEl) return;
-
-  const weekId = plannerCurrentWeek;
-  const entry = getPlanForWeek(weekId);
-  const plan = entry ? JSON.parse(JSON.stringify(entry.plan)) : {};
-
-  if (!plan[personId]) plan[personId] = {};
-
-  if (dayOffEl && dayOffEl.checked) {
-    delete plan[personId][dayIdx];
-  } else {
-    const isLead = teamData.leads && teamData.leads.some(m => m.id === personId);
-    const role = isLead ? 'LDSup' : (roleEl ? roleEl.value : 'Coach');
-    plan[personId][dayIdx] = { shift: shiftEl.value, role };
-  }
-
-  savePlanForWeek(weekId, plan, entry ? entry.status : 'draft', entry ? entry.notes : '');
-  closePlannerPopover();
-  renderPlannerView();
-}
-
-// ── Day header click — mini pattern view ────────────────────────────────────
-function plannerDayClick(dayIdx) {
-  const patIdx = DAY_PATTERN_IDX[dayIdx];
-  const patName = PATTERN_NAMES[patIdx];
-  const rows = currentState[patIdx];
-
-  let h = `<div style="padding:12px"><h4 style="margin-bottom:10px">${WEEK_DAYS[dayIdx]} \u2014 Patrón: ${esc(patName)}</h4>`;
-  h += '<table style="width:100%;font-size:.82rem;border-collapse:collapse">';
-  h += '<thead><tr><th style="text-align:left;padding:4px 8px;background:var(--surface-alt)">Rol</th><th style="text-align:left;padding:4px 8px;background:var(--surface-alt)">Turno</th><th style="text-align:left;padding:4px 8px;background:var(--surface-alt)">Persona</th></tr></thead><tbody>';
-  for (const row of rows) {
-    const member = row.assignedId ? findMemberById(row.assignedId) : null;
-    const name = member ? (member.shortName||member.name) : '(sin asignar)';
-    h += `<tr><td style="padding:3px 8px;border-bottom:1px solid var(--border)">${esc(row.role)}</td><td style="padding:3px 8px;border-bottom:1px solid var(--border)">${esc(row.shift)}</td><td style="padding:3px 8px;border-bottom:1px solid var(--border)">${esc(name)}</td></tr>`;
-  }
-  h += '</tbody></table>';
-  h += `<div style="margin-top:10px;font-size:.78rem"><a href="#" onclick="switchToPattern(${patIdx});return false">Ver patrón completo →</a></div>`;
-  h += '</div>';
-
-  showPlannerDayModal(h);
-}
-
-function switchToPattern(patIdx) {
-  closePlannerDayModal();
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    b.classList.remove('active');
-    if (b.dataset.pat == patIdx) b.classList.add('active');
-  });
-  activePattern = patIdx;
-  render(activePattern);
-  updateUndoRedoButtons();
-}
-
-let plannerDayModalEl = null;
-function showPlannerDayModal(content) {
-  closePlannerDayModal();
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
-  overlay.addEventListener('click', e => { if(e.target===overlay) closePlannerDayModal(); });
-
-  const box = document.createElement('div');
-  box.style.cssText = 'background:var(--surface);border-radius:10px;box-shadow:var(--shadow-lg);max-width:480px;width:90%;max-height:80vh;overflow-y:auto';
-  box.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)"><strong>Vista de patrón del día</strong><button onclick="closePlannerDayModal()" style="border:none;background:none;font-size:1.2rem;cursor:pointer">✕</button></div>` + content;
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-  plannerDayModalEl = overlay;
-}
-
-function closePlannerDayModal() {
-  if (plannerDayModalEl) { plannerDayModalEl.remove(); plannerDayModalEl = null; }
-}
-
-// ── Generate and Save actions ─────────────────────────────────────────────────
-function plannerGenerate() {
-  const plan = generateWeekPlan(plannerCurrentWeek);
-  const entry = getPlanForWeek(plannerCurrentWeek);
-  savePlanForWeek(plannerCurrentWeek, plan, entry ? entry.status : 'draft', entry ? entry.notes : '');
-  renderPlannerView();
-  showUndoToast('📥 Plan generado desde patrones');
-}
-
-function plannerSave() {
-  const entry = getPlanForWeek(plannerCurrentWeek);
-  if (!entry) {
-    savePlanForWeek(plannerCurrentWeek, {}, 'draft', '');
-  } else {
-    saveWeekPlans();
-  }
-  showUndoToast('💾 Plan guardado');
-}
-
-function plannerAdvanceStatus() {
-  advancePlanStatus(plannerCurrentWeek);
-  renderPlannerView();
-}
-
-// ── CSV export for week plan ──────────────────────────────────────────────────
-function plannerExportCSV() {
-  const weekLabel = formatWeekLabel(plannerCurrentWeek);
-  const entry = getPlanForWeek(plannerCurrentWeek);
-  const plan = entry ? entry.plan : {};
-  const allMembers = getAllMembers();
-
-  let csv = `Semana,"${weekLabel}"\n`;
-  csv += 'Persona,Rol,' + WEEK_DAYS.join(',') + '\n';
-
-  for (const member of allMembers) {
-    const isLead = teamData.leads && teamData.leads.some(m => m.id === member.id);
-    const roleLabel = isLead ? 'Lead' : 'Manager';
-    const days = plan[member.id] || {};
-    const cols = WEEK_DAYS.map((_, d) => {
-      const a = days[d];
-      if (!a) return 'LIBRE';
-      return `"${shiftShort(a.shift)} ${a.role}"`;
-    });
-    csv += `"${member.name}","${roleLabel}",${cols.join(',')}\n`;
-  }
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `plan_semana_${plannerCurrentWeek}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ── Availability modal ────────────────────────────────────────────────────────
-let availabilityDraft = {};
-
-function openAvailabilityModal() {
-  const weekId = plannerCurrentWeek;
-  const allMembers = getAllMembers();
-
-  availabilityDraft = {};
-  for (const m of allMembers) {
-    availabilityDraft[m.id] = {};
-    const weekOverride = (m.weeklyAvailability || {})[weekId] || {};
-    for (let d = 0; d < 6; d++) {
-      const key = WEEK_DAY_KEYS[d];
-      availabilityDraft[m.id][d] = weekOverride[key] !== false;
-    }
-  }
-
-  const weekLabel = formatWeekLabel(weekId);
-  let h = `<div class="modal-body-inner">`;
-  h += `<h4 style="margin-bottom:12px">📋 Disponibilidad \u2014 ${esc(weekLabel)}</h4>`;
-  h += '<div style="margin-bottom:8px;display:flex;gap:12px;font-size:.78rem;color:var(--text-muted)">';
-  h += '<span>☑ disponible &nbsp; ☐ no disponible</span></div>';
-
-  for (const m of allMembers) {
-    const availDays = Object.values(availabilityDraft[m.id]).filter(Boolean).length;
-    h += `<div class="avail-person-row">`;
-    h += `<span class="avail-person-name">${esc(m.shortName||m.name)}</span>`;
-    h += `<div class="avail-day-checks">`;
-    for (let d = 0; d < 6; d++) {
-      const checked = availabilityDraft[m.id][d] !== false;
-      h += `<div class="avail-day-check">`;
-      h += `<span>${WEEK_DAY_LABELS_SHORT[d]}</span>`;
-      h += `<input type="checkbox" ${checked?'checked':''} onchange="availabilityDraft['${escAttr(m.id)}'][${d}]=this.checked;updateAvailStatus('${escAttr(m.id)}')">`;
-      h += `</div>`;
-    }
-    h += `</div>`;
-    h += `<span class="avail-person-status" id="avail-status-${escAttr(m.id)}">${availDays}/6 días</span>`;
-    h += `</div>`;
-  }
-
-  const totalAvail = allMembers.filter(m => Object.values(availabilityDraft[m.id]).some(Boolean)).length;
-  const minNeeded = Math.max(...DAY_PATTERN_IDX.map(idx => currentState[idx].length));
-
-  h += `<div style="margin-top:12px;padding:10px;background:var(--surface-alt);border-radius:6px;font-size:.82rem">`;
-  h += `Disponibles: <strong id="avail-total">${totalAvail}/${allMembers.length}</strong>`;
-  if (totalAvail < minNeeded) {
-    h += ` &nbsp; <span style="color:var(--red)">⚠️ Mín necesario: ${minNeeded}</span>`;
-  } else {
-    h += ` &nbsp; <span style="color:var(--green)">✅ Personal suficiente</span>`;
-  }
-  h += `</div>`;
-
-  h += `<div style="display:flex;gap:8px;margin-top:14px">`;
-  h += `<button class="btn-save-modal" onclick="saveAvailabilityModal()">Guardar y Generar Plan</button>`;
-  h += `<button class="btn-cancel-modal" onclick="closeAvailabilityModal()">Cancelar</button>`;
-  h += `</div>`;
-  h += `</div>`;
-
-  const modal = document.getElementById('modal-team');
-  if (modal) {
-    const modalTitle = modal.querySelector('.modal-title');
-    const modalBody = document.getElementById('team-modal-body');
-    if (modalTitle) modalTitle.textContent = '📋 Disponibilidad Semanal';
-    if (modalBody) modalBody.innerHTML = h;
-    modal.dataset.mode = 'availability';
-    modal.classList.add('open');
-  }
-}
-
-function updateAvailStatus(personId) {
-  const counts = Object.values(availabilityDraft[personId] || {}).filter(Boolean).length;
-  const el = document.getElementById(`avail-status-${personId}`);
-  if (el) el.textContent = `${counts}/6 días`;
-}
-
-function closeAvailabilityModal() {
-  const modal = document.getElementById('modal-team');
-  if (modal) {
-    modal.classList.remove('open');
-    modal.dataset.mode = '';
-    renderTeamModal();
-    const modalTitle = modal.querySelector('.modal-title');
-    if (modalTitle) modalTitle.textContent = '👥 Configurar Equipo';
-  }
-}
-
-function saveAvailabilityModal() {
-  const allMembers = getAllMembers();
-  for (const m of allMembers) {
-    if (!m.weeklyAvailability) m.weeklyAvailability = {};
-    const override = {};
-    for (let d = 0; d < 6; d++) {
-      const key = WEEK_DAY_KEYS[d];
-      if (availabilityDraft[m.id] && availabilityDraft[m.id][d] === false) {
-        override[key] = false;
-      }
-    }
-    if (Object.keys(override).length > 0) {
-      m.weeklyAvailability[plannerCurrentWeek] = override;
-    } else {
-      delete (m.weeklyAvailability || {})[plannerCurrentWeek];
-    }
-  }
-  saveTeam();
-  closeAvailabilityModal();
-  plannerGenerate();
-}
 
 // ── toggleDayOff helper for team modal ───────────────────────────────────────
 function toggleDayOff(role, idx, dayNum) {
-  const m = teamDraft[role][idx];
-  if (!Array.isArray(m.daysOff)) m.daysOff = [];
-  const pos = m.daysOff.indexOf(dayNum);
-  if (pos >= 0) m.daysOff.splice(pos, 1);
-  else m.daysOff.push(dayNum);
+  const member = role === 'lead' ? teamData.leads[idx] : teamData.managers[idx];
+  if (!member) return;
+  const key = dayNum;
+  if (!member.daysOff) member.daysOff = [];
+  const i = member.daysOff.indexOf(key);
+  if (i >= 0) member.daysOff.splice(i, 1);
+  else member.daysOff.push(key);
+  saveTeam();
+  renderTeamModal();
+}
+// ═══════════════════════════════════════════════════════════════════════════════
+// IMPORT PATTERNS
+// ═══════════════════════════════════════════════════════════════════════════════
+let importedPatternData = null;
+
+function openImportPatterns() {
+  const fileInput = document.getElementById('import-file-input');
+  if (fileInput) fileInput.value = '';
+  const preview = document.getElementById('import-preview');
+  const err = document.getElementById('import-error');
+  const btn = document.getElementById('btn-import-confirm');
+  if (preview) preview.style.display = 'none';
+  if (err) { err.style.display = 'none'; err.textContent = ''; }
+  if (btn) btn.disabled = true;
+  importedPatternData = null;
+  document.getElementById('modal-import').classList.add('open');
 }
 
-// ── Close planner popover on outside click ────────────────────────────────────
-document.addEventListener('click', e => {
-  if (plannerEditPopover && !plannerEditPopover.contains(e.target)) {
-    closePlannerPopover();
-  }
+document.addEventListener('DOMContentLoaded', () => {
+  const fileInput = document.getElementById('import-file-input');
+  if (fileInput) fileInput.addEventListener('change', () => handleImportFileChange(fileInput.files[0]));
 });
+
+function handleImportFileChange(file) {
+  const preview = document.getElementById('import-preview');
+  const err = document.getElementById('import-error');
+  const btn = document.getElementById('btn-import-confirm');
+  const previewMsg = document.getElementById('import-preview-msg');
+
+  importedPatternData = null;
+  if (btn) btn.disabled = true;
+  if (preview) preview.style.display = 'none';
+  if (err) { err.style.display = 'none'; err.textContent = ''; }
+
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const content = e.target.result;
+    const ext = file.name.split('.').pop().toLowerCase();
+    try {
+      let parsed;
+      if (ext === 'json') {
+        parsed = parseImportJSON(content);
+      } else if (ext === 'csv') {
+        parsed = parseImportCSV(content);
+      } else {
+        throw new Error(`Formato no soportado (.${ext}). Usa .json o .csv`);
+      }
+      importedPatternData = parsed;
+      if (preview) preview.style.display = 'block';
+      if (previewMsg) previewMsg.textContent = `✅ ${parsed.length} filas detectadas. Listo para importar al patrón "${PATTERN_NAMES[activePattern]}".`;
+      if (btn) btn.disabled = false;
+    } catch(ex) {
+      if (err) { err.textContent = '❌ ' + ex.message; err.style.display = 'block'; }
+      importedPatternData = null;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseImportJSON(content) {
+  const data = JSON.parse(content);
+  const rows = Array.isArray(data) ? data : (data.rows || data.pattern || data.patrones || null);
+  if (!rows || !Array.isArray(rows)) throw new Error('JSON inválido: se esperaba un array de filas o { rows: [...] }');
+  return normalizeImportRows(rows);
+}
+
+function parseImportCSV(content) {
+  const lines = content.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) throw new Error('CSV vacío o sin datos');
+  const header = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  const roleIdx  = header.findIndex(h => /^rol(e)?$/i.test(h));
+  const shiftIdx = header.findIndex(h => /^(shift|turno)$/i.test(h));
+  if (roleIdx < 0 || shiftIdx < 0) throw new Error('CSV: cabeceras requeridas: role (o rol) y shift (o turno)');
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    if (!cols[roleIdx]) continue;
+    const actsRaw = cols.slice(Math.max(roleIdx, shiftIdx) + 1).join(',');
+    let acts = [];
+    try { acts = JSON.parse(actsRaw); } catch(e) {
+      acts = actsRaw ? actsRaw.split('|').map(a => a.trim()) : [];
+    }
+    rows.push({ role: cols[roleIdx], shift: cols[shiftIdx] || '', acts });
+  }
+  if (rows.length === 0) throw new Error('CSV sin filas de datos válidas');
+  return normalizeImportRows(rows);
+}
+
+function normalizeImportRows(rows) {
+  const validRoles = ['Lead', 'Manager'];
+  const n = TIME_SLOTS.length;
+  return rows.map((row, idx) => {
+    const role = row.role || row.rol || 'Manager';
+    if (!validRoles.includes(role)) throw new Error(`Fila ${idx + 1}: rol inválido "${role}". Usa Lead o Manager.`);
+    const shift = row.shift || row.turno || '';
+    let acts = row.acts || row.actividades || [];
+    if (!Array.isArray(acts)) acts = [];
+    while (acts.length < n) acts.push('');
+    acts = acts.slice(0, n);
+    const r = { role, shift, acts };
+    if (row.assignedId) r.assignedId = row.assignedId;
+    return r;
+  });
+}
+
+function confirmImportPatterns() {
+  if (!importedPatternData) return;
+  pushUndo(activePattern);
+  currentState[activePattern] = importedPatternData;
+  saveState();
+  closeModal('modal-import');
+  importedPatternData = null;
+  render(activePattern);
+  showToast(`✅ Patrón importado correctamente (${currentState[activePattern].length} filas)`);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REPLICATE PATTERN
+// ═══════════════════════════════════════════════════════════════════════════════
+function openReplicatePattern() {
+  const select = document.getElementById('replicate-target-select');
+  if (select) select.value = (activePattern + 1) % 5;
+  document.getElementById('modal-replicate').classList.add('open');
+}
+
+function confirmReplicatePattern() {
+  const select = document.getElementById('replicate-target-select');
+  if (!select) return;
+  const targetIdx = parseInt(select.value);
+  if (isNaN(targetIdx) || targetIdx === activePattern) {
+    showToast('⚠️ Selecciona un patrón de destino diferente al actual');
+    return;
+  }
+  pushUndo(targetIdx);
+  currentState[targetIdx] = currentState[activePattern].map(row => ({
+    role: row.role, shift: row.shift, acts: [...row.acts], assignedId: row.assignedId
+  }));
+  saveState();
+  closeModal('modal-replicate');
+  showToast(`✅ Patrón replicado a "${PATTERN_NAMES[targetIdx]}"`);
+}
+
+// ── Toast helper ─────────────────────────────────────────────────────────────
+function showToast(msg, duration) {
+  const el = document.getElementById('undo-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('visible');
+  if (el._toastTimer) clearTimeout(el._toastTimer);
+  el._toastTimer = setTimeout(() => el.classList.remove('visible'), duration || 2500);
+}
