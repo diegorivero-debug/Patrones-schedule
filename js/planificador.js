@@ -905,16 +905,21 @@ class ScheduleGenerator {
         let workSat = pattern[w];
 
         // Before giving Saturday off, verify minimum Saturday coverage won't be breached.
-        // Count how many OTHER non-SL people are already confirmed working Saturday.
+        // Use workSatPattern as the authoritative source for who will work Saturday —
+        // this avoids overcounting people whose pre-assigned Saturday shifts will be
+        // removed later in _fillRemaining().
         if (!workSat && !isVacation(this.get(p.id, w, SAT))) {
           const satMin = getMinStaffByDay(SAT);
           let satWorkers = 0;
           for (const t of TEAM_DATA) {
             if (t.role === 'SL' || t.id === p.id) continue;
             const tSat = this.get(t.id, w, SAT);
-            // Counts as working if already has a shift or their pattern says they work Sat
-            if (countsForCoverage(t.id, tSat)) satWorkers++;
-            else if (workSatPattern[t.id] && workSatPattern[t.id][w] && !isVacation(tSat)) satWorkers++;
+            if (workSatPattern[t.id] != null) {
+              // workSatPattern is the canonical intent; use it to predict final Saturday state
+              if (workSatPattern[t.id][w] && !isVacation(tSat)) satWorkers++;
+            } else if (countsForCoverage(t.id, tSat)) {
+              satWorkers++;
+            }
           }
           // If adding this person's OFF would leave Saturday below the minimum, override
           if (satWorkers < satMin) {
@@ -924,8 +929,10 @@ class ScheduleGenerator {
         }
 
         if (!workSat) {
-          // Don't work Saturday → mark Sat as OFF (if not already set)
-          if (!this.get(p.id, w, SAT) || this.get(p.id, w, SAT) === null) {
+          // Don't work Saturday → mark Sat as OFF, overriding any pre-assigned shift.
+          // Pre-assigned shifts (from _assignSMRotation, _assignOpsLeads, etc.) must be
+          // cleared so _fillRemaining() and coverage counts see the correct final state.
+          if (!isVacation(this.get(p.id, w, SAT))) {
             this.set(p.id, w, SAT, 'OFF', true);
           }
           // Work Mon-Fri (5 days) — no weekday off needed
@@ -1143,11 +1150,13 @@ class ScheduleGenerator {
       return count;
     };
 
-    // Prefer candidate days not in neverOff/avoidOff
-    const candidates = [MON, THU, FRI].filter(d => !neverOff.includes(d));
+    // Prefer candidate days not in neverOff/avoidOff and not already occupied by an Own day
+    const candidates = [MON, THU, FRI].filter(d =>
+      !neverOff.includes(d) && this.get(p.id, w, d) !== 'Own'
+    );
     const pool0 = candidates.length > 0
       ? candidates
-      : [MON,TUE,WED,THU,FRI].filter(d => !neverOff.includes(d));
+      : [MON,TUE,WED,THU,FRI].filter(d => !neverOff.includes(d) && this.get(p.id, w, d) !== 'Own');
 
     if (pool0.length === 0) {
       // Absolute fallback — respect nothing (shouldn't happen)
@@ -1252,8 +1261,8 @@ class ScheduleGenerator {
     this._assignLeadGenius();
     this._assignLeadShopping();
     this._assignSundayShifts();   // must be called after all role shifts, before days-off
+    this._applyOwnDaysRules();    // must run before _assignDaysOff so weekday coverage counts are accurate
     this._assignDaysOff();
-    this._applyOwnDaysRules();
     this._applyOpsLeadLdopsRules();
     this._fillRemaining();
     return this.sched;

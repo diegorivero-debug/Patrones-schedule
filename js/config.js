@@ -114,10 +114,10 @@
         jueSabRotacion2x2: true
       },
       restriccionesPersonales: {
-        jorge:  { fixedMorningDays: ['WED'], ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
-        sheila: { ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
-        itziar: { ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
-        cris_c: { morningOnlyWeekdays: true, ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
+        jorge:  { fixedMorningDays: ['WED'], ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE', 'WED'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
+        sheila: { ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE', 'WED'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
+        itziar: { ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE', 'WED'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
+        cris_c: { morningOnlyWeekdays: true, ownDays: ['MON', 'TUE'], neverOffDays: ['MON', 'TUE', 'WED'], ownCountsForCoverage: false, role: 'SENIOR_MANAGER' },
         javi_s: { aorFixedDays: ['MON', 'FRI'], avoidOffDays: ['TUE', 'WED'] },
         // Semana A: L-V 7:00-16:00, finde descanso. Semana B: libre disposición.
         // Ancla: semana del 2026-03-30 (lunes) = Semana A. Alterna A,B,A,B...
