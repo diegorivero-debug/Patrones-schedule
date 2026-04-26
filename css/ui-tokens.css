@@ -1,5 +1,5 @@
 /* ===== UI-TOKENS.CSS — Design tokens for the App Shell ===== */
-/* Included on every page via app-shell.css */
+/* Included explicitly on pages via its own <link> stylesheet reference */
 
 :root {
   /* ── Layout ─────────────────────────────── */
