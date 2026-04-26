@@ -6,36 +6,69 @@
 <meta name="theme-color" content="#1a1a2e">
 <link rel="manifest" href="manifest.webmanifest">
 <title>⚙️ Ajustes · Leadership Schedule</title>
+<link rel="stylesheet" href="css/ui-tokens.css">
+<link rel="stylesheet" href="css/app-shell.css">
 <link rel="stylesheet" href="css/nav.css">
 <link rel="stylesheet" href="css/ajustes.css">
 </head>
 <body>
 
-<!-- ===== HEADER ===== -->
-<header class="app-header">
-  <div class="app-header-left">
-    <span class="app-logo">📅</span>
-    <div>
-      <h1 class="app-title">Leadership Schedule</h1>
-      <span class="app-subtitle">Ajustes</span>
-    </div>
+<!-- ===== APP SHELL ===== -->
+<div class="app-shell">
+
+<!-- SIDEBAR -->
+<aside class="app-sidebar" id="app-sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-logo">📅</span>
+    <span class="sidebar-brand">Leadership Schedule</span>
   </div>
-  <div class="app-header-right">
+  <nav class="sidebar-nav" aria-label="Navegación principal">
+    <a class="sidebar-link" href="index.html" data-tooltip="Inicio" title="Inicio">
+      <span class="sidebar-icon">🏠</span>
+      <span class="sidebar-label">Inicio</span>
+    </a>
+    <a class="sidebar-link" href="dashboard.html" data-tooltip="Patrones" title="Patrones">
+      <span class="sidebar-icon">📊</span>
+      <span class="sidebar-label">Patrones</span>
+    </a>
+    <a class="sidebar-link" href="equipo.html" data-tooltip="Equipo" title="Equipo">
+      <span class="sidebar-icon">👥</span>
+      <span class="sidebar-label">Equipo</span>
+    </a>
+    <a class="sidebar-link" href="vacaciones.html" data-tooltip="Vacaciones" title="Vacaciones">
+      <span class="sidebar-icon">🌴</span>
+      <span class="sidebar-label">Vacaciones</span>
+    </a>
+    <a class="sidebar-link" href="planificador-13w.html" data-tooltip="13 Semanas" title="13 Semanas">
+      <span class="sidebar-icon">📅</span>
+      <span class="sidebar-label">13 Semanas</span>
+    </a>
+    <a class="sidebar-link" href="auditor.html" data-tooltip="Auditor" title="Auditor">
+      <span class="sidebar-icon">🔍</span>
+      <span class="sidebar-label">Auditor</span>
+    </a>
+    <a class="sidebar-link" href="equity.html" data-tooltip="Equidad" title="Equidad">
+      <span class="sidebar-icon">⚖️</span>
+      <span class="sidebar-label">Equidad</span>
+    </a>
+    <a class="sidebar-link active" href="ajustes.html" data-tooltip="Ajustes" title="Ajustes" aria-current="page">
+      <span class="sidebar-icon">⚙️</span>
+      <span class="sidebar-label">Ajustes</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- CONTENT COLUMN -->
+<div class="app-content">
+
+<!-- TOPBAR -->
+<header class="app-topbar">
+  <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Colapsar menú" aria-expanded="true" title="Colapsar menú">☰</button>
+  <span class="topbar-title">Ajustes</span>
+  <div class="topbar-right">
     <button class="btn-header" id="theme-toggle">🌙 Oscuro</button>
   </div>
 </header>
-
-<!-- NAV BAR -->
-<nav class="app-nav">
-  <a class="nav-btn nav-home" href="index.html">🏠 Inicio</a>
-  <a class="nav-btn" href="dashboard.html">📊 Patrones</a>
-  <a class="nav-btn" href="equipo.html">👥 Equipo</a>
-  <a class="nav-btn" href="vacaciones.html">🌴 Vacaciones</a>
-  <a class="nav-btn" href="planificador-13w.html">📅 13 Semanas</a>
-  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
-  <a class="nav-btn" href="equity.html">⚖️ Equidad</a>
-  <a class="nav-btn active" href="ajustes.html">⚙️ Ajustes</a>
-</nav>
 
 <!-- ===== MAIN ===== -->
 <main class="main">
@@ -979,5 +1012,9 @@
 </script>
 <script src="js/command-palette.js"></script>
 <script src="js/pwa.js"></script>
+<script src="js/app-shell.js"></script>
+
+</div><!-- /.app-content -->
+</div><!-- /.app-shell -->
 </body>
 </html>
