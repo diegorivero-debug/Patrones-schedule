@@ -2261,6 +2261,7 @@ function importVacacionesCSV(event) {
       }
 
       const VALID_TYPES = new Set(['V','V25','F','TGD','Parental','Paternidad','Lactancia','UNPAID','']);
+      // 'confirmed' = approved and marked on the official calendar (used by vacaciones.js)
       const VALID_STATUS = new Set(['approved','pending','confirmed']);
 
       let importCount = 0;
@@ -2353,7 +2354,7 @@ function openAddRequestModal() {
         <select id="req-type" onchange="updateReqDayVisibility()">
           <option value="day-off">Día libre</option>
           <option value="morning-day">Mañana un día concreto</option>
-          <option value="morning-week">Semana completa de mañana</option>
+          <option value="morning-week">Semana de mañana (todos los días)</option>
           <option value="shift-preference">Preferencia de turno</option>
           <option value="other">Otro</option>
         </select>
