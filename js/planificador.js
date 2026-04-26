@@ -295,6 +295,9 @@ class ScheduleGenerator {
     // Load vacation data from localStorage
     this.vacData = this._loadVacations();
 
+    // Load approved requests from equipo.html
+    this.approvedRequests = this._loadApprovedRequests();
+
     // Rotation state (influenced by seed for variant diversity)
     // SM Wed-Sat rotation: which SM pair goes morning this week
     // Pairs among {sheila, itziar} rotating with Cris always morning Mon-Fri
@@ -363,6 +366,91 @@ class ScheduleGenerator {
     }
 
     return data;
+  }
+
+  // ── Load approved requests from equipo.html ─────────────────────────────────
+  _loadApprovedRequests() {
+    const raw = localStorage.getItem('schedule_team');
+    if (!raw) return [];
+    try {
+      const team = JSON.parse(raw);
+      const allMembers = [...(team.leads || []), ...(team.managers || [])];
+      const result = [];
+      for (const m of allMembers) {
+        for (const req of (m.requests || [])) {
+          if (req.status === 'approved') {
+            result.push({ ...req, memberId: m.id });
+          }
+        }
+      }
+      return result;
+    } catch(e) { return []; }
+  }
+
+  // ── Apply approved requests to the schedule ──────────────────────────────────
+  // Called right after _applyVacations() so vacations take priority.
+  // Supported request types:
+  //   - day-off        : force a specific day to OFF
+  //   - morning-day    : force a specific day to morning shift
+  //   - morning-week   : force all weekdays of the specified week to morning
+  _applyApprovedRequests() {
+    const weekDates = computeWeekDates(this.qStart);
+    const DAY_NAME_TO_IDX = {
+      'Lunes': MON, 'Martes': TUE, 'Miércoles': WED, 'Miercoles': WED,
+      'Jueves': THU, 'Viernes': FRI, 'Sábado': SAT, 'Sabado': SAT,
+    };
+
+    for (const req of this.approvedRequests) {
+      const personId = req.memberId;
+      if (!personId || !this.sched[personId]) continue;
+
+      // Parse ISO week string "2026-W16" → Monday date
+      let reqMonday = null;
+      if (req.week && /^\d{4}-W\d{1,2}$/.test(req.week)) {
+        const [yearStr, wStr] = req.week.split('-W');
+        const yr = parseInt(yearStr, 10);
+        const wk = parseInt(wStr, 10);
+        const jan4 = new Date(yr, 0, 4);
+        const day = (jan4.getDay() + 6) % 7;
+        const monday = new Date(jan4);
+        monday.setDate(jan4.getDate() - day + (wk - 1) * 7);
+        reqMonday = monday;
+      }
+      if (!reqMonday) continue;
+
+      // Find which Q-week this corresponds to
+      const weekIdx = weekDates.findIndex(wd => {
+        return wd.getFullYear() === reqMonday.getFullYear() &&
+               wd.getMonth() === reqMonday.getMonth() &&
+               wd.getDate() === reqMonday.getDate();
+      });
+      if (weekIdx < 0) continue; // not in this Q
+
+      const type = req.type;
+
+      if (type === 'morning-week') {
+        // Force all weekdays (Mon-Fri) to morning shift
+        for (let d = MON; d <= FRI; d++) {
+          if (!isVacation(this.get(personId, weekIdx, d))) {
+            const p = TEAM_BY_ID[personId];
+            const shift = (p && p.c && p.c.morningOnly) ? 'Early' : 'Early S';
+            this.set(personId, weekIdx, d, shift, true);
+          }
+        }
+      } else if (type === 'morning-day' || type === 'day-off') {
+        const dayIdx = DAY_NAME_TO_IDX[req.day];
+        if (dayIdx === undefined || dayIdx > SAT) continue;
+        if (isVacation(this.get(personId, weekIdx, dayIdx))) continue;
+
+        if (type === 'day-off') {
+          this.set(personId, weekIdx, dayIdx, 'OFF', true);
+        } else { // morning-day
+          const p = TEAM_BY_ID[personId];
+          const shift = (p && p.c && p.c.morningOnly) ? 'Early' : 'Early S';
+          this.set(personId, weekIdx, dayIdx, shift, true);
+        }
+      }
+    }
   }
 
   // Apply vacation/absence entries to the schedule cells
@@ -1254,6 +1342,7 @@ class ScheduleGenerator {
   // ── Main generate ──────────────────────────────────────────────────────────
   generate() {
     this._applyVacations();
+    this._applyApprovedRequests();
     this._assignSMRotation();
     this._assignManagerShifts();
     this._balanceDailyCoverage();  // ensure morning/afternoon balance + min closing staff
