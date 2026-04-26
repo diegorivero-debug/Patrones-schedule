@@ -55,7 +55,7 @@ echo -e "${BOLD}¿Estás seguro de que quieres desinstalar \"${APP_NAME}\"? [s/N
 read -r -t 15 CONFIRM || CONFIRM="n"
 CONFIRM="${CONFIRM:-n}"
 
-if [[ "${CONFIRM,,}" != "s" ]]; then
+if [[ "$(echo "$CONFIRM" | tr '[:upper:]' '[:lower:]')" != "s" ]]; then
   info "Desinstalación cancelada."
   exit 0
 fi

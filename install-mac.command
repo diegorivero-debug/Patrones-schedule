@@ -310,7 +310,7 @@ echo -e "${BOLD}¿Abrir Leadership Schedule ahora? [S/n]${NC} "
 read -r -t 10 OPEN_NOW || OPEN_NOW="s"
 OPEN_NOW="${OPEN_NOW:-s}"
 
-if [[ "${OPEN_NOW,,}" != "n" ]]; then
+if [[ "$(echo "$OPEN_NOW" | tr '[:upper:]' '[:lower:]')" != "n" ]]; then
   info "Abriendo la app..."
   open "$APP_PATH" 2>/dev/null || bash "$MACOS_DIR/launch.sh"
   success "¡App abierta! Búscala en el Dock."
