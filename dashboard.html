@@ -80,18 +80,16 @@
     <button class="tab-btn"        data-pat="2">Miércoles</button>
     <button class="tab-btn"        data-pat="3">Sábado</button>
     <button class="tab-btn"        data-pat="4">🏪 Domingo</button>
-    <button class="tab-btn"        data-pat="week">📅 Semana</button>
-    <button class="tab-btn"        data-pat="planner">📋 Planificar</button>
-    <button class="tab-btn"        data-pat="equity">⚖️ Equidad Mgr</button>
-    <button class="tab-btn"        data-pat="real">📂 Día Real</button>
+
   </div>
   <div class="action-btns">
     <!-- Grupo Edición -->
     <div class="tool-group">
       <button class="btn-add"    onclick="openAddFigure()">➕ Añadir Figura</button>
       <button class="btn-gen"    onclick="openGenerate()">⚙️ Generar Patrón</button>
-      <button class="btn-whatif" id="btn-whatif" onclick="toggleWhatif()">🔮 What-if</button>
       <button class="btn-rules"  onclick="openRules()">📋 Reglas</button>
+      <button class="btn-import" onclick="openImportPatterns()">📥 Importar</button>
+      <button class="btn-replicate" onclick="openReplicatePattern()">📋 Replicar</button>
     </div>
     <!-- Grupo Análisis -->
     <div class="tool-group">
@@ -124,15 +122,13 @@
   <div id="alert-drawer-list" class="alert-drawer-list"></div>
 </div>
 
-<div id="whatif-banner">
-  <div class="whatif-banner-msg">🔮 MODO WHAT-IF — Haz clic en una persona para simular su ausencia</div>
-  <div id="whatif-impact"></div>
-</div>
+
 <div class="main">
   <div id="quick-stats" class="quick-stats"></div>
   <div id="kpi-cards"></div>
-  <div id="kpi-heatmap"></div>
   <div id="schedule-container"></div>
+  <div id="kpi-heatmap"></div>
+</div>
 </div>
 
 <!-- Add Figure Modal -->
@@ -199,6 +195,49 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modal-rules')">Cancelar</button>
       <button class="btn-primary" onclick="addRule()">Añadir Regla</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Patterns Modal -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal">
+    <h2>📥 Importar Patrón</h2>
+    <p style="font-size:.85rem;color:#4a5568;margin-bottom:12px;">
+      Importa un patrón desde un archivo <strong>JSON</strong> o <strong>CSV</strong>.<br>
+      El patrón importado reemplazará el patrón actualmente seleccionado.
+    </p>
+    <label>Seleccionar archivo</label>
+    <input type="file" id="import-file-input" accept=".json,.csv" style="margin-bottom:10px;">
+    <div id="import-preview" style="display:none;margin-bottom:10px;">
+      <p style="font-size:.82rem;color:#2d3748;font-weight:600" id="import-preview-msg"></p>
+    </div>
+    <div id="import-error" style="display:none;color:#c53030;font-size:.82rem;margin-bottom:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn-primary" id="btn-import-confirm" onclick="confirmImportPatterns()" disabled>Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Replicate Pattern Modal -->
+<div class="modal-overlay" id="modal-replicate">
+  <div class="modal">
+    <h2>📋 Replicar Patrón</h2>
+    <p style="font-size:.85rem;color:#4a5568;margin-bottom:12px;">
+      Copia el patrón actualmente activo a otra pestaña/patrón.
+    </p>
+    <label>Patrón de destino</label>
+    <select id="replicate-target-select" style="margin-bottom:16px;">
+      <option value="0">Día Normal</option>
+      <option value="1">Martes</option>
+      <option value="2">Miércoles</option>
+      <option value="3">Sábado</option>
+      <option value="4">🏪 Domingo</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-replicate')">Cancelar</button>
+      <button class="btn-primary" onclick="confirmReplicatePattern()">Replicar</button>
     </div>
   </div>
 </div>

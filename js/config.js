@@ -27,8 +27,12 @@
         // DEPRECATED: usar coberturaFranja para valores por franja horaria
         // Se mantiene como fallback para código que aún no use coberturaFranja
         floorMinimo: 4,
+        floorObjetivo: 6,
+        floorMaximo: 10,
         managersFloorMinimo: 2,
+        managersFloorMaximo: 6,
         coachMinimo: 2,
+        coachMaximo: 5,
         floorHoraPunta: 6,
         horasPunta: ['12:00-14:00', '17:00-21:00'],
         cierreInvierno: '21:00',
