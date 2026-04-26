@@ -1,0 +1,187 @@
+/* ===== NAV.CSS — Sistema de navegación compartido ===== */
+/* Incluir en TODAS las páginas junto con el CSS específico */
+
+/* ── App Header ────────────────────────────────────── */
+.app-header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-logo {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.app-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.app-subtitle {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.6);
+  display: block;
+  margin-top: 1px;
+  line-height: 1.3;
+}
+
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Header buttons (inside .app-header) ───────────── */
+.app-header .btn-header {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.app-header .btn-header:hover { background: rgba(255,255,255,.22); }
+
+/* Season toggle inside header */
+.app-header .season-toggle {
+  display: flex;
+  gap: 4px;
+}
+.app-header .season-btn {
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.75);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.app-header .season-btn:hover {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+}
+.app-header .season-btn.active {
+  background: rgba(255,255,255,.22);
+  color: #fff;
+  border-color: rgba(255,255,255,.4);
+}
+
+/* ── App Nav ────────────────────────────────────────── */
+.app-nav {
+  background: var(--surface, #fff);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  padding: 0 24px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.app-nav::-webkit-scrollbar { display: none; }
+
+/* ── Nav buttons ────────────────────────────────────── */
+.app-nav .nav-btn {
+  padding: 9px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted, #718096);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  text-decoration: none;
+  display: inline-block;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  margin-bottom: -1px;
+}
+.app-nav .nav-btn:hover {
+  background: var(--surface-alt, #f7fafc);
+  color: var(--text, #2d3748);
+}
+.app-nav .nav-btn.active {
+  color: var(--accent, #2b6cb0);
+  border-bottom: 3px solid var(--accent, #2b6cb0);
+  background: transparent;
+}
+
+/* ── Home button separator ─────────────────────────── */
+.app-nav .nav-btn.nav-home {
+  margin-right: 8px;
+  padding-right: 16px;
+  border-right: 1px solid var(--border, #e2e8f0);
+}
+
+/* ── Toast ────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: #2d3748;
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: .88rem;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .25s, transform .25s;
+  z-index: 999;
+  white-space: nowrap;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Dark mode ───────────────────────────────────────── */
+[data-theme="dark"] .app-nav {
+  background: var(--surface, #1a202c);
+  border-bottom-color: var(--border, #4a5568);
+}
+[data-theme="dark"] .app-nav .nav-btn:hover {
+  background: var(--surface-alt, #2d3748);
+}
+[data-theme="dark"] .app-nav .nav-btn.nav-home {
+  border-right-color: var(--border, #4a5568);
+}
+
+/* ── Responsive mobile ──────────────────────────────── */
+@media (max-width: 640px) {
+  .app-nav { padding: 0 12px; }
+  .app-nav .nav-btn { padding: 8px 10px; font-size: 0.76rem; }
+  .app-header { padding: 10px 16px; }
+  .app-title { font-size: 1rem; }
+}

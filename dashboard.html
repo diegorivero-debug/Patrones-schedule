@@ -6,37 +6,39 @@
 <meta name="theme-color" content="#1a1a2e">
 <link rel="manifest" href="manifest.webmanifest">
 <title>🗓️ Leadership Schedule - Dashboard</title>
+<link rel="stylesheet" href="css/nav.css">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<header>
-  <div class="header-row-top">
-    <div class="header-left">
-      <a href="index.html" class="btn-home">🏠 Inicio</a>
-      <div>
-        <h1>🗓️ Leadership Schedule - Dashboard</h1>
-        <p id="subtitle">Selecciona un patrón para visualizar</p>
-      </div>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="app-header-left">
+    <span class="app-logo">📅</span>
+    <div>
+      <h1 class="app-title">Leadership Schedule</h1>
+      <span class="app-subtitle" id="subtitle">Patrones de turnos</span>
     </div>
-    <div class="header-controls">
-      <div class="season-toggle">
-        <button class="season-btn active" data-season="verano" onclick="switchSeason('verano')">☀️ Verano</button>
-        <button class="season-btn" data-season="invierno" onclick="switchSeason('invierno')">❄️ Invierno</button>
-      </div>
-      <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()">🌙 Oscuro</button>
+  </div>
+  <div class="app-header-right">
+    <div class="season-toggle">
+      <button class="season-btn active" data-season="verano" onclick="switchSeason('verano')">☀️ Verano</button>
+      <button class="season-btn" data-season="invierno" onclick="switchSeason('invierno')">❄️ Invierno</button>
     </div>
+    <button class="btn-header" id="theme-toggle" onclick="toggleTheme()">🌙 Oscuro</button>
   </div>
 </header>
 
-<nav class="site-nav">
-  <a class="nav-btn active" href="dashboard.html">📊 Dashboard</a>
-  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
+<!-- NAV BAR -->
+<nav class="app-nav">
+  <a class="nav-btn nav-home" href="index.html">🏠 Inicio</a>
+  <a class="nav-btn active" href="dashboard.html">📊 Patrones</a>
   <a class="nav-btn" href="equipo.html">👥 Equipo</a>
   <a class="nav-btn" href="vacaciones.html">🌴 Vacaciones</a>
-  <a class="nav-btn" href="planificador-13w.html">📅 Planificador</a>
+  <a class="nav-btn" href="planificador-13w.html">📅 13 Semanas</a>
+  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
   <a class="nav-btn" href="equity.html">⚖️ Equidad</a>
   <a class="nav-btn" href="ajustes.html">⚙️ Ajustes</a>
-  <a class="nav-btn" href="index.html">🏠 Inicio</a>
 </nav>
 <div class="tabs-bar">
   <div class="tabs">
