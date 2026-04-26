@@ -2402,7 +2402,7 @@ function updateReqDayVisibility() {
   const type = document.getElementById('req-type')?.value;
   const dayRow = document.getElementById('req-day-row');
   if (dayRow) {
-    // Show day selector only for day-specific requests
+    // Hide day selector for morning-week (applies to all days); show for all other types
     dayRow.style.display = (type === 'morning-week') ? 'none' : 'flex';
   }
 }

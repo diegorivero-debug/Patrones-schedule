@@ -410,8 +410,9 @@ class ScheduleGenerator {
         const [yearStr, wStr] = req.week.split('-W');
         const yr = parseInt(yearStr, 10);
         const wk = parseInt(wStr, 10);
+    // ISO 8601: week 1 is the week containing Jan 4; Monday offset calculated from Jan 4
         const jan4 = new Date(yr, 0, 4);
-        const day = (jan4.getDay() + 6) % 7;
+        const day = (jan4.getDay() + 6) % 7; // days since Monday (0=Mon)
         const monday = new Date(jan4);
         monday.setDate(jan4.getDate() - day + (wk - 1) * 7);
         reqMonday = monday;
