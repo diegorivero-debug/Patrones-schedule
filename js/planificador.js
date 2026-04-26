@@ -333,13 +333,36 @@ class ScheduleGenerator {
   // ── Load vacations ──────────────────────────────────────────────────────────
   _loadVacations() {
     // vacaciones_${year}: { data: {personId: {weekNum: absenceType}}, periods: [] }
-    const year = parseDate(this.qStart).getFullYear();
-    const raw  = localStorage.getItem(`vacaciones_${year}`);
-    if (!raw) return {};
-    try {
-      const parsed = JSON.parse(raw);
-      return parsed.data || {};
-    } catch(e) { return {}; }
+    // Load data for the start year and also the following year in case the
+    // 13-week quarter spans a year boundary (e.g. Q4: Nov → Feb).
+    function loadYear(year) {
+      const raw = localStorage.getItem(`vacaciones_${year}`);
+      if (!raw) return {};
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed.data || {};
+      } catch(e) { return {}; }
+    }
+
+    const startYear = parseDate(this.qStart).getFullYear();
+    const endDate   = addDays(parseDate(this.qStart), (WEEKS - 1) * 7 + 5); // last day of Q
+    const endYear   = endDate.getFullYear();
+
+    const data = loadYear(startYear);
+
+    if (endYear !== startYear) {
+      // Merge next-year data (next year wins on conflict, though conflicts shouldn't happen)
+      const nextData = loadYear(endYear);
+      for (const [personId, weekMap] of Object.entries(nextData)) {
+        if (!data[personId]) {
+          data[personId] = weekMap;
+        } else {
+          Object.assign(data[personId], weekMap);
+        }
+      }
+    }
+
+    return data;
   }
 
   // Apply vacation/absence entries to the schedule cells
@@ -350,7 +373,8 @@ class ScheduleGenerator {
       weekDates.forEach((wdStart, wi) => {
         // ISO week number of this Q week's Monday
         const weekNum = isoWeek(wdStart);
-        const absence = weekMap[weekNum];
+        const absenceRaw = weekMap[weekNum];
+        const absence = typeof absenceRaw === 'string' ? absenceRaw : (absenceRaw?.type || null);
         if (absence && SHIFT_DEFS[absence]) {
           // Mark all 6 days of that week as the absence type
           // (The vacaciones module stores one entry per week meaning the person is absent)
