@@ -703,36 +703,35 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 
 .eq-toast-item.toast-ok   { background: #276749; }
 .eq-toast-item.toast-err  { background: #c53030; }
 .eq-toast-item.toast-info { background: var(--accent); }
+<link rel="stylesheet" href="css/nav.css">
 </style>
 </head>
 <body>
 
 <!-- ===== HEADER ===== -->
-<header class="site-header">
-  <h1>👥 Gestión del Equipo</h1>
-  <span class="subtitle" id="header-subtitle">Leadership Schedule · 0 personas</span>
-  <div class="header-actions">
+<header class="app-header">
+  <div class="app-header-left">
+    <span class="app-logo">📅</span>
+    <div>
+      <h1 class="app-title">Leadership Schedule</h1>
+      <span class="app-subtitle" id="header-subtitle">Gestión del Equipo</span>
+    </div>
+  </div>
+  <div class="app-header-right">
     <button class="btn-header" id="theme-toggle" onclick="toggleTheme()">🌙 Oscuro</button>
-    <a href="index.html" class="btn-header">🏠 Inicio</a>
-    <a href="dashboard.html" class="btn-header">📊 Dashboard ↗</a>
-    <a href="auditor.html" class="btn-header">🔍 Auditor ↗</a>
-    <a href="vacaciones.html" class="btn-header">🌴 Vacaciones ↗</a>
-    <a href="planificador-13w.html" class="btn-header">📅 Planificador ↗</a>
-    <a href="equity.html" class="btn-header">⚖️ Equidad ↗</a>
-    <a href="ajustes.html" class="btn-header">⚙️ Ajustes ↗</a>
   </div>
 </header>
 
-<!-- ===== SITE NAV ===== -->
-<nav class="site-nav">
-  <a class="nav-btn" href="dashboard.html">📊 Dashboard</a>
-  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
+<!-- NAV BAR -->
+<nav class="app-nav">
+  <a class="nav-btn nav-home" href="index.html">🏠 Inicio</a>
+  <a class="nav-btn" href="dashboard.html">📊 Patrones</a>
   <a class="nav-btn active" href="equipo.html">👥 Equipo</a>
   <a class="nav-btn" href="vacaciones.html">🌴 Vacaciones</a>
-  <a class="nav-btn" href="planificador-13w.html">📅 Planificador</a>
+  <a class="nav-btn" href="planificador-13w.html">📅 13 Semanas</a>
+  <a class="nav-btn" href="auditor.html">🔍 Auditor</a>
   <a class="nav-btn" href="equity.html">⚖️ Equidad</a>
   <a class="nav-btn" href="ajustes.html">⚙️ Ajustes</a>
-  <a class="nav-btn" href="index.html">🏠 Inicio</a>
 </nav>
 
 <!-- ===== TAB NAVIGATION ===== -->
@@ -1263,7 +1262,7 @@ function updateBadges() {
 
 function updateHeaderCount() {
   const el = document.getElementById('header-subtitle');
-  if (el) el.textContent = `Leadership Schedule · ${getAllMembers().length} personas`;
+  if (el) el.textContent = `Gestión del Equipo · ${getAllMembers().length} personas`;
 }
 
 // ===== THEME =====
