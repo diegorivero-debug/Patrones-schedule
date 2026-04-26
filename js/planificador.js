@@ -370,16 +370,25 @@ class ScheduleGenerator {
 
   // ── Load approved requests from equipo.html ─────────────────────────────────
   _loadApprovedRequests() {
-    const raw = localStorage.getItem('schedule_team');
-    if (!raw) return [];
+    // Primary: read from the flat 'schedule_requests' key (written by equipo.html syncRequests)
+    const rawFlat = localStorage.getItem('schedule_requests');
+    if (rawFlat) {
+      try {
+        const all = JSON.parse(rawFlat);
+        if (Array.isArray(all)) return all.filter(r => r.status === 'approved');
+      } catch(e) {}
+    }
+    // Fallback: extract from full team model
+    const rawTeam = localStorage.getItem('schedule_team');
+    if (!rawTeam) return [];
     try {
-      const team = JSON.parse(raw);
+      const team = JSON.parse(rawTeam);
       const allMembers = [...(team.leads || []), ...(team.managers || [])];
       const result = [];
       for (const m of allMembers) {
         for (const req of (m.requests || [])) {
           if (req.status === 'approved') {
-            result.push({ ...req, memberId: m.id });
+            result.push(Object.assign({}, req, { memberId: m.id }));
           }
         }
       }
