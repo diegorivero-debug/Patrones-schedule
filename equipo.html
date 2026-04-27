@@ -2842,7 +2842,7 @@ function openFichaPersonal(id) {
         const t = typeof entry === 'string' ? entry : (entry?.type || '?');
         const st = entry?.status || 'approved';
         return `<div class="ficha-abs-item"><span class="info-chip">S${wk}</span> ${esc(ABSENCE_LABELS_EQUIPO[t] || t)} ${statusBadgeHTML(st)}
-          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteVacacionWeek('${esc(id)}',${curYear},${wk})" title="Eliminar">🗑️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="(async () => { await deleteVacacionWeek('${esc(id)}',${curYear},${wk}); openFichaPersonal('${esc(id)}'); })()" title="Eliminar">🗑️</button>
         </div>`;
       }).join('')
     : `<span class="text-muted text-sm">Sin vacaciones registradas en ${curYear}</span>`;
