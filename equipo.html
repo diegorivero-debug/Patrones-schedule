@@ -2208,6 +2208,8 @@ function saveNewVacacion() {
   payload.data[personId][weekNum] = { type, status: 'approved' };
   writeVacacionesData(year, payload);
 
+  const vacYearSelect = document.getElementById('vac-year-select');
+  if (vacYearSelect) vacYearSelect.value = String(year);
   closeModal();
   renderAbsencesList();
   showToast('Vacación registrada correctamente', 'ok');
