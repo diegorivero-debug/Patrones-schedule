@@ -2821,7 +2821,7 @@ function openFichaPersonal(id) {
   if (!m && regP) {
     m = {
       id: regP.id, name: regP.name, shortName: regP.name.split(' ')[0],
-      defaultRole: ['OPS_LEAD','LEAD_GENIUS','LEAD_SHOPPING'].includes(regP.role) ? 'lead' : (regP.role === 'SM' ? 'sm' : 'manager'),
+      defaultRole: ['OPS_LEAD','LEAD_GENIUS','LEAD_SHOPPING'].includes(regP.role) ? 'lead' : (regP.role === 'SM' ? 'sm' : (regP.role === 'SL' ? 'sl' : 'manager')),
       defaultShift: regP.c?.defaultShift || '—',
       daysOff: [], scheduleRestrictions: [], requests: [], absences: [],
       stats: { vacationDaysTotal: 22 }
